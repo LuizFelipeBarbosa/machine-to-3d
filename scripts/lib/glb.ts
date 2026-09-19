@@ -1,3 +1,6 @@
+export type Vec3 = [number, number, number];
+type Bounds = { min: Vec3; max: Vec3 };
+
 export type GlbSummary = {
   generator: string | undefined;
   namedNodes: string[];
@@ -7,18 +10,18 @@ export type GlbSummary = {
   meshCount: number;
   animationCount: number;
   extensionsUsed: string[];
-  boundingBox: { min: [number, number, number]; max: [number, number, number] } | null;
+  boundingBox: Bounds | null;
+  nodeBounds: Record<string, Bounds>;
 };
 
-type Vector3 = [number, number, number];
 type GltfNode = {
   name?: string;
   mesh?: number;
   children?: number[];
   matrix?: number[];
-  translation?: Vector3;
+  translation?: Vec3;
   rotation?: [number, number, number, number];
-  scale?: Vector3;
+  scale?: Vec3;
 };
 type GltfDocument = {
   asset?: { generator?: string };
@@ -75,12 +78,21 @@ export function parseGlbJson(bytes: Uint8Array): unknown {
   return json;
 }
 
-export function summarizeGlb(bytes: Uint8Array): GlbSummary {
+function readGlbDocument(bytes: Uint8Array): GltfDocument {
   const json = parseGlbJson(bytes);
   if (typeof json !== 'object' || json === null || Array.isArray(json)) {
     throw new Error('Invalid GLB: JSON document must be an object.');
   }
-  const document = json as GltfDocument;
+  return json as GltfDocument;
+}
+
+/** World-space subtree bounds for named nodes in the default scene. */
+export function nodeBounds(bytes: Uint8Array): Record<string, { min: Vec3; max: Vec3 }> {
+  return calculateBounds(readGlbDocument(bytes)).nodeBounds;
+}
+
+export function summarizeGlb(bytes: Uint8Array): GlbSummary {
+  const document = readGlbDocument(bytes);
   const nodes = document.nodes ?? [];
   const roots = document.scenes?.[document.scene ?? 0]?.nodes ?? [];
   const namedNodes = nodes.flatMap(node => node.name ? [node.name] : []);
@@ -99,7 +111,7 @@ export function summarizeGlb(bytes: Uint8Array): GlbSummary {
     meshCount: document.meshes?.length ?? 0,
     animationCount: document.animations?.length ?? 0,
     extensionsUsed: document.extensionsUsed ?? [],
-    boundingBox: calculateBoundingBox(document, roots),
+    ...calculateBounds(document),
   };
 }
 
@@ -150,17 +162,29 @@ function multiplyMatrices(left: number[], right: number[]): number[] {
   return result;
 }
 
-function calculateBoundingBox(document: GltfDocument, roots: number[]): GlbSummary['boundingBox'] {
-  const min: Vector3 = [Infinity, Infinity, Infinity];
-  const max: Vector3 = [-Infinity, -Infinity, -Infinity];
+function mergeBounds(target: Bounds, source: Bounds): void {
+  for (let axis = 0; axis < 3; axis++) {
+    target.min[axis] = Math.min(target.min[axis], source.min[axis]);
+    target.max[axis] = Math.max(target.max[axis], source.max[axis]);
+  }
+}
+
+function emptyBounds(): Bounds {
+  return { min: [Infinity, Infinity, Infinity], max: [-Infinity, -Infinity, -Infinity] };
+}
+
+function calculateBounds(document: GltfDocument): Pick<GlbSummary, 'boundingBox' | 'nodeBounds'> {
+  const boundingBox = emptyBounds();
+  const namedBounds = new Map<string, Bounds>();
   const ancestors = new Set<number>();
 
-  function visit(index: number, parentMatrix: number[]): void {
+  function visit(index: number, parentMatrix: number[]): Bounds {
     if (ancestors.has(index)) {
       throw new Error(`Invalid GLB: cycle at node ${index}.`);
     }
     const node = getNode(document.nodes ?? [], index);
     const worldMatrix = multiplyMatrices(parentMatrix, nodeMatrix(node));
+    const bounds = emptyBounds();
     if (node.mesh !== undefined) {
       const mesh = document.meshes?.[node.mesh];
       if (!mesh) throw new Error(`Invalid GLB: mesh ${node.mesh} does not exist.`);
@@ -176,17 +200,32 @@ function calculateBoundingBox(document: GltfDocument, roots: number[]): GlbSumma
           for (let axis = 0; axis < 3; axis++) {
             const value = worldMatrix[axis] * x + worldMatrix[4 + axis] * y
               + worldMatrix[8 + axis] * z + worldMatrix[12 + axis];
-            min[axis] = Math.min(min[axis], value);
-            max[axis] = Math.max(max[axis], value);
+            bounds.min[axis] = Math.min(bounds.min[axis], value);
+            bounds.max[axis] = Math.max(bounds.max[axis], value);
           }
         }
       }
     }
     ancestors.add(index);
-    for (const child of node.children ?? []) visit(child, worldMatrix);
+    for (const child of node.children ?? []) {
+      mergeBounds(bounds, visit(child, worldMatrix));
+    }
     ancestors.delete(index);
+    if (node.name && bounds.min[0] !== Infinity) {
+      // Duplicate names share an entry encompassing every matching subtree.
+      const combined = namedBounds.get(node.name) ?? emptyBounds();
+      mergeBounds(combined, bounds);
+      namedBounds.set(node.name, combined);
+    }
+    return bounds;
   }
 
-  for (const root of roots) visit(root, identityMatrix());
-  return min[0] === Infinity ? null : { min, max };
+  const roots = document.scenes?.[document.scene ?? 0]?.nodes ?? [];
+  for (const root of roots) {
+    mergeBounds(boundingBox, visit(root, identityMatrix()));
+  }
+  return {
+    boundingBox: boundingBox.min[0] === Infinity ? null : boundingBox,
+    nodeBounds: Object.fromEntries(namedBounds),
+  };
 }

@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { parseGlbJson, summarizeGlb } from './glb.js';
+import { nodeBounds, parseGlbJson, summarizeGlb } from './glb.js';
 
 function makeGlb(document: unknown): Uint8Array {
   const json = Buffer.from(JSON.stringify(document));
@@ -20,6 +20,23 @@ function makeGlb(document: unknown): Uint8Array {
 }
 
 describe('reference instrument GLBs', () => {
+  it('bounds the Park NX10 head and its probe within the model', async () => {
+    const bytes = await readFile(new URL('../../seed/park-nx10/model.glb', import.meta.url));
+    const bounds = nodeBounds(bytes);
+    const model = summarizeGlb(bytes).boundingBox!;
+    expect(bounds.head).toBeDefined();
+    expect(bounds.probe).toBeDefined();
+    const height = bounds.head.max[1] - bounds.head.min[1];
+    expect(height).toBeGreaterThan(0.5);
+    expect(height).toBeLessThan(2);
+    for (let axis = 0; axis < 3; axis++) {
+      expect(bounds.head.min[axis]).toBeGreaterThanOrEqual(model.min[axis]);
+      expect(bounds.head.max[axis]).toBeLessThanOrEqual(model.max[axis]);
+      expect(bounds.probe.min[axis]).toBeGreaterThanOrEqual(bounds.head.min[axis]);
+      expect(bounds.probe.max[axis]).toBeLessThanOrEqual(bounds.head.max[axis]);
+    }
+  });
+
   it.each([
     {
       file: 'rise-raman-sem',
@@ -137,6 +154,46 @@ describe('GLB parsing and bounds', () => {
     const bounds = summary.boundingBox!;
     [5, 20, 33].forEach((value, axis) => expect(bounds.min[axis]).toBeCloseTo(value));
     [11, 22, 36].forEach((value, axis) => expect(bounds.max[axis]).toBeCloseTo(value));
+    expect(nodeBounds(bytes)).toEqual({ root: bounds, part: bounds });
+  });
+
+  it('includes own meshes and unnamed descendants, but omits empty subtrees', () => {
+    const bytes = makeGlb({
+      scenes: [{ nodes: [0] }],
+      nodes: [
+        { name: 'assembly', mesh: 0, translation: [10, 0, 0], children: [1, 2] },
+        { mesh: 0, translation: [2, 3, 4], children: [3] },
+        { name: 'empty' },
+        { name: 'tip', mesh: 0, translation: [0, 2, 0] },
+      ],
+      meshes: [{ primitives: [{ attributes: { POSITION: 0 } }] }],
+      accessors: [{ min: [0, 0, 0], max: [1, 1, 1] }],
+    });
+    expect(nodeBounds(bytes)).toEqual({
+      assembly: { min: [10, 0, 0], max: [13, 6, 5] },
+      tip: { min: [12, 5, 4], max: [13, 6, 5] },
+    });
+  });
+
+  it('prints node bounds with --nodes and includes them in JSON output', () => {
+    const script = fileURLToPath(new URL('../inspect-glb.ts', import.meta.url));
+    const file = fileURLToPath(new URL('../../seed/park-nx10/model.glb', import.meta.url));
+    const text = spawnSync(process.execPath, ['--import', 'tsx', script, file, '--nodes'], {
+      encoding: 'utf8',
+    });
+    expect(text.error).toBeUndefined();
+    expect(text.status).toBe(0);
+    expect(text.stdout).toMatch(/^head: min \[.+\], max \[.+\], size \[.+\]$/m);
+
+    const json = spawnSync(process.execPath, ['--import', 'tsx', script, file, '--json'], {
+      encoding: 'utf8',
+    });
+    expect(json.error).toBeUndefined();
+    expect(json.status).toBe(0);
+    expect(JSON.parse(json.stdout).nodeBounds.head).toEqual({
+      min: expect.arrayContaining([expect.any(Number)]),
+      max: expect.arrayContaining([expect.any(Number)]),
+    });
   });
 
   it('reports unnamed roots and null bounds when no positions have bounds', () => {
@@ -145,5 +202,6 @@ describe('GLB parsing and bounds', () => {
     expect(summary.namedNodes).toEqual([]);
     expect(summary.duplicateNames).toEqual([]);
     expect(summary.boundingBox).toBeNull();
+    expect(summary.nodeBounds).toEqual({});
   });
 });
