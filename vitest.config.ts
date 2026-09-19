@@ -9,6 +9,7 @@ export default defineConfig({
           include: [
             'shared/**/*.test.ts',
             'scripts/**/*.test.ts',
+            'worker/**/*.test.ts',
             'seed/**/*.test.ts',
             'src/**/*.test.ts',
           ],

@@ -511,3 +511,71 @@ describe('seed procedures', () => {
       .toMatchObject({ machineVersionId: current.machineVersionId });
   });
 });
+
+describe('seed reference media', () => {
+  test('compares relative paths across uploads while preserving storage ids in published content', async () => {
+    const { t, trainee, machineArgs, procedureArgs } = await setup();
+    await t.mutation(api.seed.upsertMachine, machineArgs);
+    const video = await t.run((ctx) => ctx.storage.store(new Blob(['video'])));
+    const image = await t.run((ctx) => ctx.storage.store(new Blob(['image'])));
+    const content = structuredClone(procedureArgs.content);
+    content.video = { fileId: video, label: 'Demonstration' };
+    content.steps[0].media = { fileId: image, alt: 'Setup' };
+    const mediaKeys = { [video]: 'reference.mp4', [image]: 'media/step-01.jpg' };
+    const first = await t.mutation(api.seed.upsertProcedure, { ...procedureArgs, content, mediaKeys });
+    if (!first.created) throw new Error('Expected a new procedure');
+    const original = await t.run((ctx) => ctx.db.get(first.versionId));
+    expect(original).toMatchObject({ content, seedMedia: mediaKeys });
+    expect(await trainee.query(api.procedures.getForPlay, {
+      machineSlug: 'machine', procedureSlug: 'procedure',
+    })).toMatchObject({
+      content,
+      mediaUrls: { [video]: expect.any(String), [image]: expect.any(String) },
+    });
+
+    const nextVideo = await t.run((ctx) => ctx.storage.store(new Blob(['next video upload'])));
+    const nextImage = await t.run((ctx) => ctx.storage.store(new Blob(['next image upload'])));
+    content.video.fileId = nextVideo;
+    content.steps[0].media.fileId = nextImage;
+    const nextKeys = { [nextVideo]: 'reference.mp4', [nextImage]: 'media/step-01.jpg' };
+    expect(await t.mutation(api.seed.upsertProcedure, {
+      ...procedureArgs, content, mediaKeys: nextKeys,
+    })).toEqual({ created: false, updated: false, reason: 'unchanged' });
+    expect(await t.run((ctx) => ctx.db.get(first.versionId))).toEqual(original);
+    expect(await t.run((ctx) => ctx.db.query('procedureVersions').collect())).toHaveLength(1);
+
+    nextKeys[nextImage] = 'media/step-02.jpg';
+    const changedImage = await t.mutation(api.seed.upsertProcedure, {
+      ...procedureArgs, content, mediaKeys: nextKeys,
+    });
+    expect(changedImage).toMatchObject({ created: false, updated: true, version: 2 });
+    if (!changedImage.updated) throw new Error('Expected an updated procedure');
+    expect(await t.run((ctx) => ctx.db.get(changedImage.versionId)))
+      .toMatchObject({ content, seedMedia: nextKeys });
+
+    content.video.label = 'Updated demonstration label';
+    expect(await t.mutation(api.seed.upsertProcedure, {
+      ...procedureArgs, content, mediaKeys: nextKeys,
+    })).toMatchObject({ created: false, updated: true, version: 3 });
+    nextKeys[nextVideo] = 'media/alternate.mp4';
+    expect(await t.mutation(api.seed.upsertProcedure, {
+      ...procedureArgs, content, mediaKeys: nextKeys,
+    })).toMatchObject({ created: false, updated: true, version: 4 });
+    expect(await t.run((ctx) => ctx.db.get(first.versionId))).toEqual({ ...original, status: 'retired' });
+  });
+
+  test('keeps storage-id comparison for versions without seed media metadata', async () => {
+    const { t, machineArgs, procedureArgs } = await setup();
+    await t.mutation(api.seed.upsertMachine, machineArgs);
+    const content = structuredClone(procedureArgs.content);
+    content.video = { fileId: await t.run((ctx) => ctx.storage.store(new Blob(['video']))) };
+    const first = await t.mutation(api.seed.upsertProcedure, { ...procedureArgs, content });
+    if (!first.created) throw new Error('Expected a new procedure');
+    expect((await t.run((ctx) => ctx.db.get(first.versionId)))?.seedMedia).toBeUndefined();
+    expect(await t.mutation(api.seed.upsertProcedure, { ...procedureArgs, content }))
+      .toEqual({ created: false, updated: false, reason: 'unchanged' });
+    content.video.fileId = await t.run((ctx) => ctx.storage.store(new Blob(['another video'])));
+    expect(await t.mutation(api.seed.upsertProcedure, { ...procedureArgs, content }))
+      .toMatchObject({ created: false, updated: true, version: 2 });
+  });
+});

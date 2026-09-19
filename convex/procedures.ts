@@ -1,6 +1,7 @@
 import { ConvexError, v } from 'convex/values';
 import { validateProcedure } from '../shared/validateProcedure';
 import type { ProcedureContent } from '../shared/procedure';
+import type { Doc } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
 import type { QueryCtx } from './_generated/server';
 import { requireRole, requireUser } from './lib/authz';
@@ -10,8 +11,10 @@ import {
   getDraft,
   getLatestVersion,
   linkTargetsForMachine,
+  mediaUrlsForContent,
   parseContent,
   parseDefinition,
+  publishDraftMachineVersion,
   requireMachine,
   requireMachineVersion,
   requireProcedure,
@@ -34,21 +37,6 @@ const versionSummaryValidator = v.object({
   changeNote: v.optional(v.string()),
 });
 
-async function mediaUrlsForContent(ctx: QueryCtx, contents: ProcedureContent[]) {
-  const fileIds = new Set(contents.flatMap((content) =>
-    content.steps.flatMap((step) => step.media ? [step.media.fileId] : []),
-  ));
-  const entries: [string, string][] = [];
-  for (const fileId of fileIds) {
-    // Local content may use URLs; those are rendered directly by the player.
-    const storageId = ctx.db.system.normalizeId('_storage', fileId);
-    if (storageId === null) continue;
-    const url = await ctx.storage.getUrl(storageId);
-    if (url !== null) entries.push([fileId, url]);
-  }
-  return Object.fromEntries(entries);
-}
-
 export const getEditorContext = query({
   args: { machineSlug: v.string(), procedureSlug: v.string() },
   returns: v.union(v.object({
@@ -61,6 +49,11 @@ export const getEditorContext = query({
     versions: v.array(versionSummaryValidator),
     draftId: v.optional(v.id('procedureVersions')),
     approvedId: v.optional(v.id('procedureVersions')),
+    activeJob: v.union(v.object({
+      _id: v.id('draftJobs'),
+      status: v.union(v.literal('queued'), v.literal('running')),
+      stage: v.string(),
+    }), v.null()),
     linkTargets: linkTargetsValidator,
     procedureTitles: v.record(v.string(), v.string()),
     mediaUrls: mediaUrlsValidator,
@@ -80,6 +73,21 @@ export const getEditorContext = query({
       .withIndex('by_procedure', (q) => q.eq('procedureId', procedure._id))
       .order('desc').collect();
     const draft = versions.find((version) => version.status === 'draft');
+    let activeJob: (Pick<Doc<'draftJobs'>, '_id' | 'stage'> & {
+      status: 'queued' | 'running';
+    }) | null = null;
+    if (draft) {
+      for (const status of ['queued', 'running'] as const) {
+        const job = await ctx.db.query('draftJobs')
+          .withIndex('by_target', (q) =>
+            q.eq('targetProcedureVersionId', draft._id).eq('status', status),
+          ).first();
+        if (job !== null) {
+          activeJob = { _id: job._id, status, stage: job.stage };
+          break;
+        }
+      }
+    }
     const approved = await getApprovedVersion(ctx, procedure);
     const machineVersion = await requireMachineVersion(
       ctx, (draft ?? approved)?.machineVersionId ?? machine.currentVersionId,
@@ -119,6 +127,7 @@ export const getEditorContext = query({
       })),
       draftId: draft?._id,
       approvedId: approved?._id,
+      activeJob,
       linkTargets,
       procedureTitles: Object.fromEntries(titleEntries),
       mediaUrls: await mediaUrlsForContent(ctx, mediaContents),
@@ -166,6 +175,7 @@ export const getForPlay = query({
     version: v.number(),
     machineVersionId: v.id('machineVersions'),
     content: procedureContentValidator,
+    sourceVideoUrl: v.union(v.string(), v.null()),
     modelUrl: v.union(v.string(), v.null()),
     definition: machineDefinitionValidator,
     linkTargets: linkTargetsValidator,
@@ -200,6 +210,8 @@ export const getForPlay = query({
       version: version.version,
       machineVersionId: machineVersion._id,
       content: parseContent(version.content),
+      sourceVideoUrl: version.sourceVideoFileId === undefined
+        ? null : await ctx.storage.getUrl(version.sourceVideoFileId),
       modelUrl: await ctx.storage.getUrl(machineVersion.modelFileId),
       definition: parseDefinition(machineVersion.definition),
       linkTargets: await linkTargetsForMachine(ctx, machine._id),
@@ -217,6 +229,8 @@ export const getVersion = query({
     status: versionStatusValidator,
     machineVersionId: v.id('machineVersions'),
     content: procedureContentValidator,
+    contentRevision: v.number(),
+    sourceVideoUrl: v.union(v.string(), v.null()),
     changeNote: v.optional(v.string()),
     approvedAt: v.optional(v.number()),
     createdBy: v.optional(v.id('users')),
@@ -244,6 +258,9 @@ export const getVersion = query({
       machineVersionId: machineVersion._id,
       content,
       changeNote: version.changeNote,
+      contentRevision: version.contentRevision ?? 0,
+      sourceVideoUrl: version.sourceVideoFileId === undefined
+        ? null : await ctx.storage.getUrl(version.sourceVideoFileId),
       approvedAt: version.approvedAt,
       createdBy: version.createdBy,
       modelUrl: await ctx.storage.getUrl(machineVersion.modelFileId),
@@ -318,6 +335,28 @@ export const create = mutation({
   },
 });
 
+async function machineVersionForDraft(
+  ctx: QueryCtx,
+  machine: Doc<'machines'>,
+  source: Doc<'procedureVersions'> | null,
+) {
+  const sourceMachineVersion = source === null ? null : await ctx.db.get(source.machineVersionId);
+  if (sourceMachineVersion?.status !== 'draft') {
+    return requireMachineVersion(ctx, machine.currentVersionId);
+  }
+  if (machine.currentVersionId === undefined) {
+    const latest = await ctx.db.query('machineVersions')
+      .withIndex('by_machine', (q) => q.eq('machineId', machine._id))
+      .order('desc').first();
+    if (latest !== null && sourceMachineVersion.version < latest.version) {
+      throw new ConvexError('Machine version superseded');
+    }
+    return sourceMachineVersion;
+  }
+  const currentVersion = await requireMachineVersion(ctx, machine.currentVersionId);
+  return sourceMachineVersion.version > currentVersion.version ? sourceMachineVersion : currentVersion;
+}
+
 export const createDraft = mutation({
   args: {
     procedureId: v.id('procedures'),
@@ -338,7 +377,7 @@ export const createDraft = mutation({
       throw new ConvexError('Source version belongs to another procedure');
     }
     const machine = await requireMachine(ctx, procedure.machineId);
-    const machineVersion = await requireMachineVersion(ctx, machine.currentVersionId);
+    const machineVersion = await machineVersionForDraft(ctx, machine, source);
     return ctx.db.insert('procedureVersions', {
       procedureId,
       version: (latest?.version ?? 0) + 1,
@@ -348,19 +387,36 @@ export const createDraft = mutation({
         ? emptyProcedureContent(procedure.slug, parseDefinition(machineVersion.definition))
         : parseContent(source.content),
       copiedFromVersionId: source?._id,
+      sourceVideoFileId: source?.sourceVideoFileId,
       createdBy: user._id,
     });
   },
 });
 
 export const saveDraft = mutation({
-  args: { versionId: v.id('procedureVersions'), content: procedureContentValidator },
+  args: {
+    versionId: v.id('procedureVersions'),
+    content: procedureContentValidator,
+    expectedContentRevision: v.optional(v.number()),
+  },
   returns: v.null(),
-  handler: async (ctx, { versionId, content }) => {
+  handler: async (ctx, { versionId, content, expectedContentRevision }) => {
     await requireRole(ctx, 'author');
     const version = await requireVersion(ctx, versionId);
     if (version.status !== 'draft') {
       throw new ConvexError('Only drafts can be edited');
+    }
+    if (expectedContentRevision !== undefined && expectedContentRevision !== (version.contentRevision ?? 0)) {
+      throw new ConvexError('Draft was changed elsewhere; reload before saving');
+    }
+    for (const status of ['queued', 'running'] as const) {
+      const job = await ctx.db.query('draftJobs')
+        .withIndex('by_target', (q) =>
+          q.eq('targetProcedureVersionId', versionId).eq('status', status),
+        ).first();
+      if (job !== null) {
+        throw new ConvexError('An agent revision is running for this draft');
+      }
     }
     await ctx.db.patch(versionId, { content: parseContent(content) });
     return null;
@@ -406,6 +462,10 @@ export const approve = mutation({
     if (issues.length > 0) {
       const details = issues.map((issue) => `${issue.path}: ${issue.message}`).join('\n');
       throw new ConvexError(`Invalid procedure references:\n${details}`);
+    }
+
+    if (machineVersion.status === 'draft') {
+      await publishDraftMachineVersion(ctx, machineVersion._id);
     }
 
     const approvedVersions = await ctx.db.query('procedureVersions')

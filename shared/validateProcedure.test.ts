@@ -50,8 +50,54 @@ function makeProcedure(): ProcedureContent {
 }
 
 describe('validateProcedure', () => {
+  const fractionMachine: MachineDefinition = {
+    ...machine,
+    stateVars: [
+      ...machine.stateVars,
+      { name: 'demo', label: 'Demonstration', kind: 'fraction', effects: [{ type: 'clip', clip: 'Demo' }] },
+    ],
+  };
+
   it('accepts valid references', () => {
     expect(validateProcedure(makeProcedure(), machine, { scan: ['align'] })).toEqual([]);
+  });
+
+  it.each([0, 0.18, 1])('accepts a fraction of %s alongside toggle values', (value) => {
+    const content = makeProcedure();
+    content.start.demo = value;
+    content.steps[0].state!.demo = value;
+    expect(validateProcedure(content, fractionMachine)).toEqual([]);
+  });
+
+  it.each([false, true])('reports boolean %s for a fraction in start and step state', (value) => {
+    const content = makeProcedure();
+    content.start.demo = value;
+    content.steps[0].state!.demo = value;
+    expect(validateProcedure(content, fractionMachine)).toEqual([
+      { path: 'start.demo', message: expect.stringContaining(`"demo" (fraction) requires a number in [0, 1]; received ${value}`) },
+      { path: 'steps[0].state.demo', message: expect.stringContaining(`"demo" (fraction) requires a number in [0, 1]; received ${value}`) },
+    ]);
+  });
+
+  it.each([0, 0.18, 1])('reports numeric %s for a toggle in start and step state', (value) => {
+    const content = makeProcedure();
+    content.start.lift = value;
+    content.steps[0].state!.lift = value;
+    expect(validateProcedure(content, machine)).toEqual([
+      { path: 'start.lift', message: expect.stringContaining(`"lift" (toggle) requires a boolean; received ${value}`) },
+      { path: 'steps[0].state.lift', message: expect.stringContaining(`"lift" (toggle) requires a boolean; received ${value}`) },
+    ]);
+  });
+
+  it.each([-0.1, 1.1, NaN, Infinity])('reports an invalid fraction of %s even without schema parsing', (value) => {
+    const content = makeProcedure();
+    content.start.demo = value;
+    content.steps[0].state!.demo = value;
+    const issues = validateProcedure(content, fractionMachine);
+    expect(issues.map((issue) => issue.path)).toEqual(['start.demo', 'steps[0].state.demo']);
+    for (const issue of issues) {
+      expect(issue.message).toContain(`"demo" (fraction) requires a number in [0, 1]; received ${value}`);
+    }
   });
 
   it('reports unknown parts at their array position', () => {

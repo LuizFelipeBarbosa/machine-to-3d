@@ -106,6 +106,7 @@ function VersionPreview({ versionId, slug, ...props }: SelectionProps & { versio
       procedure={{
         slug, machineSlug: props.machine.slug, content: version.content,
         versionId, placeholder: false,
+        sourceVideoUrl: version.sourceVideoUrl,
       }}
       preview
       linkTargets={version.linkTargets}
@@ -189,14 +190,28 @@ function LoadedWorkspace({ machine, procedures, authorMachineId }: WorkspaceProp
             {!selected && <>
               {machine.definition.stateVars.map((variable) => (
                 <label key={variable.name}>
-                  <input
-                    type="checkbox"
-                    checked={Boolean(controller.state[variable.name])}
-                    onChange={(event) => {
-                      const checked = event.target.checked;
-                      controller.setState((state) => ({ ...state, [variable.name]: checked }));
-                    }}
-                  />
+                  {variable.kind === 'fraction' ? (
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={Number(controller.state[variable.name] ?? 0) * 100}
+                      onChange={(event) => {
+                        const value = event.target.valueAsNumber / 100;
+                        controller.setState((state) => ({ ...state, [variable.name]: value }));
+                      }}
+                    />
+                  ) : (
+                    <input
+                      type="checkbox"
+                      checked={Boolean(controller.state[variable.name])}
+                      onChange={(event) => {
+                        const checked = event.target.checked;
+                        controller.setState((state) => ({ ...state, [variable.name]: checked }));
+                      }}
+                    />
+                  )}
                   {variable.label}
                 </label>
               ))}
@@ -218,6 +233,9 @@ function LoadedWorkspace({ machine, procedures, authorMachineId }: WorkspaceProp
       <aside className="panel" aria-label={selected ? 'Procedure' : 'Explore'}>
         <ProcedurePicker machineSlug={machine.slug} authorMachineId={authorMachineId}
           procedures={procedures} selected={selected} onSelect={openProcedure} />
+        {isConvexMode && authorMachineId && (
+          <Link className="btn" to={`/jobs/new?machine=${encodeURIComponent(machine.slug)}`}>Draft from video</Link>
+        )}
         {!selected ? (
           <ExplorePanel machine={machine} procedures={procedures} controller={controller}
             inspected={inspected} canEdit={Boolean(authorMachineId)} onInspect={setInspected} onOpenProcedure={openProcedure} />

@@ -1,0 +1,83 @@
+.jobs-table td {
+  overflow-wrap:anywhere;
+}
+
+.jobs-table a,.job-actions a {
+  color:var(--signal);
+}
+
+.job-stages {
+  display:flex;
+  gap:.5rem;
+  overflow-x:auto;
+  margin:1rem 1.25rem;
+  padding:0 0 .5rem;
+  list-style:none;
+}
+
+.job-stages li {
+  padding:.35rem .65rem;
+  border-bottom:3px solid var(--rule);
+  color:var(--ink-2);
+  background:var(--paper-2);
+}
+
+.job-stages .is-done {
+  color:var(--signal);
+  border-color:var(--signal);
+}
+
+.job-stages .is-current {
+  color:var(--signal-ink);
+  background:var(--signal);
+  border-color:var(--signal);
+  font-weight:600;
+}
+
+.job-stages .is-failed {
+  color:var(--caution-ink);
+  background:var(--caution-bg);
+  border-color:var(--caution-edge);
+}
+
+.job-events,.job-error {
+  margin:.75rem 1.25rem;
+  padding:.75rem;
+  border:1px solid var(--rule);
+  background:var(--paper-2);
+  font-family:monospace;
+  font-size:.875rem;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+}
+
+.job-events {
+  max-height:18rem;
+  overflow:auto;
+  list-style:none;
+}
+
+.job-events li + li {
+  margin-top:.35rem;
+}
+
+.job-events time {
+  color:var(--ink-2);
+}
+
+.job-events .warn,.job-events .error,.job-error {
+  color:var(--caution-ink);
+  background:var(--caution-bg);
+}
+
+.job-error {
+  border-color:var(--caution-edge);
+}
+
+.job-actions {
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:.75rem;
+  margin:.75rem 1.25rem;
+}

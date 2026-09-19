@@ -99,6 +99,32 @@ describe('editorStore', () => {
     expect(useEditorStore.getState()).toBe(initial);
   });
 
+  it('preserves numeric fraction values in start and step state and restores inheritance', () => {
+    const fractionMachine = structuredClone(machine);
+    fractionMachine.stateVars[0].kind = 'fraction';
+    const content = makeContent();
+    content.start.lift = 0;
+    content.steps[0].state = { lift: 0 };
+    content.steps[2].state = { lift: 0 };
+    const store = useEditorStore.getState();
+    store.load({ content, machine: fractionMachine, linkTargets: {} });
+
+    store.setStartState('lift', 0.18);
+    store.setStepState('raise', 'lift', 0.42);
+    expect(useEditorStore.getState().content?.start.lift).toBe(0.18);
+    expect(selectSelectedStep(useEditorStore.getState())?.state?.lift).toBe(0.42);
+    expect(selectIssues(useEditorStore.getState())).toEqual([]);
+    expect(useEditorStore.getState().dirty).toBe(true);
+
+    store.setStepState('raise', 'lift', 0);
+    expect(selectSelectedStep(useEditorStore.getState())?.state?.lift).toBe(0);
+    store.setStepState('raise', 'lift', null);
+    expect(selectSelectedStep(useEditorStore.getState())?.state).toBeUndefined();
+    expect(ops.stateForStep(useEditorStore.getState().content!, 'raise').lift).toBe(0.18);
+    expect(content.start.lift).toBe(0);
+    expect(content.steps[0].state).toEqual({ lift: 0 });
+  });
+
   it('selects and deselects without making content dirty', () => {
     const content = makeContent();
     const store = useEditorStore.getState();

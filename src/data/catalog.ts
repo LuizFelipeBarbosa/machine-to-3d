@@ -8,7 +8,9 @@ export type ProcedureRecord = {
   content: ProcedureContent;
   placeholder: boolean;
   versionId?: string;
+  /** Reference video and step image URLs, keyed by storage id or local seed path. */
   mediaUrls?: Record<string, string>;
+  sourceVideoUrl?: string | null;
   /** The machine snapshot approved with this procedure, when served by the backend. */
   machineVersion?: Pick<MachineRecord, 'modelUrl' | 'definition'>;
 };

@@ -37,7 +37,7 @@ export function createConvexCatalog(client: ConvexReactClient): Catalog {
       if (!procedure.modelUrl) {
         throw new Error('The approved procedure’s machine model is unavailable.');
       }
-      const { content, versionId } = procedure;
+      const { content, versionId, sourceVideoUrl } = procedure;
       const text = [content.title, content.summary, ...content.steps.flatMap((step) => [
         step.title, step.body, step.caution ?? '', step.check ?? '',
       ])].join(' ');
@@ -46,6 +46,7 @@ export function createConvexCatalog(client: ConvexReactClient): Catalog {
         machineSlug,
         content,
         versionId,
+        sourceVideoUrl,
         mediaUrls: procedure.mediaUrls,
         machineVersion: { modelUrl: procedure.modelUrl, definition: procedure.definition },
         placeholder: /\bplaceholder\b/i.test(text),

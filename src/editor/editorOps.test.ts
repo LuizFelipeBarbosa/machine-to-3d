@@ -112,6 +112,19 @@ describe('editorOps', () => {
     expect(ops.togglePart(added, 'raise', 'z').steps[0].parts).toEqual(['head']);
   });
 
+  it('deletes provenance when explicitly cleared', () => {
+    const content = ops.patchStep(makeContent(), 'raise', { provenance: 'inferred' });
+    const cleared = ops.patchStep(content, 'raise', { provenance: undefined });
+    expect(Object.hasOwn(cleared.steps[0], 'provenance')).toBe(false);
+    expect(content.steps[0].provenance).toBe('inferred');
+  });
+
+  it('preserves a source timestamp of zero', () => {
+    const content = ops.patchStep(makeContent(), 'raise', { sourceTimestamp: 0 });
+    expect(Object.hasOwn(content.steps[0], 'sourceTimestamp')).toBe(true);
+    expect(content.steps[0].sourceTimestamp).toBe(0);
+  });
+
   it('sets absolute true and false values, inherits with null, and drops empty state', () => {
     const content = makeContent();
     const repeated = ops.setStepState(content, 'raise', 'lift', true);
@@ -128,6 +141,35 @@ describe('editorOps', () => {
     expect(ops.setStepState(empty, 'raise', 'absent', null)).toStrictEqual(empty);
     const inherited = ops.setStepState(content, 'lower', 'lift', null);
     expect(ops.stateForStep(inherited, 'lower').lift).toBe(true);
+  });
+
+  it('sets numeric step values and inherits without removing other numeric or boolean values', () => {
+    const content = makeContent();
+    content.start.demo = 0.18;
+    const updated = ops.setStepState(content, 'raise', 'demo', 0.6);
+    expect(updated.steps[0].state).toStrictEqual({ lift: true, demo: 0.6 });
+    expect(ops.stateForStep(updated, 'uncover').demo).toBe(0.6);
+
+    const inheritFraction = ops.setStepState(updated, 'raise', 'demo', null);
+    expect(inheritFraction.steps[0].state).toStrictEqual({ lift: true });
+    expect(ops.stateForStep(inheritFraction, 'raise').demo).toBe(0.18);
+
+    const inheritToggle = ops.setStepState(updated, 'raise', 'lift', null);
+    expect(inheritToggle.steps[0].state).toStrictEqual({ demo: 0.6 });
+    const zero = ops.setStepState(inheritToggle, 'raise', 'demo', 0);
+    expect(zero.steps[0].state).toStrictEqual({ demo: 0 });
+    const empty = ops.setStepState(zero, 'raise', 'demo', null);
+    expect(Object.hasOwn(empty.steps[0], 'state')).toBe(false);
+    expect(content.steps[0].state).toStrictEqual({ lift: true });
+    expect(updated.steps[0].state).toStrictEqual({ lift: true, demo: 0.6 });
+  });
+
+  it('sets numeric initial state without changing boolean values or mutating the input', () => {
+    const content = makeContent();
+    const updated = ops.setStartState(content, 'demo', 0.18);
+    expect(updated.start).toStrictEqual({ lift: false, covers: true, demo: 0.18 });
+    expect(ops.stateBeforeStep(updated, 'raise').demo).toBe(0.18);
+    expect(content.start).toStrictEqual({ lift: false, covers: true });
   });
 
   it('sets initial state and patches metadata while preserving other fields', () => {

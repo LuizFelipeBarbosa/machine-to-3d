@@ -5,10 +5,11 @@ import type { ProcedureIssue } from '../../shared/validateProcedure';
 type IssuesPanelProps = {
   issues: ProcedureIssue[];
   steps: Step[];
+  notes?: string[];
   onSelect(id: string): void;
 };
 
-export function IssuesPanel({ issues, steps, onSelect }: IssuesPanelProps): JSX.Element {
+export function IssuesPanel({ issues, steps, notes, onSelect }: IssuesPanelProps): JSX.Element {
   return (
     <section className="editor-issues" aria-label="Validation issues">
       <h3>Validation issues</h3>
@@ -28,6 +29,7 @@ export function IssuesPanel({ issues, steps, onSelect }: IssuesPanelProps): JSX.
           })}
         </ul>
       )}
+      {notes?.map((note, index) => <p key={index} className="issue-note">{note}</p>)}
     </section>
   );
 }

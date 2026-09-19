@@ -27,6 +27,20 @@ function deepEqualIgnoringKeyOrder(left: unknown, right: unknown): boolean {
   return JSON.stringify(sortObjectKeys(left)) === JSON.stringify(sortObjectKeys(right));
 }
 
+function contentWithSeedPaths(rawContent: unknown, mediaKeys: Record<string, string> = {}) {
+  // Parsing gives us a copy, so the stored content keeps its storage ids.
+  const content = parseContent(rawContent);
+  if (content.video) {
+    content.video.fileId = mediaKeys[content.video.fileId] ?? content.video.fileId;
+  }
+  for (const step of content.steps) {
+    if (step.media) {
+      step.media.fileId = mediaKeys[step.media.fileId] ?? step.media.fileId;
+    }
+  }
+  return content;
+}
+
 export const uploadUrl = internalMutation({
   args: {},
   returns: v.string(),
@@ -101,6 +115,7 @@ export const upsertProcedure = internalMutation({
     machineSlug: v.string(),
     slug: v.string(),
     content: procedureContentValidator,
+    mediaKeys: v.optional(v.record(v.string(), v.string())),
     linkTargets: v.record(v.string(), v.array(v.string())),
     force: v.optional(v.boolean()),
   },
@@ -123,7 +138,7 @@ export const upsertProcedure = internalMutation({
       reason: v.union(v.literal('unchanged'), v.literal('human-authored')),
     }),
   ),
-  handler: async (ctx, { machineSlug, slug, content: rawContent, linkTargets, force }) => {
+  handler: async (ctx, { machineSlug, slug, content: rawContent, mediaKeys, linkTargets, force }) => {
     const machine = await ctx.db
       .query('machines')
       .withIndex('by_slug', (q) => q.eq('slug', machineSlug))
@@ -156,7 +171,10 @@ export const upsertProcedure = internalMutation({
           }
         }
       }
-      if (approved !== null && deepEqualIgnoringKeyOrder(rawContent, approved.content)) {
+      if (approved !== null && deepEqualIgnoringKeyOrder(
+        contentWithSeedPaths(rawContent, mediaKeys),
+        contentWithSeedPaths(approved.content, approved.seedMedia),
+      )) {
         return { created: false as const, updated: false as const, reason: 'unchanged' as const };
       }
     }
@@ -177,6 +195,7 @@ export const upsertProcedure = internalMutation({
       status: 'approved',
       machineVersionId: machineVersion._id,
       content,
+      ...(mediaKeys === undefined ? {} : { seedMedia: mediaKeys }),
       approvedAt: Date.now(),
       changeNote: forced ? 'Seeded (forced reset)' : 'Seeded',
     });

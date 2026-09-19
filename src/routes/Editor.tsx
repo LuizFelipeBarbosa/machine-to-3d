@@ -27,13 +27,14 @@ function DraftEditor({ context, version, canApprove }: {
   const saveDraft = useMutation(api.procedures.saveDraft);
   const discardDraft = useMutation(api.procedures.discardDraft);
   const approve = useMutation(api.procedures.approve);
+  const createRevision = useMutation(api.draftJobs.createRevision);
   const [busy, setBusy] = useState(false);
   // Query updates acknowledge saves; they must not reload the author's working copy.
-  // The parent keys this component by draft id so a new draft starts a new session.
+  // The parent keys by draft id and content revision so agent rewrites start a new session.
   const [initialVersion] = useState(version);
   const onSave = useCallback(async (content: ProcedureContent) => {
-    await saveDraft({ versionId: version._id, content });
-  }, [saveDraft, version._id]);
+    await saveDraft({ versionId: version._id, content, expectedContentRevision: version.contentRevision });
+  }, [saveDraft, version._id, version.contentRevision]);
 
   async function discard(autosave: AutosaveControls) {
     setBusy(true);
@@ -65,6 +66,22 @@ function DraftEditor({ context, version, canApprove }: {
     }
   }
 
+  async function reviseDraft(autosave: AutosaveControls, instruction: string) {
+    setBusy(true);
+    await autosave.pause();
+    try {
+      if (!await autosave.flush()) throw new Error('Save the draft successfully before sending it to the agent.');
+      await createRevision({ procedureVersionId: version._id, instruction });
+    } catch (error) {
+      autosave.resume();
+      throw error;
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const activeJob = context.activeJob;
+
   return (
     <EditorView
       machine={{
@@ -80,6 +97,8 @@ function DraftEditor({ context, version, canApprove }: {
       procedureTitles={context.procedureTitles}
       mediaUrls={context.mediaUrls}
       disabled={busy}
+      lockedMessage={activeJob ? `Agent revision in progress (${activeJob.stage}). Editing resumes when it finishes.` : undefined}
+      lockedMessageHref={activeJob ? `/jobs/${activeJob._id}` : undefined}
       onSave={onSave}
       onPreview={async () => {
         await navigate(`/m/${encodeURIComponent(context.machineSlug)}/${encodeURIComponent(version.procedureSlug)}?${new URLSearchParams({ version: version._id })}`);
@@ -92,6 +111,7 @@ function DraftEditor({ context, version, canApprove }: {
           canApprove={canApprove}
           onDiscard={() => discard(autosave)}
           onApprove={(note) => approveDraft(autosave, note)}
+          onRevise={activeJob ? undefined : (instruction) => reviseDraft(autosave, instruction)}
         />
       )}
     />
@@ -130,7 +150,7 @@ function ConvexEditor() {
   if (!version.modelUrl) return <p className="notice" role="alert">The machine model is unavailable.</p>;
   return (
     <DraftEditor
-      key={version._id}
+      key={`${version._id}:${version.contentRevision}`}
       context={context}
       version={version}
       canApprove={Boolean(me && ROLE_RANK[me.role] >= ROLE_RANK.approver)}

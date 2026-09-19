@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status", "modelChanged", "instrument", "procedureSlug", "stepsObserved", "stepsInferred", "uncertainties", "notes"],
+  "properties": {
+    "status": { "type": "string", "enum": ["complete", "blocked"] },
+    "modelChanged": { "type": "boolean" },
+    "instrument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "confidence"],
+      "properties": {
+        "name": { "type": "string" },
+        "confidence": { "type": "string", "enum": ["high", "medium", "low"] }
+      }
+    },
+    "procedureSlug": { "type": "string" },
+    "stepsObserved": { "type": "integer", "minimum": 0 },
+    "stepsInferred": { "type": "integer", "minimum": 0 },
+    "uncertainties": { "type": "array", "items": { "type": "string" } },
+    "notes": { "type": "string" }
+  }
+}

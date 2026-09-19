@@ -17,13 +17,13 @@ export function effectiveState(content: ProcedureContent, index: number, overrid
 /** Keep trainee choices until an entered step explicitly sets the same variable. */
 export function useEffectiveState(content: ProcedureContent, index: number): {
   state: MachineState;
-  setToggle(name: string, on: boolean): void;
+  setValue(name: string, value: boolean | number): void;
 } {
   const [overrides, setOverrides] = useState<MachineState>({});
   const [previousStep, setPreviousStep] = useState({ content, index });
 
   // Adjust before committing children so neither the scene nor later steps see stale choices.
-  // Toggles made after entering this step are allowed, even if it sets that variable.
+  // Overrides made after entering this step are allowed, even if it sets that variable.
   if (previousStep.content !== content || previousStep.index !== index) {
     setPreviousStep({ content, index });
     setOverrides(previousStep.content !== content ? {} : retainedOverrides(content, index, overrides));
@@ -33,8 +33,8 @@ export function useEffectiveState(content: ProcedureContent, index: number): {
 
   return {
     state,
-    setToggle(name, on) {
-      setOverrides((current) => ({ ...current, [name]: on }));
+    setValue(name, value) {
+      setOverrides((current) => ({ ...current, [name]: value }));
     },
   };
 }

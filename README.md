@@ -125,6 +125,17 @@ Capture/export require Playwright's Chromium browser to be installed. Put the re
 
 In backend mode, `/admin/machines` lets an admin upload a GLB and paste its `machine.json` definition. It validates referenced node names against the GLB in the browser via `useGlbCheck`, shows a live 3D preview with state-variable toggles via `DefinitionPreview`, and publishes a new machine version via `machines.publishVersion` after uploading the model through `files.generateUploadUrl`.
 
+## Drafting procedures from video
+
+The local worker polls Convex for jobs from the app's “Draft from video” pages,
+extracts video references, and runs Codex to produce and verify a procedure draft
+and, when the model changes, a machine draft in a reused per-machine workspace.
+Generated content becomes visible to trainees only after an approver approves
+the procedure in the app, which also publishes its draft machine version.
+
+See [worker/README.md](worker/README.md) for requirements, configuration, running
+the worker, stub testing, workspace layout, job stages, and troubleshooting.
+
 ## Seed content inventory
 
 All 11 machines in `seed/manifest.ts` have procedures. Titles below come from their procedure JSON files.

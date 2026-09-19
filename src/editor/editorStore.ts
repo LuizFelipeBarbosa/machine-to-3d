@@ -23,8 +23,8 @@ export type EditorState = {
   moveStep(stepId: string, direction: -1 | 1): void;
   patchStep(stepId: string, patch: Partial<Omit<Step, 'id'>>): void;
   togglePart(stepId: string, part: string): void;
-  setStepState(stepId: string, name: string, value: boolean | null): void;
-  setStartState(name: string, value: boolean): void;
+  setStepState(stepId: string, name: string, value: boolean | number | null): void;
+  setStartState(name: string, value: boolean | number): void;
   patchMeta(patch: Partial<Pick<ProcedureContent, 'title' | 'summary' | 'minutes'>>): void;
   markSaved(): void;
 };

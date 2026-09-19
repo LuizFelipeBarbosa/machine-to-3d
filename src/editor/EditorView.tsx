@@ -22,12 +22,14 @@ export type EditorViewProps = {
   procedureTitles?: Record<string, string>;
   mediaUrls?: Record<string, string>;
   disabled?: boolean;
+  lockedMessage?: string;
+  lockedMessageHref?: string;
   onSave?: (content: ProcedureContent) => Promise<void>;
   onPreview?: (content: ProcedureContent) => void | Promise<void>;
   headerSlot?: ReactNode | ((autosave: AutosaveControls) => ReactNode);
 };
 
-export function EditorView({ machine, procedureSlug, initialContent, linkTargets, procedureTitles, mediaUrls, disabled = false, onSave, onPreview, headerSlot }: EditorViewProps): JSX.Element {
+export function EditorView({ machine, procedureSlug, initialContent, linkTargets, procedureTitles, mediaUrls, disabled = false, lockedMessage, lockedMessageHref, onSave, onPreview, headerSlot }: EditorViewProps): JSX.Element {
   const store = useEditorStore();
   const [initialized, setInitialized] = useState(false);
   const [scene, setScene] = useState<MachineSceneHandle | null>(null);
@@ -51,7 +53,13 @@ export function EditorView({ machine, procedureSlug, initialContent, linkTargets
   }, [currentLinkTargets]);
 
   const autosave = useAutosave(onSave);
-  const busy = disabled || previewing || uploading;
+  const locked = Boolean(lockedMessage);
+  const busy = disabled || previewing || uploading || locked;
+
+  useLayoutEffect(() => {
+    if (locked) void autosave.pause();
+    else autosave.resume();
+  }, [locked, autosave.pause, autosave.resume]);
 
   useEffect(() => {
     // Read the latest view only when selection or scene readiness changes.
@@ -80,6 +88,8 @@ export function EditorView({ machine, procedureSlug, initialContent, linkTargets
   const content = store.content;
   if (!initialized || !content) return <p role="status">Loading editor…</p>;
   const state = selected ? stateForStep(content, selected.id) : content.start;
+  const inferredCount = content.steps.filter((step) => step.provenance === 'inferred').length;
+  const notes = inferredCount > 0 ? [`${inferredCount} step(s) marked as inferred — review them before approving`] : [];
 
   return (
     <main className="app editor-app">
@@ -124,6 +134,9 @@ export function EditorView({ machine, procedureSlug, initialContent, linkTargets
             {!onSave && <span className="editor-hint" role="status">{store.dirty ? 'Unsaved changes' : 'No changes'}</span>}
           </div>
           {autosave.error && <p className="caution" role="alert">Unable to save draft: {autosave.error}</p>}
+          {lockedMessage && <p className="draft" role="status">
+            {lockedMessageHref ? <a href={lockedMessageHref}>{lockedMessage}</a> : lockedMessage}
+          </p>}
           {headerSlot && (
             <fieldset className="editor-content-fields" disabled={busy}>
               {typeof headerSlot === 'function' ? headerSlot(autosave) : headerSlot}
@@ -159,7 +172,7 @@ export function EditorView({ machine, procedureSlug, initialContent, linkTargets
                 onSetState={(name, value) => store.setStepState(selected.id, name, value)}
               />
             ) : <p className="editor-hint">Add or select a step to edit it.</p>}
-            <IssuesPanel issues={issues} steps={content.steps} onSelect={selectStep} />
+            <IssuesPanel issues={issues} steps={content.steps} notes={notes} onSelect={selectStep} />
           </fieldset>
         </div>
         <footer className="panel-foot editor-footer">{content.steps.length} steps · {procedureSlug}</footer>

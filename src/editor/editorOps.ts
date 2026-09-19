@@ -77,7 +77,7 @@ export function patchStep(
 ): ProcedureContent {
   return replaceStep(content, stepId, (step) => {
     const updated = { ...step, ...patch };
-    const optionalFields = ['caution', 'check', 'media', 'link', 'state'] as const;
+    const optionalFields = ['caution', 'check', 'media', 'link', 'state', 'provenance', 'uncertainty', 'sourceTimestamp'] as const;
     for (const field of optionalFields) {
       if (updated[field] === undefined) delete updated[field];
     }
@@ -98,12 +98,12 @@ export function togglePart(
   });
 }
 
-/** Boolean values are absolute sets; null inherits the previous step's value. */
+/** Boolean and numeric values are absolute sets; null inherits the previous step's value. */
 export function setStepState(
   content: ProcedureContent,
   stepId: string,
   name: string,
-  value: boolean | null,
+  value: boolean | number | null,
 ): ProcedureContent {
   return replaceStep(content, stepId, (step) => {
     const state = value === null ? { ...step.state } : { ...step.state, [name]: value };
@@ -120,7 +120,7 @@ export function setStepState(
 export function setStartState(
   content: ProcedureContent,
   name: string,
-  value: boolean,
+  value: boolean | number,
 ): ProcedureContent {
   return { ...content, start: { ...content.start, [name]: value } };
 }

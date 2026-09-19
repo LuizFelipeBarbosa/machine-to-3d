@@ -1,8 +1,35 @@
-import type { MachineDefinition } from './machine';
+import type { MachineDefinition, MachineState, StateVar } from './machine';
 import type { ProcedureContent } from './procedure';
 
 export type ProcedureIssue = { path: string; message: string };
 export type LinkTargets = Record<string /* procedureSlug */, string[] /* step ids */>;
+
+function validateState(
+  state: MachineState,
+  stateVars: Map<string, StateVar>,
+  path: string,
+): ProcedureIssue[] {
+  const issues: ProcedureIssue[] = [];
+  for (const [name, value] of Object.entries(state)) {
+    const variable = stateVars.get(name);
+    if (!variable) {
+      issues.push({ path: `${path}.${name}`, message: `Unknown state variable "${name}".` });
+      continue;
+    }
+
+    const valid = variable.kind === 'toggle'
+      ? typeof value === 'boolean'
+      : typeof value === 'number' && value >= 0 && value <= 1;
+    if (!valid) {
+      const expected = variable.kind === 'toggle' ? 'a boolean' : 'a number in [0, 1]';
+      issues.push({
+        path: `${path}.${name}`,
+        message: `State variable "${name}" (${variable.kind}) requires ${expected}; received ${String(value)}.`,
+      });
+    }
+  }
+  return issues;
+}
 
 /** Reference checks that Zod cannot express. Returns [] when valid. Does not throw. */
 export function validateProcedure(
@@ -11,8 +38,8 @@ export function validateProcedure(
   linkTargets?: LinkTargets,
 ): ProcedureIssue[] {
   const issues: ProcedureIssue[] = [];
-  const stateVarNames = new Set(machine.stateVars.map((stateVar) => stateVar.name));
-  for (const name of stateVarNames) {
+  const stateVars = new Map(machine.stateVars.map((variable) => [variable.name, variable]));
+  for (const name of stateVars.keys()) {
     if (!Object.hasOwn(content.start, name)) {
       issues.push({
         path: `start.${name}`,
@@ -20,14 +47,7 @@ export function validateProcedure(
       });
     }
   }
-  for (const name of Object.keys(content.start)) {
-    if (!stateVarNames.has(name)) {
-      issues.push({
-        path: `start.${name}`,
-        message: `Unknown state variable "${name}".`,
-      });
-    }
-  }
+  issues.push(...validateState(content.start, stateVars, 'start'));
 
   if (content.steps.length === 0) {
     issues.push({ path: 'steps', message: 'At least one step is required.' });
@@ -54,14 +74,7 @@ export function validateProcedure(
       }
     });
 
-    for (const name of Object.keys(step.state ?? {})) {
-      if (!stateVarNames.has(name)) {
-        issues.push({
-          path: `${stepPath}.state.${name}`,
-          message: `Unknown state variable "${name}".`,
-        });
-      }
-    }
+    issues.push(...validateState(step.state ?? {}, stateVars, `${stepPath}.state`));
 
     const link = step.link;
     if (linkTargets !== undefined && link !== undefined) {

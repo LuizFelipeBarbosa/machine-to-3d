@@ -26,11 +26,17 @@ export const StepSchema = z.object({
   /** A step's `state` is an ABSOLUTE SET, never a toggle. `{ lift: true }` means
    * lift is on from this step onward whatever it was before; repeating it is a no-op.
    * Only variables that change need to be listed. */
-  state: z.record(z.string(), z.boolean()).optional(),
+  state: z.record(z.string(), z.union([z.boolean(), z.number().min(0).max(1)])).optional(),
   caution: z.string().optional(),
   check: z.string().optional(),
   media: StepMediaSchema.optional(),
   link: StepLinkSchema.optional(),
+  /** observed: the source recording shows this step; inferred: added from references or general practice */
+  provenance: z.enum(['observed', 'inferred']).optional(),
+  /** author/agent note on what is unsure about this step */
+  uncertainty: z.string().optional(),
+  /** seconds into the original recording */
+  sourceTimestamp: z.number().nonnegative().optional(),
 }).strict();
 
 export const ProcedureContentSchema = z.object({
@@ -38,7 +44,11 @@ export const ProcedureContentSchema = z.object({
   title: z.string().min(1),
   summary: z.string(),
   minutes: z.number().int().positive(),
-  start: z.record(z.string(), z.boolean()),
+  video: z.object({
+    fileId: z.string(),
+    label: z.string().optional(),
+  }).strict().optional(),
+  start: z.record(z.string(), z.union([z.boolean(), z.number().min(0).max(1)])),
   steps: z.array(StepSchema),
 }).strict();
 

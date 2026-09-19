@@ -1,27 +1,33 @@
 // @vitest-environment jsdom
 import { createElement } from 'react';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { getFunctionName } from 'convex/server';
-import { afterEach, expect, it, vi } from 'vitest';
+import { ConvexError } from 'convex/values';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { MachineAdmin } from './MachineAdmin';
 
 const backend = vi.hoisted(() => ({
   generateUploadUrl: vi.fn(),
   publishVersion: vi.fn(),
+  publishDraftVersion: vi.fn(),
+  listVersions: vi.fn(),
   role: 'admin',
 }));
 
 vi.mock('../data/mode', () => ({ isConvexMode: true }));
 vi.mock('../auth/useMe', () => ({ useMe: () => ({ me: { role: backend.role }, loading: false }) }));
 vi.mock('convex/react', () => ({
-  useMutation: (reference: Parameters<typeof getFunctionName>[0]) => (
-    getFunctionName(reference) === 'files:generateUploadUrl' ? backend.generateUploadUrl : backend.publishVersion
-  ),
-  useQuery: (reference: Parameters<typeof getFunctionName>[0]) => (
+  useMutation: (reference: Parameters<typeof getFunctionName>[0]) => {
+    const name = getFunctionName(reference);
+    if (name === 'files:generateUploadUrl') return backend.generateUploadUrl;
+    if (name === 'machines:publishDraftVersion') return backend.publishDraftVersion;
+    return backend.publishVersion;
+  },
+  useQuery: (reference: Parameters<typeof getFunctionName>[0], args: unknown) => (
     getFunctionName(reference) === 'machines:list' ? [
       { _id: 'machine', slug: 'test-machine', name: 'Test machine', kind: 'Instrument', currentVersionId: 'current', procedures: [] },
-    ] : [{ _id: 'newer', version: 4 }, { _id: 'current', version: 3 }]
+    ] : backend.listVersions(args)
   ),
 }));
 vi.mock('./useGlbCheck', () => ({
@@ -31,6 +37,13 @@ vi.mock('./useGlbCheck', () => ({
   }),
 }));
 vi.mock('./DefinitionPreview', () => ({ DefinitionPreview: () => null }));
+
+beforeEach(() => {
+  backend.listVersions.mockReturnValue([
+    { _id: 'newer', version: 4, status: 'draft', _creationTime: 1726747200000 },
+    { _id: 'current', version: 3, status: 'published', _creationTime: 1726660800000 },
+  ]);
+});
 
 afterEach(() => {
   cleanup();
@@ -92,6 +105,61 @@ it('reports upload failure and allows retry without publishing a version', async
   expect((await screen.findByRole('alert')).textContent).toContain('GLB could not be uploaded');
   await waitFor(() => expect((screen.getByRole('button', { name: 'Publish version' }) as HTMLButtonElement).disabled).toBe(false));
   expect(backend.publishVersion).not.toHaveBeenCalled();
+});
+
+it('shows the selected machine versions with status, date, and publishing only for drafts', () => {
+  render(createElement(MemoryRouter, null, createElement(MachineAdmin)));
+  expect(screen.queryByRole('region', { name: 'Machine versions' })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: /Test machine/ }));
+  const versions = screen.getByRole('region', { name: 'Machine versions' });
+  const rows = within(versions).getAllByRole('listitem');
+  expect(within(rows[0]).getByText(`v4 · Draft · ${new Date(1726747200000).toLocaleDateString()}`)).toBeTruthy();
+  expect(within(rows[1]).getByText(`v3 · Published · ${new Date(1726660800000).toLocaleDateString()}`)).toBeTruthy();
+  expect(within(rows[0]).getByRole('button', { name: 'Publish' })).toBeTruthy();
+  expect(within(rows[1]).queryByRole('button', { name: 'Publish' })).toBeNull();
+  expect(backend.listVersions).toHaveBeenCalledWith({ machineId: 'machine' });
+});
+
+it('publishes the selected draft version', async () => {
+  backend.publishDraftVersion.mockResolvedValue(null);
+  render(createElement(MemoryRouter, null, createElement(MachineAdmin)));
+  fireEvent.click(screen.getByRole('button', { name: /Test machine/ }));
+  const versions = screen.getByRole('region', { name: 'Machine versions' });
+  const publish = within(versions).getByRole('button', { name: 'Publish' }) as HTMLButtonElement;
+  fireEvent.click(publish);
+  expect(backend.publishDraftVersion).toHaveBeenCalledWith({ machineVersionId: 'newer' });
+  await waitFor(() => expect(publish.disabled).toBe(false));
+});
+
+it.each(['Machine version superseded', 'Only draft machine versions can be published'])(
+  'reports the draft publishing error: %s', async (message) => {
+    backend.publishDraftVersion.mockRejectedValue(new ConvexError(message));
+    render(createElement(MemoryRouter, null, createElement(MachineAdmin)));
+    fireEvent.click(screen.getByRole('button', { name: /Test machine/ }));
+    const versions = screen.getByRole('region', { name: 'Machine versions' });
+    fireEvent.click(within(versions).getByRole('button', { name: 'Publish' }));
+    const error = await within(versions).findByRole('alert');
+    expect(error.textContent).toBe(message);
+    expect(error.className).toBe('notice error');
+  },
+);
+
+it('shows a loading notice while the selected machine versions are pending', () => {
+  backend.listVersions.mockReturnValue(undefined);
+  render(createElement(MemoryRouter, null, createElement(MachineAdmin)));
+  fireEvent.click(screen.getByRole('button', { name: /Test machine/ }));
+  const versions = screen.getByRole('region', { name: 'Machine versions' });
+  expect(within(versions).getByRole('status').textContent).toBe('Loading versions…');
+  expect(within(versions).queryByText('No versions yet.')).toBeNull();
+});
+
+it('shows an empty notice when the selected machine has no versions', () => {
+  backend.listVersions.mockReturnValue([]);
+  render(createElement(MemoryRouter, null, createElement(MachineAdmin)));
+  fireEvent.click(screen.getByRole('button', { name: /Test machine/ }));
+  const versions = screen.getByRole('region', { name: 'Machine versions' });
+  expect(within(versions).getByText('No versions yet.')).toBeTruthy();
+  expect(within(versions).queryByRole('status')).toBeNull();
 });
 
 it('denies non-admins access to the form', () => {

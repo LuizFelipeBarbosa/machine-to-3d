@@ -10,7 +10,9 @@ import { localCatalog } from './data/localCatalog';
 import { isConvexMode } from './data/mode';
 import { Editor } from './routes/Editor';
 import { MachineWorkspace } from './machine/MachineWorkspace';
+import { Jobs, JobDetail } from './routes/Jobs';
 import { MachineList } from './routes/MachineList';
+import { NewJob } from './routes/NewJob';
 import { Records } from './routes/Records';
 import { Users } from './routes/Users';
 
@@ -22,6 +24,9 @@ function AppRoutes() {
       <Route path="/m/:machine/:procedure?" element={<MachineWorkspace />} />
       <Route path="/m/:machine/:procedure/edit" element={<Editor />} />
       <Route path="/records" element={isConvexMode ? <Records /> : <Navigate to="/" replace />} />
+      <Route path="/jobs" element={isConvexMode ? <Jobs /> : <Navigate to="/" replace />} />
+      <Route path="/jobs/new" element={isConvexMode ? <NewJob /> : <Navigate to="/" replace />} />
+      <Route path="/jobs/:id" element={isConvexMode ? <JobDetail /> : <Navigate to="/" replace />} />
       <Route path="/users" element={isConvexMode ? <Users /> : <Navigate to="/" replace />} />
       <Route path="/sign-in" element={<Navigate to="/" replace />} />
     </Routes>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { Authenticated } from 'convex/react';
+import { ROLE_RANK } from './auth/roles';
 import { useMe } from './auth/useMe';
 import { isConvexMode } from './data/mode';
 import { errorMessage } from './lib/errorMessage';
@@ -29,6 +30,7 @@ function AccountNav() {
       <nav aria-label="Main navigation">
         <NavLink to="/" end>Machines</NavLink>
         <NavLink to="/records">Records</NavLink>
+        {me && ROLE_RANK[me.role] >= ROLE_RANK.author && <NavLink to="/jobs">Jobs</NavLink>}
         {me?.role === 'admin' && <NavLink to="/users">Users</NavLink>}
         {me?.role === 'admin' && <NavLink to="/admin/machines">Machines admin</NavLink>}
       </nav>

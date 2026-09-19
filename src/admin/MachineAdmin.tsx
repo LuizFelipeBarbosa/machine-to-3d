@@ -49,6 +49,7 @@ function MachineAdminForm() {
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [published, setPublished] = useState<{ slug: string; version: number } | null>(null);
+  const selected = machines?.find((machine) => machine.slug === slug);
   const parsed = useMemo(() => parseDefinition(json), [json]);
   const { definition } = parsed;
   const { summary, issues: glbIssues } = useGlbCheck(file, definition);
@@ -122,6 +123,7 @@ function MachineAdminForm() {
             </ul>
           )}
           {machines?.length === 0 && <p>No machines yet.</p>}
+          {selected && <MachineVersions key={selected._id} machineId={selected._id} />}
         </section>
         <div className="admin-workspace">
           <form onSubmit={(event) => { void publish(event); }}>
@@ -197,6 +199,48 @@ function ExistingMachine({ machine, selected, disabled, onSelect }: {
   );
 }
 
+function MachineVersions({ machineId }: { machineId: Id<'machines'> }) {
+  const versions = useQuery(api.machines.listVersions, { machineId });
+  const publishDraftVersion = useMutation(api.machines.publishDraftVersion);
+  const [publishing, setPublishing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function publish(machineVersionId: Id<'machineVersions'>) {
+    if (publishing) return;
+    setPublishing(true);
+    setError(null);
+    try {
+      await publishDraftVersion({ machineVersionId });
+    } catch (cause) {
+      setError(errorMessage(cause));
+    } finally {
+      setPublishing(false);
+    }
+  }
+
+  return (
+    <section className="admin-versions" aria-label="Machine versions">
+      <h2>Machine versions</h2>
+      {versions === undefined ? <p role="status">Loading versions…</p> : (
+        <ul>
+          {versions.map((version) => (
+            <li key={version._id}>
+              <span>v{version.version} · {version.status === 'published' ? 'Published' : 'Draft'} · {new Date(version._creationTime).toLocaleDateString()}</span>
+              {version.status === 'draft' && (
+                <button type="button" className="btn" disabled={publishing} onClick={() => { void publish(version._id); }}>
+                  Publish
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {versions?.length === 0 && <p>No versions yet.</p>}
+      {error && <p className="notice error" role="alert">{error}</p>}
+    </section>
+  );
+}
+
 function GlbDetails({ summary }: { summary: GlbSummary }) {
   const bounds = summary.boundingBox;
   const size = bounds ? bounds.max.map((maximum, axis) => (maximum - bounds.min[axis]).toFixed(3)).join(' × ') : 'Unavailable';
@@ -205,6 +249,12 @@ function GlbDetails({ summary }: { summary: GlbSummary }) {
       <h2>GLB summary</h2>
       <p>Roots ({summary.rootNodes.length}): {summary.rootNodes.map((node) => node || '(unnamed)').join(', ') || 'None'}</p>
       <p>{summary.nodeCount} nodes · {summary.namedNodes.length} named nodes · {summary.meshCount} meshes · {summary.animationCount} animations</p>
+      <details open>
+        <summary>Animations</summary>
+        <ul className="admin-node-list">
+          {summary.animations?.map((animation, index) => <li key={index}><code>{animation.name} ({animation.duration}s → {animation.targetNodes.join(', ')})</code></li>)}
+        </ul>
+      </details>
       <p>Bounding-box size (X × Y × Z): {size}</p>
       <details open>
         <summary>Named nodes</summary>

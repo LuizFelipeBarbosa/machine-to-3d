@@ -5,7 +5,7 @@ type StepStateControlsProps = {
   stateVars: StateVar[];
   state: MachineState | undefined;
   inherited: MachineState;
-  onChange(name: string, value: boolean | null): void;
+  onChange(name: string, value: boolean | number | null): void;
 };
 
 const choices = [
@@ -21,13 +21,41 @@ export function StepStateControls({ stateVars, state, inherited, onChange }: Ste
       {stateVars.length === 0 && <p className="editor-hint">This machine has no state controls.</p>}
       {stateVars.map((variable) => {
         const value = state?.[variable.name] ?? null;
-        const inheritedValue = Boolean(inherited[variable.name]);
+        const inheritedValue = variable.kind === 'fraction'
+          ? Number(inherited[variable.name] ?? 0)
+          : Boolean(inherited[variable.name]);
         return (
           <div className="editor-state" key={variable.name}>
             <span>{variable.label}</span>
-            <small className="editor-hint">inherits: {inheritedValue ? 'on' : 'off'}</small>
+            <small className="editor-hint">
+              inherits: {typeof inheritedValue === 'number' ? inheritedValue : inheritedValue ? 'on' : 'off'}
+            </small>
             <div className="tri" role="group" aria-label={variable.label}>
-              {choices.map((choice) => (
+              {variable.kind === 'fraction' ? (
+                <>
+                  <button
+                    type="button"
+                    aria-pressed={value === null}
+                    onClick={() => onChange(variable.name, null)}
+                  >
+                    Inherit
+                  </button>
+                  <input
+                    type="number"
+                    aria-label={variable.label}
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    value={Number(value ?? inheritedValue)}
+                    onChange={(event) => {
+                      const next = event.target.valueAsNumber;
+                      if (Number.isFinite(next)) {
+                        onChange(variable.name, Math.max(0, Math.min(1, next)));
+                      }
+                    }}
+                  />
+                </>
+              ) : choices.map((choice) => (
                 <button
                   key={choice.label}
                   type="button"

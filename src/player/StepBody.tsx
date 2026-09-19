@@ -29,6 +29,7 @@ export function StepBody({ step, checked, onChecked, linkTargets, mediaUrls, onO
   return (
     <div className="step-body">
       <p className="step-instructions">{step.body}</p>
+      {step.media && mediaUrl && <img className="step-media" src={mediaUrl} alt={step.media.alt} />}
       {step.caution && (
         <div className="caution">
           <strong>Where this goes wrong</strong>
@@ -52,7 +53,6 @@ export function StepBody({ step, checked, onChecked, linkTargets, mediaUrls, onO
           {link.label}
         </button>
       )}
-      {step.media && mediaUrl && <img className="step-media" src={mediaUrl} alt={step.media.alt} />}
     </div>
   );
 }

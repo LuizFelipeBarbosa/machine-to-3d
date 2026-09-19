@@ -30,12 +30,20 @@ export const EffectSchema = z.discriminatedUnion('type', [
     axis: z.enum(['x', 'y', 'z']),
     angle: z.number(),
   }).strict(),
+  // Scrubs the named GLB animation clip to `value × duration`. Nodes the clip animates must
+  // not also be targets of translate/rotate effects; that is checked against the GLB at load.
+  z.object({
+    type: z.literal('clip'),
+    clip: z.string().min(1),
+  }).strict(),
 ]);
 
 export const StateVarSchema = z.object({
   name: z.string().min(1),
   label: z.string(),
-  kind: z.literal('toggle'),
+  /** fraction: a 0..1 progress value; with a clip effect it is the clip's progress;
+   * with translate/rotate it scales the offset/angle */
+  kind: z.enum(['toggle', 'fraction']),
   userToggle: z.boolean().optional(),
   effects: z.array(EffectSchema).min(1),
 }).strict();
@@ -70,6 +78,29 @@ function rejectDuplicateNames(
   });
 }
 
+function rejectSharedClips(
+  definition: { stateVars: StateVar[] },
+  context: z.RefinementCtx,
+): void {
+  const owners = new Map<string, number>();
+  definition.stateVars.forEach((stateVar, index) => {
+    for (const effect of stateVar.effects) {
+      if (effect.type !== 'clip') {
+        continue;
+      }
+      const owner = owners.get(effect.clip);
+      if (owner !== undefined && owner !== index) {
+        context.addIssue({
+          code: 'custom',
+          path: ['stateVars', index, 'effects'],
+          message: `Clip "${effect.clip}" is referenced by more than one state var`,
+        });
+      }
+      owners.set(effect.clip, index);
+    }
+  });
+}
+
 export const MachineDefinitionSchema = z.object({
   formatVersion: z.literal(1),
   rootNode: z.string().min(1),
@@ -81,6 +112,7 @@ export const MachineDefinitionSchema = z.object({
   rejectDuplicateNames(definition.parts, 'parts', context);
   rejectDuplicateNames(definition.presetViews, 'presetViews', context);
   rejectDuplicateNames(definition.stateVars, 'stateVars', context);
+  rejectSharedClips(definition, context);
 });
 
 export type Vec3 = z.infer<typeof Vec3Schema>;
@@ -90,7 +122,7 @@ export type StateVar = z.infer<typeof StateVarSchema>;
 export type Part = z.infer<typeof PartSchema>;
 export type PresetView = z.infer<typeof PresetViewSchema>;
 export type MachineDefinition = z.infer<typeof MachineDefinitionSchema>;
-export type MachineState = Record<string, boolean>;
+export type MachineState = Record<string, boolean | number>;
 
 /** Every node name the definition refers to: rootNode, part names and effect nodes
  * (deduplicated, first-seen order). Used to check a definition against a GLB's node names. */
@@ -101,10 +133,25 @@ export function referencedNodes(definition: MachineDefinition): string[] {
   }
   for (const stateVar of definition.stateVars) {
     for (const effect of stateVar.effects) {
-      nodes.add(effect.node);
+      if (effect.type !== 'clip') {
+        nodes.add(effect.node);
+      }
     }
   }
   return [...nodes];
+}
+
+/** Unique clip names referenced by any state var's effects, in first-seen order. */
+export function referencedClips(definition: MachineDefinition): string[] {
+  const clips = new Set<string>();
+  for (const stateVar of definition.stateVars) {
+    for (const effect of stateVar.effects) {
+      if (effect.type === 'clip') {
+        clips.add(effect.clip);
+      }
+    }
+  }
+  return [...clips];
 }
 
 export function findPart(definition: MachineDefinition, name: string): Part | undefined {

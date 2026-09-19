@@ -23,6 +23,27 @@ export function parseContent(raw: unknown): ProcedureContent {
   }
 }
 
+export async function mediaUrlsForContent(
+  ctx: QueryCtx,
+  contents: ProcedureContent[],
+): Promise<Record<string, string>> {
+  const fileIds = new Set<string>();
+  for (const content of contents) {
+    if (content.video) fileIds.add(content.video.fileId);
+    for (const step of content.steps) {
+      if (step.media) fileIds.add(step.media.fileId);
+    }
+  }
+  const entries: [string, string][] = [];
+  for (const fileId of fileIds) {
+    const storageId = ctx.db.system.normalizeId('_storage', fileId);
+    if (storageId === null) continue;
+    const url = await ctx.storage.getUrl(storageId);
+    if (url !== null) entries.push([fileId, url]);
+  }
+  return Object.fromEntries(entries);
+}
+
 export function parseDefinition(raw: unknown): MachineDefinition {
   try {
     return MachineDefinitionSchema.parse(raw);
@@ -138,12 +159,14 @@ export function emptyProcedureContent(
 
 export async function publishMachineVersion(
   ctx: MutationCtx,
-  { slug, name, kind, modelFileId, definition: rawDefinition }: {
+  { slug, name, kind, modelFileId, definition: rawDefinition, publish = true, sourceFileId }: {
     slug: string;
     name: string;
     kind: string;
     modelFileId: Id<'_storage'>;
     definition: unknown;
+    publish?: boolean;
+    sourceFileId?: Id<'_storage'>;
   },
 ) {
   const definition = parseDefinition(rawDefinition);
@@ -163,9 +186,32 @@ export async function publishMachineVersion(
   const machineVersionId = await ctx.db.insert('machineVersions', {
     machineId,
     version,
+    status: publish ? 'published' : 'draft',
     modelFileId,
+    ...(sourceFileId === undefined ? {} : { sourceFileId }),
     definition,
   });
-  await ctx.db.patch(machineId, { name, kind, currentVersionId: machineVersionId });
+  if (publish) {
+    await ctx.db.patch(machineId, { name, kind, currentVersionId: machineVersionId });
+  }
   return { machineId, machineVersionId, version };
+}
+
+export async function publishDraftMachineVersion(
+  ctx: MutationCtx,
+  machineVersionId: Id<'machineVersions'>,
+) {
+  const version = await requireMachineVersion(ctx, machineVersionId);
+  if (version.status !== 'draft') {
+    throw new ConvexError('Only draft machine versions can be published');
+  }
+  const machine = await requireMachine(ctx, version.machineId);
+  if (machine.currentVersionId !== undefined) {
+    const currentVersion = await requireMachineVersion(ctx, machine.currentVersionId);
+    if (currentVersion.version >= version.version) {
+      throw new ConvexError('Machine version superseded');
+    }
+  }
+  await ctx.db.patch(version._id, { status: 'published' });
+  await ctx.db.patch(machine._id, { currentVersionId: version._id });
 }

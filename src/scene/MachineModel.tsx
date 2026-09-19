@@ -5,7 +5,7 @@ import type { ThreeEvent } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import type { MachineDefinition, MachineState } from '../../shared/machine';
-import { computePoses, easeValues } from './effects';
+import { clipTimes, computePoses, easeValues, goalFromState } from './effects';
 import { indexModel, isHiddenByAncestor, partOf } from './modelIndex';
 import type { ModelIndex } from './modelIndex';
 import { prefersReducedMotion } from './reducedMotion';
@@ -39,7 +39,7 @@ function highlightedMaterial(base: THREE.Material, cache: Map<THREE.Material, TH
 }
 
 function goalValues(definition: MachineDefinition, state: MachineState): Record<string, number> {
-  return Object.fromEntries(definition.stateVars.map(({ name }) => [name, state[name] ? 1 : 0]));
+  return Object.fromEntries(definition.stateVars.map(({ name }) => [name, goalFromState(state[name])]));
 }
 
 export function MachineModel({
@@ -47,7 +47,12 @@ export function MachineModel({
 }: MachineModelProps): JSX.Element {
   const gltf = useGLTF(url);
   const scene = useMemo(() => gltf.scene.clone(true), [gltf.scene]);
-  const index = useMemo(() => indexModel(scene, definition), [scene, definition]);
+  const index = useMemo(() => indexModel(scene, definition, gltf.animations), [scene, definition, gltf.animations]);
+  const { mixer, actions, clipNodes } = useMemo(() => ({
+    mixer: new THREE.AnimationMixer(index.root),
+    actions: new Map<string, THREE.AnimationAction>(),
+    clipNodes: new Set([...index.clips.values()].flatMap(({ targetNodes }) => targetNodes)),
+  }), [index]);
   const values = useRef(goalValues(definition, state));
   const pointerDown = useRef<{ x: number; y: number; id: number } | null>(null);
   const materials = useMemo(() => {
@@ -66,6 +71,13 @@ export function MachineModel({
   }, [index, highlightedParts]);
 
   useLayoutEffect(() => {
+    for (const [name, { clip }] of index.clips) {
+      const action = mixer.clipAction(clip, index.root);
+      action.setLoop(THREE.LoopOnce, 1);
+      action.play();
+      action.paused = true;
+      actions.set(name, action);
+    }
     const visibility = new Map<THREE.Object3D, boolean>();
     for (const name of Object.keys(index.rest)) {
       const node = index.nodes.get(name)!;
@@ -79,6 +91,8 @@ export function MachineModel({
       }
     });
     return () => {
+      mixer.stopAllAction();
+      mixer.uncacheRoot(index.root);
       for (const [mesh, base] of materials.bases) mesh.material = base;
       for (const clone of materials.clones.values()) clone.dispose();
       materials.clones.clear();
@@ -90,7 +104,7 @@ export function MachineModel({
         node.visible = visibility.get(node)!;
       }
     };
-  }, [index, materials]);
+  }, [index, materials, mixer, actions]);
 
   useLayoutEffect(() => {
     onIndexed?.(index);
@@ -104,9 +118,18 @@ export function MachineModel({
     const poses = computePoses(definition, values.current, index.rest);
     for (const [name, pose] of Object.entries(poses)) {
       const node = index.nodes.get(name)!;
-      node.position.fromArray(pose.position);
-      node.quaternion.fromArray(pose.quaternion);
+      // The mixer skips unchanged poses, so visible-only effects must preserve clip transforms.
+      if (!clipNodes.has(name)) {
+        node.position.fromArray(pose.position);
+        node.quaternion.fromArray(pose.quaternion);
+      }
       node.visible = pose.visible;
+    }
+    if (index.clips.size > 0) {
+      const durations = Object.fromEntries([...index.clips].map(([name, { clip }]) => [name, clip.duration]));
+      const times = clipTimes(definition, values.current, durations);
+      for (const [name, time] of Object.entries(times)) actions.get(name)!.time = time;
+      mixer.update(0);
     }
     for (const [mesh, base] of materials.bases) {
       if (!highlightedMeshes.has(mesh)) {

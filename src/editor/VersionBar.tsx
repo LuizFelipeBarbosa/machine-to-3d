@@ -20,6 +20,7 @@ type VersionBarProps = {
   onCreateDraft?(fromVersionId?: Id<'procedureVersions'>): Promise<void>;
   onDiscard?(): Promise<void>;
   onApprove?(changeNote: string): Promise<void>;
+  onRevise?(instruction: string): Promise<void>;
 };
 
 export const saveStatusLabels: Record<AutosaveStatus, string> = {
@@ -27,11 +28,12 @@ export const saveStatusLabels: Record<AutosaveStatus, string> = {
 };
 
 export function VersionBar({
-  versions, draftId, status = 'saved', canApprove = false, onCreateDraft, onDiscard, onApprove,
+  versions, draftId, status = 'saved', canApprove = false, onCreateDraft, onDiscard, onApprove, onRevise,
 }: VersionBarProps) {
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [approving, setApproving] = useState(false);
   const [changeNote, setChangeNote] = useState('');
+  const [instruction, setInstruction] = useState('');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const draft = versions.find((version) => version._id === draftId);
@@ -45,6 +47,7 @@ export function VersionBar({
       setConfirmDiscard(false);
       setApproving(false);
       setChangeNote('');
+      setInstruction('');
     } catch (cause) {
       setError(errorMessage(cause));
     } finally {
@@ -94,6 +97,23 @@ export function VersionBar({
             <button type="button" className="btn" disabled={pending} onClick={() => setApproving(false)}>Cancel</button>
           </div>
         </form>
+      )}
+      {draft && onRevise && (
+        <details>
+          <summary>Revise with agent</summary>
+          <form className="editor-fields" onSubmit={(event) => {
+            event.preventDefault();
+            if (instruction.trim()) void run(() => onRevise(instruction.trim()));
+          }}>
+            <label className="editor-field">
+              Revision instruction
+              <textarea rows={3} value={instruction} disabled={pending}
+                placeholder="Tell the agent what to change, e.g. 'The door hinges on the left' or 'Add the step at 1:42 where the valve is closed'"
+                onChange={(event) => setInstruction(event.target.value)} />
+            </label>
+            <button type="submit" className="btn" disabled={pending || !instruction.trim()}>Send to agent</button>
+          </form>
+        </details>
       )}
       <details open={!draftId}>
         <summary>Version history</summary>

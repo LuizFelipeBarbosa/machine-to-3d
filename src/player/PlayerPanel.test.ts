@@ -88,6 +88,30 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+describe('source recording', () => {
+  it('links to the original recording when a source video URL is available', () => {
+    const sourceVideoUrl = 'https://example.com/video.mp4';
+    render(createElement(PlayerPanel, {
+      controller, machine, procedure: { ...procedure, sourceVideoUrl }, linkTargets: {}, onOpenProcedure: vi.fn(),
+    }));
+    fireEvent.click(screen.getByText('About this procedure'));
+    expect(screen.getByRole('link', { name: 'Watch the original recording' }).getAttribute('href')).toBe(sourceVideoUrl);
+  });
+
+  it('omits the recording link when the source video URL is absent, null, or empty', () => {
+    const props = { controller, machine, procedure, linkTargets: {}, onOpenProcedure: vi.fn() };
+    const view = render(createElement(PlayerPanel, props));
+    fireEvent.click(screen.getByText('About this procedure'));
+    expect(screen.queryByRole('link', { name: 'Watch the original recording' })).toBe(null);
+
+    view.rerender(createElement(PlayerPanel, { ...props, procedure: { ...procedure, sourceVideoUrl: null } }));
+    expect(screen.queryByRole('link', { name: 'Watch the original recording' })).toBe(null);
+
+    view.rerender(createElement(PlayerPanel, { ...props, procedure: { ...procedure, sourceVideoUrl: '' } }));
+    expect(screen.queryByRole('link', { name: 'Watch the original recording' })).toBe(null);
+  });
+});
+
 describe('completion reporting', () => {
   it('previews from the first step without reading, persisting, or recording training progress', () => {
     const recordedProgress = { cur: 1, checked: ['confirm'], done: ['confirm'] };

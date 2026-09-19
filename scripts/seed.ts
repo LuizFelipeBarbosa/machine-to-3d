@@ -1,12 +1,12 @@
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { readFileSync, statSync } from 'node:fs';
+import { extname, isAbsolute, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ZodError } from 'zod';
 import type { ZodType } from 'zod';
 import { SEED_MACHINES } from '../seed/manifest';
 import type { SeedMachine } from '../seed/manifest';
-import { MachineDefinitionSchema, referencedNodes } from '../shared/machine';
+import { MachineDefinitionSchema, referencedClips, referencedNodes } from '../shared/machine';
 import type { MachineDefinition } from '../shared/machine';
 import { ProcedureContentSchema } from '../shared/procedure';
 import type { ProcedureContent } from '../shared/procedure';
@@ -58,6 +58,33 @@ function readContent<T>(path: string, schema: ZodType<T>, issues: string[]): T |
   }
 }
 
+function mediaReferences(content: ProcedureContent): { fileId: string }[] {
+  const references: { fileId: string }[] = content.steps.flatMap((step) => step.media ? [step.media] : []);
+  if (content.video) references.push(content.video);
+  return references;
+}
+
+function seedMediaFile(machine: SeedMachine, fileId: string) {
+  const extension = extname(fileId).toLowerCase();
+  // Existing storage ids have no extension or path separator.
+  if (!extension && !fileId.includes('/')) return undefined;
+
+  const directory = resolve(projectRoot, machine.dir);
+  const path = resolve(directory, fileId);
+  if (isAbsolute(fileId) || !path.startsWith(`${directory}${sep}`)) {
+    throw new Error(`Media must be a relative path under ${machine.dir}: ${fileId}`);
+  }
+  const contentTypes: Record<string, string> = {
+    '.mp4': 'video/mp4',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.png': 'image/png',
+  };
+  const contentType = contentTypes[extension];
+  if (!contentType) throw new Error(`Unsupported media extension: ${fileId}`);
+  return { path, contentType };
+}
+
 function validateSeeds(): ValidatedMachine[] {
   const issues: string[] = [];
   const validated: ValidatedMachine[] = [];
@@ -82,6 +109,12 @@ function validateSeeds(): ValidatedMachine[] {
             issues.push(`${machine.dir}/model.glb: Missing referenced node "${name}"`);
           }
         }
+        const clipNames = new Set(summary.animations.map((animation) => animation.name));
+        for (const name of referencedClips(definition)) {
+          if (!clipNames.has(name)) {
+            issues.push(`${machine.dir}/model.glb: Missing referenced animation clip "${name}"`);
+          }
+        }
       }
     } catch (error) {
       issues.push(`${machine.dir}/model.glb: ${error instanceof Error ? error.message : String(error)}`);
@@ -91,6 +124,16 @@ function validateSeeds(): ValidatedMachine[] {
     for (const slug of machine.procedureSlugs) {
       const content = readContent(`${machine.dir}/procedures/${slug}.json`, ProcedureContentSchema, issues);
       if (content !== undefined) {
+        for (const { fileId } of mediaReferences(content)) {
+          try {
+            const file = seedMediaFile(machine, fileId);
+            if (file && !statSync(file.path).isFile()) {
+              throw new Error(`Not a media file: ${fileId}`);
+            }
+          } catch (error) {
+            issues.push(`${machine.dir}/procedures/${slug}.json: ${fileId}: ${error instanceof Error ? error.message : String(error)}`);
+          }
+        }
         procedures.push({ slug, content });
       }
     }
@@ -124,24 +167,46 @@ function runConvex<T>(name: string, args: Record<string, unknown>): T {
   return JSON.parse(stdout) as T;
 }
 
-async function uploadModel(model: Buffer): Promise<string> {
+async function uploadFile(data: Buffer, contentType: string): Promise<string> {
   const url = runConvex<string>('seed:uploadUrl', {});
   const response = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'model/gltf-binary' },
-    body: new Uint8Array(model),
+    headers: { 'Content-Type': contentType },
+    body: new Uint8Array(data),
   });
   if (!response.ok) {
-    throw new Error(`Model upload failed (${response.status}): ${await response.text()}`);
+    throw new Error(`File upload failed (${response.status}): ${await response.text()}`);
   }
   const result: unknown = await response.json();
   if (
     typeof result !== 'object' || result === null ||
     !('storageId' in result) || typeof result.storageId !== 'string'
   ) {
-    throw new Error('Model upload did not return a storageId');
+    throw new Error('File upload did not return a storageId');
   }
   return result.storageId;
+}
+
+async function uploadProcedureMedia(
+  machine: SeedMachine,
+  original: ProcedureContent,
+  uploadedFiles: Map<string, string>,
+) {
+  const content = structuredClone(original);
+  const mediaKeys: Record<string, string> = {};
+  for (const reference of mediaReferences(content)) {
+    const relativePath = reference.fileId;
+    const file = seedMediaFile(machine, relativePath);
+    if (!file) continue;
+    let storageId = uploadedFiles.get(file.path);
+    if (!storageId) {
+      storageId = await uploadFile(readFileSync(file.path), file.contentType);
+      uploadedFiles.set(file.path, storageId);
+    }
+    reference.fileId = storageId;
+    mediaKeys[storageId] = relativePath;
+  }
+  return { content, mediaKeys };
 }
 
 async function main() {
@@ -172,6 +237,7 @@ async function main() {
   let proceduresForced = 0;
   let proceduresUnchanged = 0;
   let proceduresHumanAuthored = 0;
+  const uploadedFiles = new Map<string, string>();
   for (const { machine, definition, model, procedures, linkTargets } of validated) {
     const { slug, name, kind } = machine;
     const status = runConvex<{
@@ -183,7 +249,7 @@ async function main() {
       machinesUnchanged++;
       console.log(`${slug}: unchanged`);
     } else {
-      const modelFileId = await uploadModel(model);
+      const modelFileId = await uploadFile(model, 'model/gltf-binary');
       const result = runConvex<{ created: boolean; updated: boolean; version?: number }>('seed:upsertMachine', {
         slug, name, kind, modelFileId, definition,
       });
@@ -199,6 +265,7 @@ async function main() {
       }
     }
     for (const procedure of procedures) {
+      const { content, mediaKeys } = await uploadProcedureMedia(machine, procedure.content, uploadedFiles);
       const result = runConvex<
         | { created: true; updated: false; versionId: string; version: number }
         | { created: false; updated: true; versionId: string; version: number }
@@ -207,7 +274,8 @@ async function main() {
       >('seed:upsertProcedure', {
         machineSlug: slug,
         slug: procedure.slug,
-        content: procedure.content,
+        content,
+        mediaKeys,
         linkTargets,
         force,
       });

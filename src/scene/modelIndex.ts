@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { referencedClips } from '../../shared/machine';
 import type { MachineDefinition } from '../../shared/machine';
 import { effectNodes } from './effects';
 import type { RestTransform } from './effects';
@@ -9,6 +10,7 @@ export type ModelIndex = {
   rest: Record<string, RestTransform>;
   partMeshes: Map<string, THREE.Mesh[]>;
   bounds: THREE.Box3;
+  clips: Map<string, { clip: THREE.AnimationClip; targetNodes: string[] }>;
 };
 
 /** Preserve the original transform when a posed node is indexed again. */
@@ -21,7 +23,11 @@ export function captureRest(node: THREE.Object3D): RestTransform {
   return userData.restTransform;
 }
 
-export function indexModel(scene: THREE.Object3D, definition: MachineDefinition): ModelIndex {
+export function indexModel(
+  scene: THREE.Object3D,
+  definition: MachineDefinition,
+  animations: THREE.AnimationClip[] = [],
+): ModelIndex {
   const roots = scene.children.filter((child) => child.name.length > 0);
   if (roots.length !== 1) {
     throw new Error(`Expected one named model root in "${scene.name}", found ${roots.length}.`);
@@ -39,6 +45,7 @@ export function indexModel(scene: THREE.Object3D, definition: MachineDefinition)
     nodes.set(node.name, node);
   });
 
+  const clips = indexClips(nodes, definition, animations);
   const rest: Record<string, RestTransform> = {};
   for (const name of effectNodes(definition)) {
     const node = requireNode(nodes, name);
@@ -59,7 +66,55 @@ export function indexModel(scene: THREE.Object3D, definition: MachineDefinition)
   if (bounds.isEmpty()) {
     throw new Error(`Model root "${root.name}" has no geometry to frame.`);
   }
-  return { root, nodes, rest, partMeshes, bounds };
+  return { root, nodes, rest, partMeshes, bounds, clips };
+}
+
+function clipTargetNodes(clip: THREE.AnimationClip): string[] {
+  const names = new Set<string>();
+  for (const track of clip.tracks) {
+    const name = THREE.PropertyBinding.parseTrackName(track.name).nodeName
+      || track.name.substring(0, track.name.lastIndexOf('.'));
+    if (name) names.add(name);
+  }
+  return [...names];
+}
+
+function indexClips(
+  nodes: Map<string, THREE.Object3D>,
+  definition: MachineDefinition,
+  animations: THREE.AnimationClip[],
+): ModelIndex['clips'] {
+  const movedNodes = new Set<string>();
+  for (const variable of definition.stateVars) {
+    for (const effect of variable.effects) {
+      if (effect.type === 'translate' || effect.type === 'rotate') {
+        movedNodes.add(effect.node);
+      }
+    }
+  }
+
+  const clips: ModelIndex['clips'] = new Map();
+  const owners = new Map<string, string>();
+  for (const name of referencedClips(definition)) {
+    const clip = animations.find((animation) => animation.name === name);
+    if (!clip) throw new Error(`Missing animation clip "${name}"`);
+    const targetNodes = clipTargetNodes(clip);
+    for (const nodeName of targetNodes) {
+      if (!nodes.has(nodeName)) {
+        throw new Error(`Clip "${name}" animates unknown node "${nodeName}"`);
+      }
+      if (movedNodes.has(nodeName)) {
+        throw new Error(`Clip "${name}" animates node "${nodeName}", which is also moved by a translate/rotate effect`);
+      }
+      const owner = owners.get(nodeName);
+      if (owner !== undefined) {
+        throw new Error(`Clips "${owner}" and "${name}" both animate node "${nodeName}"`);
+      }
+      owners.set(nodeName, name);
+    }
+    clips.set(name, { clip, targetNodes });
+  }
+  return clips;
 }
 
 function requireNode(nodes: Map<string, THREE.Object3D>, name: string): THREE.Object3D {

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { summarizeGlb } from '../../scripts/lib/glb';
 import type { GlbSummary } from '../../scripts/lib/glb';
-import { referencedNodes } from '../../shared/machine';
+import { referencedClips, referencedNodes } from '../../shared/machine';
 import type { MachineDefinition } from '../../shared/machine';
 import { errorMessage } from '../lib/errorMessage';
 
@@ -55,6 +55,10 @@ export function useGlbCheck(
   const namedNodes = new Set(summary.namedNodes);
   for (const name of referencedNodes(definition)) {
     if (!namedNodes.has(name)) issues.push(`Referenced node "${name}" is missing from the GLB.`);
+  }
+  const clipNames = new Set(summary.animations.map((animation) => animation.name));
+  for (const name of referencedClips(definition)) {
+    if (!clipNames.has(name)) issues.push(`Missing referenced animation clip "${name}"`);
   }
   return { summary, issues };
 }

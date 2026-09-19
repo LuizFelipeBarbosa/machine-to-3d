@@ -826,6 +826,16 @@ details.schema pre {
   color:var(--ink-2);
 }
 
+.step-badge {
+  margin-top:.2rem;
+  padding:.05rem .35rem;
+  background:var(--paper-2);
+  border:1px solid var(--rule);
+  border-radius:999px;
+  font-size:.7rem;
+  color:var(--ink-2);
+}
+
 .editor-step-actions {
   display:flex;
   flex:none;
@@ -938,6 +948,13 @@ details.schema pre {
 
 .issue:is(button) {
   cursor:pointer;
+}
+
+.issue-note {
+  margin:.5rem 0 0;
+  color:var(--ink-2);
+  font-size:.8rem;
+  line-height:1.4;
 }
 
 .editor-issue-path {
@@ -1248,4 +1265,57 @@ details.schema pre {
   padding:.75rem 1.25rem;
   border-bottom:1px solid var(--rule);
   overflow-y:auto;
+}
+
+/* ---------- procedure reference media ---------- */
+.procedure-meta {
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:.5rem;
+}
+
+.procedure-meta > .btn {
+  padding:.3rem .6rem;
+  font-size:.85rem;
+}
+
+.video-dialog {
+  box-sizing:border-box;
+  width:90vw;
+  max-width:900px;
+  padding:1rem;
+  background:var(--paper);
+  color:var(--ink);
+  border:1px solid var(--rule);
+  border-radius:3px;
+}
+
+.video-dialog::backdrop {
+  background:rgb(0 0 0 / 65%);
+}
+
+.video-dialog-head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:1rem;
+  margin-bottom:.75rem;
+}
+
+.video-dialog-head h2 {
+  margin:0;
+  font:600 1.2rem/1.2 var(--display);
+}
+
+.video-dialog video {
+  display:block;
+  width:100%;
+  max-height:75vh;
+}
+
+.step-media {
+  max-height:260px;
+  border:1px solid var(--rule);
+  border-radius:3px;
 }

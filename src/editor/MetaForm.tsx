@@ -6,7 +6,7 @@ type MetaFormProps = {
   content: ProcedureContent;
   stateVars: StateVar[];
   onPatch(patch: Partial<Pick<ProcedureContent, 'title' | 'summary' | 'minutes'>>): void;
-  onSetStartState(name: string, value: boolean): void;
+  onSetStartState(name: string, value: boolean | number): void;
 };
 
 export function MetaForm({ content, stateVars, onPatch, onSetStartState }: MetaFormProps): JSX.Element {
@@ -31,8 +31,24 @@ export function MetaForm({ content, stateVars, onPatch, onSetStartState }: MetaF
           <legend>Starting state</legend>
           {stateVars.map((variable) => (
             <label className="editor-checkbox" key={variable.name}>
-              <input type="checkbox" checked={Boolean(content.start[variable.name])}
-                onChange={(event) => onSetStartState(variable.name, event.target.checked)} />
+              {variable.kind === 'fraction' ? (
+                <input
+                  type="number"
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={Number(content.start[variable.name] ?? 0)}
+                  onChange={(event) => {
+                    const value = event.target.valueAsNumber;
+                    if (Number.isFinite(value)) {
+                      onSetStartState(variable.name, Math.max(0, Math.min(1, value)));
+                    }
+                  }}
+                />
+              ) : (
+                <input type="checkbox" checked={Boolean(content.start[variable.name])}
+                  onChange={(event) => onSetStartState(variable.name, event.target.checked)} />
+              )}
               {variable.label}
             </label>
           ))}

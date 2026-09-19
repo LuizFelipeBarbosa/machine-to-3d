@@ -17,7 +17,7 @@ type StepFormProps = {
   scene: MachineSceneHandle | null;
   onPatch(patch: Partial<Omit<Step, 'id'>>): void;
   onTogglePart(name: string): void;
-  onSetState(name: string, value: boolean | null): void;
+  onSetState(name: string, value: boolean | number | null): void;
   onUploadStateChange?(uploading: boolean): void;
 };
 
@@ -51,6 +51,25 @@ export function StepForm({ step, machine, inherited, linkTargets, procedureTitle
       <label className="editor-field">
         Checkpoint text (optional)
         <input value={step.check ?? ''} onChange={(event) => onPatch({ check: event.target.value || undefined })} />
+      </label>
+      <label className="editor-field">
+        Provenance
+        <select value={step.provenance ?? ''} onChange={(event) => onPatch({ provenance: (event.target.value || undefined) as Step['provenance'] })}>
+          <option value="">—</option>
+          <option value="observed">Observed in recording</option>
+          <option value="inferred">Inferred</option>
+        </select>
+      </label>
+      <label className="editor-field">
+        Uncertainty note
+        <input value={step.uncertainty ?? ''} onChange={(event) => onPatch({ uncertainty: event.target.value || undefined })} />
+      </label>
+      <label className="editor-field">
+        Source time (s)
+        <input type="number" min={0} step={0.1} value={step.sourceTimestamp ?? ''} onChange={(event) => {
+          const value = event.target.value;
+          onPatch({ sourceTimestamp: value === '' ? undefined : Number(value) });
+        }} />
       </label>
       <fieldset className="editor-fieldset">
         <legend>Link to another procedure</legend>

@@ -4,7 +4,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { MachineDefinitionSchema, referencedNodes } from '../shared/machine';
+import { MachineDefinitionSchema, referencedClips, referencedNodes } from '../shared/machine';
 import { ProcedureContentSchema } from '../shared/procedure';
 import { validateProcedure, type LinkTargets } from '../shared/validateProcedure';
 import { summarizeGlb } from '../scripts/lib/glb';
@@ -26,6 +26,10 @@ describe('seed content', () => {
         expect(summary.rootNodes).toEqual([definition.rootNode]);
         for (const node of referencedNodes(definition)) {
           expect(summary.namedNodes, `Missing GLB node: ${node}`).toContain(node);
+        }
+        const clipNames = summary.animations.map((animation) => animation.name);
+        for (const clip of referencedClips(definition)) {
+          expect(clipNames, `Missing GLB clip: ${clip}`).toContain(clip);
         }
       });
 

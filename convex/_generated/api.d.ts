@@ -9,6 +9,7 @@
  */
 
 import type * as auth from "../auth.js";
+import type * as draftJobs from "../draftJobs.js";
 import type * as files from "../files.js";
 import type * as http from "../http.js";
 import type * as lib_authz from "../lib/authz.js";
@@ -19,6 +20,7 @@ import type * as procedures from "../procedures.js";
 import type * as seed from "../seed.js";
 import type * as training from "../training.js";
 import type * as users from "../users.js";
+import type * as workerRoutes from "../workerRoutes.js";
 
 import type {
   ApiFromModules,
@@ -28,6 +30,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  draftJobs: typeof draftJobs;
   files: typeof files;
   http: typeof http;
   "lib/authz": typeof lib_authz;
@@ -38,6 +41,7 @@ declare const fullApi: ApiFromModules<{
   seed: typeof seed;
   training: typeof training;
   users: typeof users;
+  workerRoutes: typeof workerRoutes;
 }>;
 
 /**

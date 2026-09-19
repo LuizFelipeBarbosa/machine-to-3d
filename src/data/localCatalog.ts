@@ -43,6 +43,14 @@ const modelUrls = import.meta.glob<string>('../../seed/*/model.glb', {
   query: '?url',
   import: 'default',
 });
+const mediaUrls = import.meta.glob<string>([
+  '../../seed/*/reference.mp4',
+  '../../seed/*/media/*',
+], {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
 
 function assertSeedFilesExist(): void {
   for (const machine of machines) {
@@ -63,10 +71,16 @@ assertSeedFilesExist();
 // The manifest controls membership and ordering; absent procedures are allowed while seeding.
 function proceduresForMachine(machine: SeedMachine): ProcedureRecord[] {
   const records: ProcedureRecord[] = [];
+  const prefix = seedPath(machine, '');
+  const machineMediaUrls = Object.fromEntries(
+    Object.entries(mediaUrls)
+      .filter(([path]) => path.startsWith(prefix))
+      .map(([path, url]) => [path.slice(prefix.length), url]),
+  );
   for (const slug of machine.procedureSlugs) {
     const content = procedures.get(seedPath(machine, `procedures/${slug}.json`));
     if (content) {
-      records.push({ slug, machineSlug: machine.slug, content, placeholder: true });
+      records.push({ slug, machineSlug: machine.slug, content, placeholder: true, mediaUrls: machineMediaUrls });
     }
   }
   return records;

@@ -5,6 +5,7 @@ import type { MachineRecord, ProcedureRecord } from '../data/catalog';
 import type { SceneController } from '../machine/useSceneController';
 import { PartInspector } from './PartInspector';
 import { PlayerFooter } from './PlayerFooter';
+import { ReferenceVideo } from './ReferenceVideo';
 import { StepList } from './StepList';
 import { usePlayerStore } from './playerStore';
 import type { Progress } from './playerStore';
@@ -32,10 +33,11 @@ function isTextControl(target: EventTarget | null): boolean {
 
 export function PlayerPanel({
   machine, controller, viewport, inspected, onInspect, procedure, linkTargets,
-  onOpenProcedure, initialStepId, onComplete, mediaUrls, preview = false,
+  onOpenProcedure, initialStepId, onComplete, mediaUrls = procedure.mediaUrls, preview = false,
 }: PlayerPanelProps): JSX.Element {
   const { content } = procedure;
   const { steps } = content;
+  const videoUrl = content.video && mediaUrls?.[content.video.fileId];
   const progressKey = `${machine.slug}/${procedure.slug}`;
   // Select the stored entry, not get(): its fresh default is not a stable store snapshot.
   const savedProgress = usePlayerStore((store) => store.progress[progressKey]);
@@ -51,7 +53,7 @@ export function PlayerPanel({
   const progress = { cur: index, done: progressState?.done ?? [], checked: progressState?.checked ?? [] };
   const currentStep = steps[index];
   const sceneStep = steps[Math.min(index, steps.length - 1)];
-  const { state, setToggle } = useEffectiveState(content, index);
+  const { state, setValue } = useEffectiveState(content, index);
   const setInspected = useCallback((part: string | null) => onInspect?.(part), [onInspect]);
   const inspectedPart = machine.definition.parts.find((part) => part.name === inspected);
   const { handle: scene, setState, setHighlighted } = controller;
@@ -196,7 +198,19 @@ export function PlayerPanel({
       {viewport?.tools && createPortal(<>
         {machine.definition.stateVars.filter((variable) => variable.userToggle).map((variable) => (
           <label key={variable.name}>
-            <input type="checkbox" checked={Boolean(state[variable.name])} onChange={(event) => setToggle(variable.name, event.target.checked)} />
+            {variable.kind === 'fraction' ? (
+              <input
+                type="range"
+                min={0}
+                max={100}
+                step={1}
+                value={Number(state[variable.name] ?? 0) * 100}
+                onChange={(event) => setValue(variable.name, event.target.valueAsNumber / 100)}
+              />
+            ) : (
+              <input type="checkbox" checked={Boolean(state[variable.name])}
+                onChange={(event) => setValue(variable.name, event.target.checked)} />
+            )}
             {variable.label}
           </label>
         ))}
@@ -208,13 +222,19 @@ export function PlayerPanel({
       )}
       <div className="panel-head procedure-info">
         {preview && <p className="draft" role="status">Draft preview — not recorded</p>}
-        <p className="procedure-meta">
-          {`${steps.length} steps · about ${content.minutes} min`}
+        <div className="procedure-meta">
+          <span>{`${steps.length} steps · about ${content.minutes} min`}</span>
           {procedure.placeholder && <> <span className="tag tag-caution">Placeholder content</span></>}
-        </p>
+          {videoUrl && <ReferenceVideo key={videoUrl} url={videoUrl} label={content.video?.label} />}
+        </div>
         <details className="procedure-about">
           <summary>About this procedure</summary>
           <p>{content.summary}</p>
+          {procedure.sourceVideoUrl && (
+            <p className="panel-source">
+              <a href={procedure.sourceVideoUrl} target="_blank" rel="noreferrer">Watch the original recording</a>
+            </p>
+          )}
           {procedure.placeholder && <p>Example content for this prototype. Swap in your lab's approved SOP before training anyone with it.</p>}
         </details>
       </div>

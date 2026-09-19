@@ -1,0 +1,24 @@
+{
+  "formatVersion": 1,
+  "rootNode": "Kit_Box",
+  "parts": [
+    { "name": "body", "label": "Body", "blurb": "Benchtop machine housing." },
+    { "name": "door", "label": "Door", "blurb": "Front access door with a left hinge." },
+    { "name": "panel", "label": "Panel", "blurb": "Top control panel with two knobs." }
+  ],
+  "presetViews": [
+    {
+      "name": "overview",
+      "label": "Overview",
+      "view": { "pos": [5, 4, 6], "target": [0, 1, 0] }
+    }
+  ],
+  "stateVars": [
+    {
+      "name": "doorOpen",
+      "label": "Door open",
+      "kind": "toggle",
+      "effects": [{ "type": "clip", "clip": "doorOpen" }]
+    }
+  ]
+}

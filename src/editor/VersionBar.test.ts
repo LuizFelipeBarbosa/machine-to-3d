@@ -16,6 +16,40 @@ const versions = [
 afterEach(cleanup);
 
 describe('version controls', () => {
+  it('offers a collapsed agent revision form only for a draft with a revision handler', () => {
+    const view = render(createElement(VersionBar, { versions, draftId }));
+    expect(screen.queryByText('Revise with agent')).toBeNull();
+    expect(screen.queryByLabelText('Revision instruction')).toBeNull();
+    const onRevise = vi.fn(async () => {});
+    view.rerender(createElement(VersionBar, { versions, draftId, onRevise }));
+    expect(screen.getByText('Revise with agent').closest('details')?.open).toBe(false);
+    expect(screen.getByLabelText('Revision instruction')).toBeTruthy();
+    view.rerender(createElement(VersionBar, { versions: versions.slice(1), onRevise }));
+    expect(screen.queryByText('Revise with agent')).toBeNull();
+    expect(screen.queryByLabelText('Revision instruction')).toBeNull();
+  });
+
+  it('requires a non-blank revision instruction', () => {
+    render(createElement(VersionBar, { versions, draftId, onRevise: async () => {} }));
+    fireEvent.click(screen.getByText('Revise with agent'));
+    const send = screen.getByRole('button', { name: 'Send to agent' }) as HTMLButtonElement;
+    expect(send.disabled).toBe(true);
+    fireEvent.change(screen.getByLabelText('Revision instruction'), { target: { value: '   ' } });
+    expect(send.disabled).toBe(true);
+    fireEvent.change(screen.getByLabelText('Revision instruction'), { target: { value: 'Fix the hinge' } });
+    expect(send.disabled).toBe(false);
+  });
+
+  it('sends the trimmed revision instruction', async () => {
+    const onRevise = vi.fn(async () => {});
+    render(createElement(VersionBar, { versions, draftId, onRevise }));
+    fireEvent.click(screen.getByText('Revise with agent'));
+    fireEvent.change(screen.getByLabelText('Revision instruction'), { target: { value: '  The door hinges on the left  ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send to agent' }));
+    await waitFor(() => expect(onRevise).toHaveBeenCalledExactlyOnceWith('The door hinges on the left'));
+    expect((screen.getByLabelText('Revision instruction') as HTMLTextAreaElement).value).toBe('');
+  });
+
   it('requires a second click to discard and keeps approval hidden for authors', async () => {
     const onDiscard = vi.fn(async () => {});
     render(createElement(VersionBar, { versions, draftId, status: 'unsaved', onDiscard }));

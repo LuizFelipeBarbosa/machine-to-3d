@@ -55,6 +55,72 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('procedure editor', () => {
+  it('shows a linked lock banner and disables editing and saving on mount', async () => {
+    vi.useFakeTimers();
+    try {
+      const lockedMessage = 'Agent revision in progress (queued). Editing resumes when it finishes.';
+      const onSave = vi.fn(async () => {});
+      const view = renderEditor({ lockedMessage, lockedMessageHref: '/jobs/revision', onSave, onPreview: vi.fn() });
+      const banner = screen.getByText(lockedMessage).closest('[role="status"]');
+      expect(banner?.className).toBe('draft');
+      expect(screen.getByRole('link', { name: lockedMessage }).getAttribute('href')).toBe('/jobs/revision');
+      expect(screen.getByLabelText('Step title').matches(':disabled')).toBe(true);
+      expect((screen.getByRole('button', { name: 'Preview' }) as HTMLButtonElement).disabled).toBe(true);
+      act(() => useEditorStore.getState().patchStep(procedure.steps[0].id, { title: 'Pending edit' }));
+      expect((screen.getByRole('button', { name: 'Save now' }) as HTMLButtonElement).disabled).toBe(true);
+      await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
+      fireEvent(window, new Event('beforeunload'));
+      view.unmount();
+      await act(async () => {});
+      expect(onSave).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('pauses pending autosaves when locked and resumes when the lock clears', async () => {
+    vi.useFakeTimers();
+    try {
+      const onSave = vi.fn(async () => {});
+      const props = {
+        machine, procedureSlug: 'nc-scan', initialContent: ProcedureContentSchema.parse(procedure),
+        linkTargets: {}, onSave,
+      };
+      const view = renderEditor(props);
+      fireEvent.change(screen.getByLabelText('Step title'), { target: { value: 'Pending edit' } });
+      view.rerender(createElement(StrictMode, null, createElement(EditorView, {
+        ...props, lockedMessage: 'Agent revision in progress (running). Editing resumes when it finishes.',
+      })));
+      await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
+      expect(onSave).not.toHaveBeenCalled();
+      view.rerender(createElement(StrictMode, null, createElement(EditorView, props)));
+      expect(screen.getByLabelText('Step title').matches(':disabled')).toBe(false);
+      await act(async () => { await vi.advanceTimersByTimeAsync(1500); });
+      expect(onSave).toHaveBeenCalledExactlyOnceWith(useEditorStore.getState().content);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('edits provenance, uncertainty, and source time and updates review notes', () => {
+    renderEditor();
+    fireEvent.change(screen.getByLabelText('Provenance'), { target: { value: 'inferred' } });
+    fireEvent.change(screen.getByLabelText('Uncertainty note'), { target: { value: 'Check the hinge' } });
+    fireEvent.change(screen.getByLabelText('Source time (s)'), { target: { value: '0' } });
+    expect(selectSelectedStep(useEditorStore.getState())).toMatchObject({
+      provenance: 'inferred', uncertainty: 'Check the hinge', sourceTimestamp: 0,
+    });
+    expect(screen.getByText('inferred').className).toBe('step-badge');
+    expect(screen.getByText('?').getAttribute('title')).toBe('Check the hinge');
+    expect(screen.getByText('1 step(s) marked as inferred — review them before approving').className).toBe('issue-note');
+    fireEvent.change(screen.getByLabelText('Provenance'), { target: { value: '' } });
+    fireEvent.change(screen.getByLabelText('Uncertainty note'), { target: { value: '' } });
+    fireEvent.change(screen.getByLabelText('Source time (s)'), { target: { value: '' } });
+    const step = selectSelectedStep(useEditorStore.getState())!;
+    for (const key of ['provenance', 'uncertainty', 'sourceTimestamp']) expect(Object.hasOwn(step, key)).toBe(false);
+    expect(screen.queryByText(/step\(s\) marked as inferred/)).toBeNull();
+  });
+
   it('loads local content, folds inherited state, and leaves the orbit alone during edits', () => {
     renderEditor();
     expect(screen.getByText('Local demo: changes are not saved')).toBeTruthy();

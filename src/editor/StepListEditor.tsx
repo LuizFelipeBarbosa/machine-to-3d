@@ -27,6 +27,8 @@ export function StepListEditor({ steps, selectedId, canAdd, onSelect, onAdd, onR
                   <span className="editor-badges">
                     {step.check && <span className="editor-badge">Checkpoint</span>}
                     {step.link && <span className="editor-badge">Link</span>}
+                    {step.provenance === 'inferred' && <span className="step-badge">inferred</span>}
+                    {step.uncertainty && <span className="step-badge" title={step.uncertainty}>?</span>}
                   </span>
                 </span>
               </button>

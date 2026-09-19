@@ -5,7 +5,8 @@ import { ConvexError } from 'convex/values';
 import { describe, expect, test } from 'vitest';
 import type { MachineDefinition } from '../shared/machine';
 import type { ProcedureContent } from '../shared/procedure';
-import { emptyProcedureContent, parseContent, parseDefinition } from './lib/content';
+import type * as draftJobs from './draftJobs';
+import { emptyProcedureContent, parseContent, parseDefinition, publishMachineVersion } from './lib/content';
 import type * as machines from './machines';
 import type * as procedures from './procedures';
 import schema from './schema';
@@ -13,6 +14,7 @@ import { asUser, createUser, modules } from './test.setup';
 
 // Keep these tests typed without requiring changes to checked-in generated files.
 const api = anyApi as unknown as ApiFromModules<{
+  draftJobs: typeof draftJobs;
   machines: typeof machines;
   procedures: typeof procedures;
 }>;
@@ -83,6 +85,23 @@ describe('procedure content', () => {
 });
 
 describe('procedures.create and saveDraft', () => {
+  test('refuses saves while an agent revision targets the draft and unlocks after cancellation', async () => {
+    const { t, author, versionId } = await setup();
+    const before = await t.run((ctx) => ctx.db.get(versionId));
+    const jobId = await author.mutation(api.draftJobs.createRevision, {
+      procedureVersionId: versionId, instruction: 'Clarify the first step',
+    });
+    const content = emptyProcedureContent('Edited', definition);
+    for (const status of ['queued', 'running'] as const) {
+      await t.run((ctx) => ctx.db.patch(jobId, { status }));
+      await expect(author.mutation(api.procedures.saveDraft, { versionId, content }))
+        .rejects.toMatchObject({ data: 'An agent revision is running for this draft' });
+      expect(await t.run((ctx) => ctx.db.get(versionId))).toEqual(before);
+    }
+    await author.mutation(api.draftJobs.cancel, { jobId });
+    expect(await author.mutation(api.procedures.saveDraft, { versionId, content })).toBeNull();
+  });
+
   test('creates draft v1 pinned to the current machine and records its author', async () => {
     const { t, authorId, machineVersionId, procedureId, versionId } = await setup();
     expect(await t.run((ctx) => ctx.db.get(procedureId))).toMatchObject({ slug: 'procedure' });
@@ -133,6 +152,40 @@ describe('procedures.create and saveDraft', () => {
     content.start = {};
     expect(await author.mutation(api.procedures.saveDraft, { versionId, content })).toBeNull();
     expect(await t.run((ctx) => ctx.db.get(versionId))).toMatchObject({ status: 'draft', content });
+  });
+
+  test('checks the content revision only when provided and never increments it on save', async () => {
+    const { t, author, versionId } = await setup();
+    await t.run((ctx) => ctx.db.patch(versionId, { contentRevision: 2 }));
+    const before = await t.run((ctx) => ctx.db.get(versionId));
+    const content = emptyProcedureContent('Edited', definition);
+    await expect(author.mutation(api.procedures.saveDraft, {
+      versionId, content, expectedContentRevision: 1,
+    })).rejects.toMatchObject({ data: 'Draft was changed elsewhere; reload before saving' });
+    expect(await t.run((ctx) => ctx.db.get(versionId))).toEqual(before);
+    expect(await author.query(api.procedures.getVersion, { versionId }))
+      .toMatchObject({ contentRevision: 2 });
+
+    expect(await author.mutation(api.procedures.saveDraft, {
+      versionId, content, expectedContentRevision: 2,
+    })).toBeNull();
+    expect(await t.run((ctx) => ctx.db.get(versionId))).toMatchObject({ content, contentRevision: 2 });
+
+    const nextContent = { ...content, title: 'Saved without a revision check' };
+    expect(await author.mutation(api.procedures.saveDraft, { versionId, content: nextContent })).toBeNull();
+    expect(await t.run((ctx) => ctx.db.get(versionId)))
+      .toMatchObject({ content: nextContent, contentRevision: 2 });
+  });
+
+  test('treats an absent content revision as zero when saving', async () => {
+    const { t, author, versionId } = await setup();
+    const content = emptyProcedureContent('Edited', definition);
+    expect(await author.mutation(api.procedures.saveDraft, {
+      versionId, content, expectedContentRevision: 0,
+    })).toBeNull();
+    const version = await t.run((ctx) => ctx.db.get(versionId));
+    expect(version).toMatchObject({ content });
+    expect(version).not.toHaveProperty('contentRevision');
   });
 
   test.each([0, -1, 1.5])('rejects invalid minutes %s without changing content', async (minutes) => {
@@ -240,8 +293,9 @@ describe('procedure version lifecycle', () => {
     });
   });
 
-  test('pins existing versions while new drafts target the current machine definition', async () => {
+  test.each(['published', undefined] as const)('preserves pins with machine status %s while new drafts target current', async (status) => {
     const { t, admin, author, approver, trainee, procedureId, versionId, machineVersionId, publishArgs } = await setup();
+    await t.run((ctx) => ctx.db.patch(machineVersionId, { status }));
     const content = emptyProcedureContent('Uses sample', definition);
     content.steps[0].parts = ['sample'];
     await author.mutation(api.procedures.saveDraft, { versionId, content });
@@ -252,6 +306,9 @@ describe('procedure version lifecycle', () => {
     });
     // Approval validates the pinned definition even when the current model changed.
     await approver.mutation(api.procedures.approve, { versionId, changeNote: 'Pinned v1' });
+    expect(await t.run((ctx) => ctx.db.get(current.machineId))).toMatchObject({
+      currentVersionId: current.machineVersionId,
+    });
     const playback = await trainee.query(api.procedures.getForPlay, {
       machineSlug: 'machine', procedureSlug: 'procedure',
     });
@@ -268,6 +325,138 @@ describe('procedure version lifecycle', () => {
     await expect(approver.mutation(api.procedures.approve, { versionId: draftId, changeNote: 'Updated machine' }))
       .rejects.toMatchObject({ data: expect.stringContaining('steps[0].parts[0]: Unknown part "sample".') });
     expect(await t.run((ctx) => ctx.db.get(versionId))).toMatchObject({ status: 'approved', machineVersionId });
+  });
+});
+
+describe('procedures.createDraft machine version pins', () => {
+  test.each(['explicit', 'latest'])('keeps a newer draft machine version from the %s source', async (source) => {
+    const { t, author, machineId, machineVersionId, procedureId, versionId, publishArgs } = await setup();
+    const draftMachine = await t.run((ctx) => publishMachineVersion(ctx, { ...publishArgs, publish: false }));
+    await t.run((ctx) => ctx.db.patch(versionId, {
+      status: 'retired', machineVersionId: draftMachine.machineVersionId,
+    }));
+    const draftId = await author.mutation(api.procedures.createDraft, {
+      procedureId, ...(source === 'explicit' ? { fromVersionId: versionId } : {}),
+    });
+    expect(await t.run((ctx) => ctx.db.get(draftId))).toMatchObject({
+      version: 2, status: 'draft', machineVersionId: draftMachine.machineVersionId,
+      copiedFromVersionId: versionId, content: emptyProcedureContent('Procedure', definition),
+    });
+    expect(await t.run((ctx) => ctx.db.get(machineId))).toMatchObject({ currentVersionId: machineVersionId });
+    expect(await t.run((ctx) => ctx.db.get(draftMachine.machineVersionId))).toMatchObject({ status: 'draft' });
+  });
+
+  test('falls back to the current machine when the source draft has been superseded', async () => {
+    const { t, admin, author, procedureId, versionId, publishArgs } = await setup();
+    const draftMachine = await t.run((ctx) => publishMachineVersion(ctx, { ...publishArgs, publish: false }));
+    await t.run((ctx) => ctx.db.patch(versionId, {
+      status: 'retired', machineVersionId: draftMachine.machineVersionId,
+    }));
+    const current = await admin.mutation(api.machines.publishVersion, publishArgs);
+    const draftId = await author.mutation(api.procedures.createDraft, { procedureId, fromVersionId: versionId });
+    expect(await t.run((ctx) => ctx.db.get(draftId))).toMatchObject({
+      machineVersionId: current.machineVersionId, copiedFromVersionId: versionId,
+    });
+  });
+
+  test('keeps the newest draft machine version when the machine has no current version', async () => {
+    const { t, author, machineId, machineVersionId, procedureId, versionId } = await setup();
+    await t.run(async (ctx) => {
+      await ctx.db.patch(machineId, { currentVersionId: undefined });
+      await ctx.db.patch(machineVersionId, { status: 'draft' });
+      await ctx.db.patch(versionId, { status: 'retired' });
+    });
+    const draftId = await author.mutation(api.procedures.createDraft, { procedureId });
+    expect(await t.run((ctx) => ctx.db.get(draftId))).toMatchObject({
+      machineVersionId, copiedFromVersionId: versionId,
+    });
+    expect(await t.run((ctx) => ctx.db.get(machineId))).not.toHaveProperty('currentVersionId');
+  });
+
+  test.each(['draft', 'published'] as const)('rejects a source superseded by a %s version when there is no current version', async (status) => {
+    const { t, author, machineId, machineVersionId, procedureId, versionId, publishArgs } = await setup();
+    await t.run(async (ctx) => {
+      await publishMachineVersion(ctx, { ...publishArgs, publish: status === 'published' });
+      await ctx.db.patch(machineId, { currentVersionId: undefined });
+      await ctx.db.patch(machineVersionId, { status: 'draft' });
+      await ctx.db.patch(versionId, { status: 'retired' });
+    });
+    await expect(author.mutation(api.procedures.createDraft, { procedureId, fromVersionId: versionId }))
+      .rejects.toMatchObject({ data: 'Machine version superseded' });
+    expect(await author.query(api.procedures.listVersions, { procedureId })).toHaveLength(1);
+  });
+
+  test.each(['published', 'deleted'])('rejects a %s source pin when there is no current version', async (source) => {
+    const { t, author, machineId, machineVersionId, procedureId, versionId } = await setup();
+    await t.run(async (ctx) => {
+      await ctx.db.patch(machineId, { currentVersionId: undefined });
+      await ctx.db.patch(versionId, { status: 'retired' });
+      if (source === 'deleted') {
+        await ctx.db.delete(machineVersionId);
+      }
+    });
+    await expect(author.mutation(api.procedures.createDraft, { procedureId }))
+      .rejects.toMatchObject({ data: 'Machine version not found' });
+    expect(await author.query(api.procedures.listVersions, { procedureId })).toHaveLength(1);
+  });
+});
+
+describe('procedures.approve draft machine versions', () => {
+  test.each([false, true])('publishes the pinned draft as an approver with an existing current version: %s', async (hasCurrent) => {
+    const { t, approver, machineId, machineVersionId, procedureId, versionId, publishArgs } = await setup();
+    if (!hasCurrent) {
+      await t.run(async (ctx) => {
+        await ctx.db.patch(machineId, { currentVersionId: undefined });
+        await ctx.db.patch(machineVersionId, { status: 'draft' });
+      });
+    }
+    const draftMachine = await t.run((ctx) => publishMachineVersion(ctx, { ...publishArgs, publish: false }));
+    await t.run((ctx) => ctx.db.patch(versionId, { machineVersionId: draftMachine.machineVersionId }));
+    expect(await approver.mutation(api.procedures.approve, { versionId, changeNote: 'Generated model reviewed' }))
+      .toBeNull();
+    expect(await t.run((ctx) => ctx.db.get(draftMachine.machineVersionId))).toMatchObject({ status: 'published' });
+    expect(await t.run((ctx) => ctx.db.get(machineId))).toMatchObject({
+      currentVersionId: draftMachine.machineVersionId,
+    });
+    expect(await t.run((ctx) => ctx.db.get(versionId))).toMatchObject({ status: 'approved' });
+    expect(await t.run((ctx) => ctx.db.get(procedureId))).toMatchObject({ approvedVersionId: versionId });
+  });
+
+  test('rejects a superseded draft machine without retiring the existing approval', async () => {
+    const { t, admin, author, approver, machineId, procedureId, versionId, publishArgs } = await setup();
+    await approver.mutation(api.procedures.approve, { versionId, changeNote: 'Original' });
+    const draftId = await author.mutation(api.procedures.createDraft, { procedureId });
+    const draftMachine = await t.run((ctx) => publishMachineVersion(ctx, { ...publishArgs, publish: false }));
+    await t.run((ctx) => ctx.db.patch(draftId, { machineVersionId: draftMachine.machineVersionId }));
+    await admin.mutation(api.machines.publishVersion, publishArgs);
+    const before = await t.run(async (ctx) => ({
+      machine: await ctx.db.get(machineId),
+      machineVersion: await ctx.db.get(draftMachine.machineVersionId),
+      procedure: await ctx.db.get(procedureId),
+      versions: await ctx.db.query('procedureVersions').collect(),
+    }));
+    await expect(approver.mutation(api.procedures.approve, { versionId: draftId, changeNote: 'Stale model' }))
+      .rejects.toMatchObject({ data: 'Machine version superseded' });
+    expect(await t.run(async (ctx) => ({
+      machine: await ctx.db.get(machineId),
+      machineVersion: await ctx.db.get(draftMachine.machineVersionId),
+      procedure: await ctx.db.get(procedureId),
+      versions: await ctx.db.query('procedureVersions').collect(),
+    }))).toEqual(before);
+  });
+
+  test('validates the procedure before publishing the pinned draft machine', async () => {
+    const { t, author, approver, machineId, machineVersionId, versionId, publishArgs } = await setup();
+    const draftMachine = await t.run((ctx) => publishMachineVersion(ctx, { ...publishArgs, publish: false }));
+    await t.run((ctx) => ctx.db.patch(versionId, { machineVersionId: draftMachine.machineVersionId }));
+    const content = emptyProcedureContent('Invalid reference', definition);
+    content.steps[0].parts = ['unknown'];
+    await author.mutation(api.procedures.saveDraft, { versionId, content });
+    await expect(approver.mutation(api.procedures.approve, { versionId, changeNote: 'Invalid' }))
+      .rejects.toMatchObject({ data: expect.stringContaining('Invalid procedure references:') });
+    expect(await t.run((ctx) => ctx.db.get(draftMachine.machineVersionId))).toMatchObject({ status: 'draft' });
+    expect(await t.run((ctx) => ctx.db.get(machineId))).toMatchObject({ currentVersionId: machineVersionId });
+    expect(await t.run((ctx) => ctx.db.get(versionId))).toMatchObject({ status: 'draft' });
   });
 });
 
@@ -431,6 +620,7 @@ describe('procedure queries and authorization', () => {
     expect(await author.query(api.procedures.getVersion, { versionId })).toEqual({
       _id: versionId, procedureId, version: 1, status: 'draft', machineVersionId,
       content: emptyProcedureContent('Procedure', definition), createdBy: authorId,
+      contentRevision: 0, sourceVideoUrl: null,
       modelUrl: expect.any(String), definition, linkTargets: { procedure: ['step-1'] }, mediaUrls: {},
       machineSlug: 'machine', procedureSlug: 'procedure',
     });
@@ -494,6 +684,49 @@ describe('procedures.discardDraft', () => {
 });
 
 describe('editor queries and media', () => {
+  test('returns the active revision job only when it targets the current draft', async () => {
+    const { t, author, machineId, versionId } = await setup();
+    const args = { machineSlug: 'machine', procedureSlug: 'procedure' };
+    expect(await author.query(api.procedures.getEditorContext, args)).toMatchObject({ activeJob: null });
+    const other = await author.mutation(api.procedures.create, { machineId, slug: 'other', title: 'Other' });
+    const otherJobId = await author.mutation(api.draftJobs.createRevision, {
+      procedureVersionId: other.versionId, instruction: 'Clarify',
+    });
+    expect(await author.query(api.procedures.getEditorContext, args)).toMatchObject({ activeJob: null });
+    await author.mutation(api.draftJobs.cancel, { jobId: otherJobId });
+    const jobId = await author.mutation(api.draftJobs.createRevision, {
+      procedureVersionId: versionId, instruction: 'Clarify',
+    });
+    expect(await author.query(api.procedures.getEditorContext, args)).toMatchObject({
+      activeJob: { _id: jobId, status: 'queued', stage: 'queued' },
+    });
+    await t.mutation(api.draftJobs.claim, { workerId: 'worker', leaseSeconds: 60 });
+    expect(await author.query(api.procedures.getEditorContext, args)).toMatchObject({
+      activeJob: { _id: jobId, status: 'running', stage: 'claimed' },
+    });
+    await author.mutation(api.draftJobs.cancel, { jobId });
+    expect(await author.query(api.procedures.getEditorContext, args)).toMatchObject({ activeJob: null });
+  });
+
+  test('resolves the source recording for editing and playback and copies it to later drafts', async () => {
+    const { t, author, approver, trainee, procedureId, versionId } = await setup();
+    const sourceVideoFileId = await t.run((ctx) => ctx.storage.store(new Blob(['source recording'])));
+    await t.run((ctx) => ctx.db.patch(versionId, { sourceVideoFileId }));
+    const sourceVideoUrl = await t.run((ctx) => ctx.storage.getUrl(sourceVideoFileId));
+    expect(sourceVideoUrl).toEqual(expect.any(String));
+    expect(await author.query(api.procedures.getVersion, { versionId })).toMatchObject({ sourceVideoUrl });
+
+    await approver.mutation(api.procedures.approve, { versionId, changeNote: 'Recording reviewed' });
+    expect(await trainee.query(api.procedures.getForPlay, {
+      machineSlug: 'machine', procedureSlug: 'procedure',
+    })).toMatchObject({ sourceVideoUrl });
+
+    const draftId = await author.mutation(api.procedures.createDraft, { procedureId, fromVersionId: versionId });
+    expect(await t.run((ctx) => ctx.db.get(draftId)))
+      .toMatchObject({ sourceVideoFileId, copiedFromVersionId: versionId });
+    expect(await author.query(api.procedures.getVersion, { versionId: draftId })).toMatchObject({ sourceVideoUrl });
+  });
+
   test('rejects trainees and signed-out users from author queries', async () => {
     const { t, trainee, machineId } = await setup();
     for (const role of ['signed out', 'trainee']) {
@@ -606,5 +839,58 @@ describe('editor queries and media', () => {
     expect(await author.query(api.procedures.getVersion, { versionId: draftId })).toMatchObject({
       version: 1, status: 'draft', content: emptyProcedureContent('empty', definition),
     });
+  });
+});
+
+describe('reference video URLs', () => {
+  test('resolves approved and draft videos together with their step images', async () => {
+    const { t, author, approver, trainee, procedureId, versionId } = await setup();
+    const approvedVideo = await t.run((ctx) => ctx.storage.store(new Blob(['approved video'])));
+    const draftVideo = await t.run((ctx) => ctx.storage.store(new Blob(['draft video'])));
+    const image = await t.run((ctx) => ctx.storage.store(new Blob(['step image'])));
+    const approvedUrl = await t.run((ctx) => ctx.storage.getUrl(approvedVideo));
+    const draftUrl = await t.run((ctx) => ctx.storage.getUrl(draftVideo));
+    const imageUrl = await t.run((ctx) => ctx.storage.getUrl(image));
+    const content = emptyProcedureContent('Demonstration', definition);
+    content.video = { fileId: approvedVideo, label: 'Original demonstration' };
+    content.steps[0].media = { fileId: image, alt: 'Setup' };
+    await author.mutation(api.procedures.saveDraft, { versionId, content });
+    await approver.mutation(api.procedures.approve, { versionId, changeNote: 'Reference media' });
+
+    const route = { machineSlug: 'machine', procedureSlug: 'procedure' };
+    expect(await trainee.query(api.procedures.getForPlay, route)).toMatchObject({
+      content,
+      mediaUrls: { [approvedVideo]: approvedUrl, [image]: imageUrl },
+    });
+    const draftId = await author.mutation(api.procedures.createDraft, { procedureId });
+    content.video = { fileId: draftVideo };
+    await author.mutation(api.procedures.saveDraft, { versionId: draftId, content });
+    expect(await author.query(api.procedures.getVersion, { versionId: draftId })).toMatchObject({
+      content,
+      mediaUrls: { [draftVideo]: draftUrl, [image]: imageUrl },
+    });
+    expect((await author.query(api.procedures.getEditorContext, route))?.mediaUrls).toEqual({
+      [approvedVideo]: approvedUrl, [draftVideo]: draftUrl, [image]: imageUrl,
+    });
+    expect((await trainee.query(api.procedures.getForPlay, route))?.content.video?.fileId).toBe(approvedVideo);
+  });
+
+  test('omits unresolved video URLs without hiding available step images', async () => {
+    const { t, author, versionId } = await setup();
+    const deletedVideo = await t.run(async (ctx) => {
+      const id = await ctx.storage.store(new Blob(['deleted video']));
+      await ctx.storage.delete(id);
+      return id;
+    });
+    const image = await t.run((ctx) => ctx.storage.store(new Blob(['step image'])));
+    const imageUrl = await t.run((ctx) => ctx.storage.getUrl(image));
+    for (const fileId of [deletedVideo, 'reference.mp4']) {
+      const content = emptyProcedureContent('Missing video', definition);
+      content.video = { fileId };
+      content.steps[0].media = { fileId: image, alt: 'Available image' };
+      await author.mutation(api.procedures.saveDraft, { versionId, content });
+      expect((await author.query(api.procedures.getVersion, { versionId }))?.mediaUrls)
+        .toEqual({ [image]: imageUrl });
+    }
   });
 });

@@ -1,6 +1,8 @@
 export type Vec3 = [number, number, number];
 type Bounds = { min: Vec3; max: Vec3 };
 
+export type GlbAnimationSummary = { name: string; duration: number; targetNodes: string[] };
+
 export type GlbSummary = {
   generator: string | undefined;
   namedNodes: string[];
@@ -9,6 +11,7 @@ export type GlbSummary = {
   nodeCount: number;
   meshCount: number;
   animationCount: number;
+  animations: GlbAnimationSummary[];
   extensionsUsed: string[];
   boundingBox: Bounds | null;
   nodeBounds: Record<string, Bounds>;
@@ -30,7 +33,11 @@ type GltfDocument = {
   nodes?: GltfNode[];
   meshes?: { primitives: { attributes: { POSITION?: number } }[] }[];
   accessors?: { min?: number[]; max?: number[] }[];
-  animations?: unknown[];
+  animations?: {
+    name?: string;
+    channels: { target: { node?: number; path: string } }[];
+    samplers: { input: number }[];
+  }[];
   extensionsUsed?: string[];
 };
 
@@ -87,8 +94,21 @@ function readGlbDocument(bytes: Uint8Array): GltfDocument {
 }
 
 /** World-space subtree bounds for named nodes in the default scene. */
-export function nodeBounds(bytes: Uint8Array): Record<string, { min: Vec3; max: Vec3 }> {
-  return calculateBounds(readGlbDocument(bytes)).nodeBounds;
+export function nodeBounds(bytes: Uint8Array): Record<string, Bounds>;
+/** Rest-pose world bounds of the union of the requested named subtrees. */
+export function nodeBounds(bytes: Buffer | Uint8Array, names: string[]): Bounds | null;
+export function nodeBounds(bytes: Uint8Array, names?: string[]): Record<string, Bounds> | Bounds | null {
+  const document = readGlbDocument(bytes);
+  if (names === undefined) return calculateBounds(document).nodeBounds;
+  const requestedNames = new Set(names);
+  if (!document.nodes?.some(node => node.name && requestedNames.has(node.name))) return null;
+
+  const boundsByName = calculateBounds(document, true).nodeBounds;
+  const bounds = emptyBounds();
+  for (const name of requestedNames) {
+    if (Object.hasOwn(boundsByName, name)) mergeBounds(bounds, boundsByName[name]);
+  }
+  return bounds.min[0] === Infinity ? null : bounds;
 }
 
 export function summarizeGlb(bytes: Uint8Array): GlbSummary {
@@ -110,9 +130,26 @@ export function summarizeGlb(bytes: Uint8Array): GlbSummary {
     nodeCount: nodes.length,
     meshCount: document.meshes?.length ?? 0,
     animationCount: document.animations?.length ?? 0,
+    animations: summarizeAnimations(document),
     extensionsUsed: document.extensionsUsed ?? [],
     ...calculateBounds(document),
   };
+}
+
+function summarizeAnimations(document: GltfDocument): GlbAnimationSummary[] {
+  return (document.animations ?? []).map(animation => {
+    let duration = 0;
+    for (const sampler of animation.samplers) {
+      duration = Math.max(duration, document.accessors?.[sampler.input]?.max?.[0] ?? 0);
+    }
+    const targetNodes = new Set<string>();
+    for (const channel of animation.channels) {
+      const index = channel.target.node;
+      const name = index === undefined ? undefined : document.nodes?.[index]?.name;
+      if (name) targetNodes.add(name);
+    }
+    return { name: animation.name ?? '', duration, targetNodes: [...targetNodes] };
+  });
 }
 
 function getNode(nodes: GltfNode[], index: number): GltfNode {
@@ -173,10 +210,11 @@ function emptyBounds(): Bounds {
   return { min: [Infinity, Infinity, Infinity], max: [-Infinity, -Infinity, -Infinity] };
 }
 
-function calculateBounds(document: GltfDocument): Pick<GlbSummary, 'boundingBox' | 'nodeBounds'> {
+function calculateBounds(document: GltfDocument, includeAllNodes = false): Pick<GlbSummary, 'boundingBox' | 'nodeBounds'> {
   const boundingBox = emptyBounds();
   const namedBounds = new Map<string, Bounds>();
   const ancestors = new Set<number>();
+  const visited = new Set<number>();
 
   function visit(index: number, parentMatrix: number[]): Bounds {
     if (ancestors.has(index)) {
@@ -211,6 +249,7 @@ function calculateBounds(document: GltfDocument): Pick<GlbSummary, 'boundingBox'
       mergeBounds(bounds, visit(child, worldMatrix));
     }
     ancestors.delete(index);
+    visited.add(index);
     if (node.name && bounds.min[0] !== Infinity) {
       // Duplicate names share an entry encompassing every matching subtree.
       const combined = namedBounds.get(node.name) ?? emptyBounds();
@@ -220,9 +259,20 @@ function calculateBounds(document: GltfDocument): Pick<GlbSummary, 'boundingBox'
     return bounds;
   }
 
-  const roots = document.scenes?.[document.scene ?? 0]?.nodes ?? [];
+  const nodes = document.nodes ?? [];
+  let roots = document.scenes?.[document.scene ?? 0]?.nodes ?? [];
+  if (includeAllNodes) {
+    const children = new Set(nodes.flatMap(node => node.children ?? []));
+    roots = nodes.map((_, index) => index).filter(index => !children.has(index));
+  }
   for (const root of roots) {
     mergeBounds(boundingBox, visit(root, identityMatrix()));
+  }
+  if (includeAllNodes) {
+    // Components without a root still need to be checked for cycles.
+    for (let index = 0; index < nodes.length; index++) {
+      if (!visited.has(index)) mergeBounds(boundingBox, visit(index, identityMatrix()));
+    }
   }
   return {
     boundingBox: boundingBox.min[0] === Infinity ? null : boundingBox,

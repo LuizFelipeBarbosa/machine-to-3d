@@ -7,6 +7,7 @@ import {
   getLatestVersion,
   parseContent,
   parseDefinition,
+  publishDraftMachineVersion,
   publishMachineVersion,
 } from './lib/content';
 import { machineDefinitionValidator } from './lib/validators';
@@ -36,6 +37,9 @@ export const list = query({
 
     const result = [];
     for (const machine of machines) {
+      if (!canAuthor && machine.currentVersionId === undefined) {
+        continue;
+      }
       const procedures = await ctx.db
         .query('procedures')
         .withIndex('by_machine', (q) => q.eq('machineId', machine._id))
@@ -122,6 +126,7 @@ export const listVersions = query({
   returns: v.array(v.object({
     _id: v.id('machineVersions'),
     version: v.number(),
+    status: v.union(v.literal('draft'), v.literal('published')),
     _creationTime: v.number(),
   })),
   handler: async (ctx, { machineId }) => {
@@ -131,7 +136,9 @@ export const listVersions = query({
       .withIndex('by_machine', (q) => q.eq('machineId', machineId))
       .order('desc')
       .collect();
-    return versions.map(({ _id, version, _creationTime }) => ({ _id, version, _creationTime }));
+    return versions.map(({ _id, version, status, _creationTime }) => ({
+      _id, version, status: status ?? 'published', _creationTime,
+    }));
   },
 });
 
@@ -150,6 +157,18 @@ export const publishVersion = mutation({
   }),
   handler: async (ctx, { slug, name, kind, modelFileId, definition: rawDefinition }) => {
     await requireRole(ctx, 'admin');
-    return publishMachineVersion(ctx, { slug, name, kind, modelFileId, definition: rawDefinition });
+    return publishMachineVersion(ctx, {
+      slug, name, kind, modelFileId, definition: rawDefinition, publish: true,
+    });
+  },
+});
+
+export const publishDraftVersion = mutation({
+  args: { machineVersionId: v.id('machineVersions') },
+  returns: v.null(),
+  handler: async (ctx, { machineVersionId }) => {
+    await requireRole(ctx, 'admin');
+    await publishDraftMachineVersion(ctx, machineVersionId);
+    return null;
   },
 });

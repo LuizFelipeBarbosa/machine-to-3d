@@ -4,6 +4,7 @@ import { convexTest } from 'convex-test';
 import { ConvexError } from 'convex/values';
 import { describe, expect, test } from 'vitest';
 import type { MachineDefinition } from '../shared/machine';
+import { publishMachineVersion } from './lib/content';
 import type * as machines from './machines';
 import type * as procedures from './procedures';
 import schema from './schema';
@@ -88,12 +89,13 @@ describe('machines.publishVersion', () => {
     });
     expect(await t.run((ctx) => ctx.db.get(first.machineVersionId))).toEqual(firstDocument);
     expect(await t.run((ctx) => ctx.db.get(second.machineVersionId))).toMatchObject({
+      status: 'published',
       definition: nextDefinition,
       modelFileId,
     });
     expect(await author.query(api.machines.listVersions, { machineId: first.machineId })).toEqual([
-      { _id: second.machineVersionId, version: 2, _creationTime: expect.any(Number) },
-      { _id: first.machineVersionId, version: 1, _creationTime: expect.any(Number) },
+      { _id: second.machineVersionId, version: 2, status: 'published', _creationTime: expect.any(Number) },
+      { _id: first.machineVersionId, version: 1, status: 'published', _creationTime: expect.any(Number) },
     ]);
 
     await t.run((ctx) => ctx.db.patch(first.machineId, { currentVersionId: first.machineVersionId }));
@@ -128,7 +130,132 @@ describe('machines.publishVersion', () => {
   });
 });
 
+describe('publishMachineVersion', () => {
+  test('defaults to published for existing callers and passes through the source file', async () => {
+    const { t, publishArgs } = await setup();
+    const sourceFileId = await t.run((ctx) => ctx.storage.store(new Blob(['source'])));
+    const published = await t.run((ctx) => publishMachineVersion(ctx, { ...publishArgs, sourceFileId }));
+    expect(await t.run((ctx) => ctx.db.get(published.machineVersionId))).toMatchObject({
+      status: 'published', sourceFileId,
+    });
+    expect(await t.run((ctx) => ctx.db.get(published.machineId))).toMatchObject({
+      currentVersionId: published.machineVersionId,
+    });
+  });
+
+  test('preserves the machine when creating drafts and increments versions across both statuses', async () => {
+    const { t, admin, author, publishArgs } = await setup();
+    const first = await admin.mutation(api.machines.publishVersion, publishArgs);
+    const before = await t.run((ctx) => ctx.db.get(first.machineId));
+    const sourceFileId = await t.run((ctx) => ctx.storage.store(new Blob(['editable source'])));
+    const draft = await t.run((ctx) => publishMachineVersion(ctx, {
+      ...publishArgs, name: 'Draft name', kind: 'Draft kind', publish: false, sourceFileId,
+    }));
+    const nextDraft = await t.run((ctx) => publishMachineVersion(ctx, { ...publishArgs, publish: false }));
+    expect(await t.run((ctx) => ctx.db.get(first.machineId))).toEqual(before);
+    expect(await t.run((ctx) => ctx.db.get(draft.machineVersionId))).toMatchObject({
+      machineId: first.machineId, version: 2, status: 'draft', sourceFileId,
+    });
+    expect(await t.run((ctx) => ctx.db.get(nextDraft.machineVersionId))).not.toHaveProperty('sourceFileId');
+    expect(await author.query(api.machines.listVersions, { machineId: first.machineId })).toEqual([
+      { _id: nextDraft.machineVersionId, version: 3, status: 'draft', _creationTime: expect.any(Number) },
+      { _id: draft.machineVersionId, version: 2, status: 'draft', _creationTime: expect.any(Number) },
+      { _id: first.machineVersionId, version: 1, status: 'published', _creationTime: expect.any(Number) },
+    ]);
+    const published = await admin.mutation(api.machines.publishVersion, publishArgs);
+    expect(published).toMatchObject({ machineId: first.machineId, version: 4 });
+    expect(await t.run((ctx) => ctx.db.get(first.machineId))).toMatchObject({
+      currentVersionId: published.machineVersionId,
+    });
+  });
+});
+
+describe('machines.publishDraftVersion', () => {
+  test.each(['trainee', 'author', 'approver'] as const)('rejects %s', async (role) => {
+    const { t, publishArgs } = await setup();
+    const userId = await createUser(t, { email: `${role}@example.com`, role });
+    const { machineId, machineVersionId } = await t.run((ctx) =>
+      publishMachineVersion(ctx, { ...publishArgs, publish: false }),
+    );
+    await expect(asUser(t, userId).mutation(api.machines.publishDraftVersion, { machineVersionId }))
+      .rejects.toMatchObject({ data: 'Not authorized' });
+    expect(await t.run((ctx) => ctx.db.get(machineVersionId))).toMatchObject({ status: 'draft' });
+    expect(await t.run((ctx) => ctx.db.get(machineId))).not.toHaveProperty('currentVersionId');
+  });
+
+  test('requires a signed-in caller', async () => {
+    const { t, publishArgs } = await setup();
+    const { machineVersionId } = await t.run((ctx) =>
+      publishMachineVersion(ctx, { ...publishArgs, publish: false }),
+    );
+    await expect(t.mutation(api.machines.publishDraftVersion, { machineVersionId }))
+      .rejects.toMatchObject({ data: 'Not signed in' });
+  });
+
+  test.each([false, true])('publishes a draft with an existing current version: %s', async (hasCurrent) => {
+    const { t, admin, publishArgs } = await setup();
+    if (hasCurrent) {
+      await admin.mutation(api.machines.publishVersion, publishArgs);
+    }
+    const { machineId, machineVersionId } = await t.run((ctx) =>
+      publishMachineVersion(ctx, { ...publishArgs, publish: false }),
+    );
+    const machineBefore = await t.run((ctx) => ctx.db.get(machineId));
+    const versionBefore = await t.run((ctx) => ctx.db.get(machineVersionId));
+    expect(await admin.mutation(api.machines.publishDraftVersion, { machineVersionId })).toBeNull();
+    expect(await t.run((ctx) => ctx.db.get(machineId))).toEqual({
+      ...machineBefore, currentVersionId: machineVersionId,
+    });
+    expect(await t.run((ctx) => ctx.db.get(machineVersionId))).toEqual({
+      ...versionBefore, status: 'published',
+    });
+  });
+
+  test.each(['same', 'newer'])('rejects a draft when the current version is %s', async (current) => {
+    const { t, admin, publishArgs } = await setup();
+    const { machineId, machineVersionId } = await t.run((ctx) =>
+      publishMachineVersion(ctx, { ...publishArgs, publish: false }),
+    );
+    if (current === 'newer') {
+      await admin.mutation(api.machines.publishVersion, publishArgs);
+    } else {
+      await t.run((ctx) => ctx.db.patch(machineId, { currentVersionId: machineVersionId }));
+    }
+    const before = await t.run((ctx) => ctx.db.get(machineId));
+    await expect(admin.mutation(api.machines.publishDraftVersion, { machineVersionId }))
+      .rejects.toMatchObject({ data: 'Machine version superseded' });
+    expect(await t.run((ctx) => ctx.db.get(machineId))).toEqual(before);
+    expect(await t.run((ctx) => ctx.db.get(machineVersionId))).toMatchObject({ status: 'draft' });
+  });
+
+  test.each(['published', undefined] as const)('rejects a published version with status %s', async (status) => {
+    const { t, admin, publishArgs } = await setup();
+    const { machineVersionId } = await admin.mutation(api.machines.publishVersion, publishArgs);
+    await t.run((ctx) => ctx.db.patch(machineVersionId, { status }));
+    await expect(admin.mutation(api.machines.publishDraftVersion, { machineVersionId }))
+      .rejects.toMatchObject({ data: 'Only draft machine versions can be published' });
+  });
+});
+
 describe('machines.list', () => {
+  test('hides draft-only machines from trainees and legacy users while showing them to authors and admins', async () => {
+    const { t, admin, author, trainee, publishArgs } = await setup();
+    const draft = await t.run((ctx) => publishMachineVersion(ctx, { ...publishArgs, publish: false }));
+    expect(await t.run((ctx) => ctx.db.get(draft.machineId))).toMatchObject({
+      slug: 'machine', name: 'Machine', kind: 'instrument',
+    });
+    expect(await t.run((ctx) => ctx.db.get(draft.machineId))).not.toHaveProperty('currentVersionId');
+    expect(await trainee.query(api.machines.list, {})).toEqual([]);
+    const legacyId = await createUser(t, { email: 'legacy@example.com' });
+    expect(await asUser(t, legacyId).query(api.machines.list, {})).toEqual([]);
+    const authorList = await author.query(api.machines.list, {});
+    expect(authorList).toEqual([{
+      _id: draft.machineId, slug: 'machine', name: 'Machine', kind: 'instrument', procedures: [],
+    }]);
+    expect(await admin.query(api.machines.list, {})).toEqual(authorList);
+    expect(await trainee.query(api.machines.getBySlug, { slug: 'machine' })).toBeNull();
+  });
+
   test('returns procedures in creation order rather than title order', async () => {
     const { admin, author, publishArgs } = await setup();
     const { machineId } = await admin.mutation(api.machines.publishVersion, publishArgs);
@@ -200,6 +327,15 @@ describe('machines.list', () => {
 });
 
 describe('machine queries', () => {
+  test('lists legacy versions without a status as published', async () => {
+    const { t, admin, author, publishArgs } = await setup();
+    const { machineId, machineVersionId } = await admin.mutation(api.machines.publishVersion, publishArgs);
+    await t.run((ctx) => ctx.db.patch(machineVersionId, { status: undefined }));
+    expect(await author.query(api.machines.listVersions, { machineId })).toEqual([{
+      _id: machineVersionId, version: 1, status: 'published', _creationTime: expect.any(Number),
+    }]);
+  });
+
   test('getBySlug returns the current definition and storage URL', async () => {
     const { t, admin, trainee, publishArgs } = await setup();
     const first = await admin.mutation(api.machines.publishVersion, publishArgs);
