@@ -59,6 +59,21 @@ for (const machine of SEED_MACHINES) {
         await openAndSettle(page, '/m/park-nx10/nc-scan');
         await expect(page).toHaveScreenshot('park-nx10-nc-scan-step-01-narrow.png');
       });
+
+      test('nc-scan: probe exchange jump preserves the rest pose', async ({ page }) => {
+        await openAndSettle(page, '/m/park-nx10/nc-scan');
+        await page.getByRole('button', { name: 'Next step', exact: true }).click();
+        await page.getByRole('button', { name: 'Next step', exact: true }).click();
+        await expect(page.locator('.step.is-current .step-title')).toHaveText('Check the probe');
+
+        await page.getByRole('button', {
+          name: 'Probe is wrong or worn? Open probe exchange',
+          exact: true,
+        }).click();
+        await page.locator('.machine-scene canvas').waitFor({ state: 'visible' });
+        await page.waitForTimeout(1500);
+        await expect(page).toHaveScreenshot('park-nx10-probe-exchange-step-01.png');
+      });
     }
   });
 }

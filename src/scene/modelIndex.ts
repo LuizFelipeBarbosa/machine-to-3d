@@ -11,6 +11,16 @@ export type ModelIndex = {
   bounds: THREE.Box3;
 };
 
+/** Preserve the original transform when a posed node is indexed again. */
+export function captureRest(node: THREE.Object3D): RestTransform {
+  const userData = node.userData as { restTransform?: RestTransform };
+  userData.restTransform ??= {
+    position: [node.position.x, node.position.y, node.position.z],
+    quaternion: [node.quaternion.x, node.quaternion.y, node.quaternion.z, node.quaternion.w],
+  };
+  return userData.restTransform;
+}
+
 export function indexModel(scene: THREE.Object3D, definition: MachineDefinition): ModelIndex {
   const roots = scene.children.filter((child) => child.name.length > 0);
   if (roots.length !== 1) {
@@ -32,10 +42,7 @@ export function indexModel(scene: THREE.Object3D, definition: MachineDefinition)
   const rest: Record<string, RestTransform> = {};
   for (const name of effectNodes(definition)) {
     const node = requireNode(nodes, name);
-    rest[name] = {
-      position: [node.position.x, node.position.y, node.position.z],
-      quaternion: [node.quaternion.x, node.quaternion.y, node.quaternion.z, node.quaternion.w],
-    };
+    rest[name] = captureRest(node);
   }
   const partMeshes = new Map<string, THREE.Mesh[]>();
   for (const part of definition.parts) {

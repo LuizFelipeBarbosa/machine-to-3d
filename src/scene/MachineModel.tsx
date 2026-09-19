@@ -46,7 +46,8 @@ export function MachineModel({
   url, definition, state, highlightedParts, instant = false, onIndexed, onPickPart,
 }: MachineModelProps): JSX.Element {
   const gltf = useGLTF(url);
-  const index = useMemo(() => indexModel(gltf.scene, definition), [gltf.scene, definition]);
+  const scene = useMemo(() => gltf.scene.clone(true), [gltf.scene]);
+  const index = useMemo(() => indexModel(scene, definition), [scene, definition]);
   const values = useRef(goalValues(definition, state));
   const pointerDown = useRef<{ x: number; y: number; id: number } | null>(null);
   const materials = useMemo(() => {
@@ -145,7 +146,7 @@ export function MachineModel({
 
   return (
     <primitive
-      object={gltf.scene}
+      object={scene}
       dispose={null}
       onPointerDown={(event: ThreeEvent<PointerEvent>) => {
         pointerDown.current = { x: event.clientX, y: event.clientY, id: event.pointerId };
