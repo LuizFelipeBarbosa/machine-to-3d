@@ -1,0 +1,80 @@
+<div id="nx10-viz">
+  <div class="viz-row"><h3>Park NX10</h3><span class="text-muted text-small">Atomic force microscope · visual reconstruction</span></div>
+  <div class="viz-controls">
+    <label class="form-check"><input id="nx-cover" class="form-check-input" type="checkbox" checked><span class="form-check-label">Exterior covers</span></label>
+    <label class="form-label">View <select class="form-select" id="nx-view"><option value="perspective">Perspective</option><option value="front">Front</option><option value="side">Side</option><option value="back">Rear</option><option value="top">Top</option></select></label>
+    <label class="form-label">Component <select class="form-select" id="nx-part"><option value="">Overview</option><option value="optics">On-axis optical microscope</option><option value="head">AFM head / Z scanner</option><option value="sample">Sample chuck / XY scanner</option><option value="xy">XY positioning stage</option><option value="z">Z positioning stage</option><option value="focus">Focus stage</option></select></label>
+  </div>
+  <div id="nx-stage" style="height:520px;position:relative;touch-action:none"><span id="nx-loading" class="text-muted">Loading 3D model…</span></div>
+  <div id="nx-detail" class="text-small" aria-live="polite">Drag to orbit · scroll or pinch to zoom · right-drag to pan</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+const root=document.getElementById('nx10-viz'), host=root.querySelector('#nx-stage'), loading=root.querySelector('#nx-loading');
+try {
+const scene=new THREE.Scene(), camera=new THREE.PerspectiveCamera(36,1,.05,100);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.outputEncoding=THREE.sRGBEncoding;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.9;
+renderer.domElement.setAttribute('role','img');renderer.domElement.setAttribute('aria-label','Interactive 3D reconstruction of the Park NX10 AFM with white frame, vertical optical microscope, silver AFM head and black sample platform.');host.appendChild(renderer.domElement);loading.remove();
+const orbit=new THREE.OrbitControls(camera,renderer.domElement);orbit.enableDamping=true;orbit.minDistance=4;orbit.maxDistance=18;orbit.target.set(0,2.55,0);
+scene.add(new THREE.HemisphereLight(0xffffff,0x79808a,.75));
+function light(color,intensity,x,y,z){const l=new THREE.DirectionalLight(color,intensity);l.position.set(x,y,z);scene.add(l);return l;}
+const key=light(0xffffff,1.5,4,9,6);key.castShadow=true;key.shadow.mapSize.set(2048,2048);Object.assign(key.shadow.camera,{left:-5,right:5,top:8,bottom:-5});key.shadow.bias=-.0005;light(0xc4d9ff,.7,-5,4,2);light(0xffffff,1.5,2,6,-5);
+const model=new THREE.Group();scene.add(model);const covers=new THREE.Group();model.add(covers);
+const white=new THREE.MeshStandardMaterial({color:0xe9e9e6,metalness:.28,roughness:.3}), black=new THREE.MeshStandardMaterial({color:0x171b1e,metalness:.35,roughness:.34}), silver=new THREE.MeshStandardMaterial({color:0xb9c1c5,metalness:.78,roughness:.27}), dark=new THREE.MeshStandardMaterial({color:0x3f4449,metalness:.7,roughness:.3}), rubber=new THREE.MeshStandardMaterial({color:0x0d1013,roughness:.8}), gold=new THREE.MeshStandardMaterial({color:0xc8a457,metalness:.7,roughness:.24});
+const parts={};for(const name of ['optics','head','sample','xy','z','focus']){parts[name]=new THREE.Group();parts[name].name=name;model.add(parts[name]);}
+function mesh(geo,mat,parent,x,y,z){const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;}
+function box(w,h,d,x,y,z,mat=black,p=model){return mesh(new THREE.BoxGeometry(w,h,d),mat,p,x,y,z);}
+function rounded(w,h,d,r,x,y,z,mat,p=model){const s=new THREE.Shape(),a=-w/2,b=-h/2;s.moveTo(a+r,b);s.lineTo(a+w-r,b);s.quadraticCurveTo(a+w,b,a+w,b+r);s.lineTo(a+w,b+h-r);s.quadraticCurveTo(a+w,b+h,a+w-r,b+h);s.lineTo(a+r,b+h);s.quadraticCurveTo(a,b+h,a,b+h-r);s.lineTo(a,b+r);s.quadraticCurveTo(a,b,a+r,b);const g=new THREE.ExtrudeGeometry(s,{depth:d,bevelEnabled:true,bevelSegments:3,steps:1,bevelSize:.025,bevelThickness:.025,curveSegments:12});g.translate(0,0,-d/2);return mesh(g,mat,p,x,y,z);}
+function cyl(r,h,x,y,z,mat=silver,p=model,axis='y'){const m=mesh(new THREE.CylinderGeometry(r,r,h,40),mat,p,x,y,z);if(axis==='z')m.rotation.x=Math.PI/2;if(axis==='x')m.rotation.z=Math.PI/2;return m;}
+function screw(x,y,z,p=model){cyl(.033,.022,x,y,z,dark,p,'z');box(.041,.006,.008,x,y,z+.015,black,p);}
+function text(label,w,h,x,y,z,p=model){const c=document.createElement('canvas');c.width=512;c.height=128;const ctx=c.getContext('2d');ctx.clearRect(0,0,512,128);ctx.fillStyle='#969c9c';ctx.font='italic 72px Georgia';ctx.textAlign='center';ctx.fillText(label,256,87);const t=new THREE.CanvasTexture(c);const m=mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:t,transparent:true,depthWrite:false}),p,x,y,z);return m;}
+// Lower chassis, feet and rounded black working surface.
+for(const x of [-1.15,1.15])for(const z of [-.95,.95])cyl(.22,.16,x,.13,z,rubber);
+rounded(3.05,.58,2.65,.18,0,.47,0,white);
+rounded(3.5,.35,3.03,.16,0,.85,0,white,covers);
+rounded(3.43,.09,2.95,.2,0,1.08,0,black,covers);
+box(.68,.23,.08,-.9,.4,1.335,rubber);text('NX10',.47,.12,1.05,.83,1.54,covers);
+// Rigid rear support and the sculpted side covers.
+box(2.48,3.47,.42,0,2.65,-1.12,black);rounded(2.88,3.7,.18,.09,0,2.78,-1.42,white,covers);
+function cheek(x){const s=new THREE.Shape();s.moveTo(-1.35,1.04);s.lineTo(.5,1.04);s.lineTo(.5,2.73);s.quadraticCurveTo(.5,3.38,1.1,3.38);s.lineTo(1.1,4.65);s.lineTo(-1.35,4.65);s.closePath();const g=new THREE.ExtrudeGeometry(s,{depth:.25,bevelEnabled:true,bevelSize:.035,bevelThickness:.035,bevelSegments:3,curveSegments:18});const m=mesh(g,white,covers,x,0,0);m.rotation.y=-Math.PI/2;}
+cheek(-1.2);cheek(1.46);rounded(2.87,.14,1.56,.08,0,4.62,-.57,white,covers);
+// Z and focus guides and lead screws.
+box(1.15,4.56,.32,.24,3.42,-.7,black,parts.z);
+for(const x of [-.16,.63]){box(.09,3.85,.09,x,3.35,-.47,silver,parts.z);for(let y=1.55;y<5.2;y+=.4)screw(x,y,-.407,parts.z);}
+cyl(.075,3.64,.27,3.37,-.43,silver,parts.z);for(let i=0;i<55;i++)cyl(.095,.016,.27,1.65+i*.062,-.43,dark,parts.z);
+box(.68,.46,.26,.25,2.23,-.23,dark,parts.z);box(.8,.88,.3,.22,3.88,-.17,dark,parts.focus);for(const x of [-.12,.56])cyl(.045,1.75,x,4.2,.01,silver,parts.focus);
+// Tall optical housing and exposed on-axis objective.
+rounded(.98,2.94,.83,.06,.22,4.52,.14,white,covers);box(.32,2.85,.015,-.07,4.53,.575,black,covers);text('Park',.5,.2,.4,3.45,.589,covers);
+box(.46,.7,.43,.22,5.32,.13,dark,parts.optics);cyl(.19,2.2,.22,4.05,.25,silver,parts.optics);
+rounded(1.04,.4,.85,.08,.22,3.03,.2,silver,parts.optics);
+cyl(.275,.22,.22,2.74,.28,black,parts.optics);cyl(.225,.58,.22,2.38,.28,silver,parts.optics);
+for(const y of [2.12,2.18,2.58,2.63])cyl(.236,.025,.22,y,.28,dark,parts.optics);cyl(.234,.024,.22,2.1,.28,gold,parts.optics);cyl(.145,.12,.22,2.02,.28,black,parts.optics);
+for(const x of [-.4,.85]){cyl(.075,.23,x,3.02,.27,silver,parts.optics,'x');cyl(.09,.09,x,3.02,.38,silver,parts.optics,'z');}screw(-.12,3.03,.651,parts.optics);
+// Rounded AFM head, adjustment knobs, probe carrier and cantilever.
+rounded(.79,.92,.24,.22,.22,1.97,-.22,silver,parts.head);rounded(.77,.29,.67,.13,.22,1.89,.21,silver,parts.head);rounded(.5,.32,.14,.12,.22,1.88,.61,silver,parts.head);
+for(const x of [-.09,.53]){cyl(.075,.11,x,2.04,.49,silver,parts.head);cyl(.072,.1,x,1.75,.55,silver,parts.head,'z');screw(x,1.86,.7,parts.head);}
+box(.19,.09,.21,.22,1.68,.34,dark,parts.head);box(.028,.012,.16,.22,1.62,.43,gold,parts.head);mesh(new THREE.ConeGeometry(.018,.05,8),silver,parts.head,.22,1.59,.5).rotation.z=Math.PI;
+// XY stage below the sample, exposed when the deck is removed.
+rounded(1.9,.13,1.7,.06,.1,.99,.08,silver,parts.xy);box(1.55,.16,1.24,.1,1.14,.08,dark,parts.xy);for(const x of [-.54,.73])box(.11,.12,1.39,x,1.2,.08,silver,parts.xy);box(1.31,.13,.95,.1,1.29,.15,silver,parts.xy);
+rounded(.61,.15,.61,.05,.22,1.42,.36,silver,parts.sample);cyl(.2,.046,.22,1.52,.36,black,parts.sample);box(.19,.015,.19,.22,1.55,.36,new THREE.MeshStandardMaterial({color:0x6a7f97,metalness:.9,roughness:.19}),parts.sample);
+for(const x of [-.02,.46])for(const z of [.12,.6])cyl(.025,.016,x,1.51,z,dark,parts.sample);
+// Expansion module and restrained fastener detail.
+box(.3,.74,.35,-.69,1.89,-.1,black);for(let y=1.68;y<2.1;y+=.12)box(.12,.025,.01,-.69,y,.081,silver);for(const x of [-1.32,1.32])for(const y of [1.35,4.37])screw(x,y,-1.31);
+// Rear ventilation grille.
+for(let x=-.94;x<1;x+=.13)box(.04,.67,.022,x,2.5,-1.525,dark,covers);
+const floor=mesh(new THREE.PlaneGeometry(200,200),new THREE.ShadowMaterial({opacity:.15}),scene,0,.035,0);floor.rotation.x=-Math.PI/2;floor.castShadow=false;
+const descriptions={optics:'On-axis optical microscope — positioned above the probe and sample.',head:'AFM head — carries the independent Z scanner and probe.',sample:'Sample chuck and XY scanner — lateral scanning beneath the probe.',xy:'XY stage — coarse sample positioning beneath the scanner.',z:'Z stage — vertical positioning of the head assembly.',focus:'Focus stage — optical focus adjustment.'};
+const view=root.querySelector('#nx-view'),part=root.querySelector('#nx-part'),cover=root.querySelector('#nx-cover');
+function setView(v){const p={perspective:[-8,6.1,10],front:[0,3,12],side:[12,3,0],back:[0,3,-12],top:[0,13,.01]}[v]||[8,6.1,10];camera.position.set(...p);orbit.target.set(0,2.8,0);orbit.update();}
+function select(){for(const [name,g] of Object.entries(parts))g.traverse(o=>{if(o.isMesh){if(!o.userData.original)o.userData.original=o.material;o.material=o.userData.original;if(name===part.value){o.material=o.material.clone();o.material.emissive.setHex(0x3a7690);o.material.emissiveIntensity=.32;}}});root.querySelector('#nx-detail').textContent=descriptions[part.value]||'Drag to orbit · scroll or pinch to zoom · right-drag to pan';}
+function save(){window.openai?.setWidgetState?.({modelContent:{instrument:'Park NX10',component:part.value,covers:cover.checked},privateContent:{view:view.value}})?.catch(()=>{});}
+cover.onchange=()=>{covers.visible=cover.checked;save();};view.onchange=()=>{setView(view.value);save();};part.onchange=()=>{if(part.value){cover.checked=false;covers.visible=false;}select();save();};
+function restore(s){if(!s)return;cover.checked=s.modelContent?.covers!==false;covers.visible=cover.checked;part.value=s.modelContent?.component||'';view.value=s.privateContent?.view||'perspective';setView(view.value);select();}setView('perspective');restore(window.openai?.widgetState);window.addEventListener('openai:set_globals',e=>restore(e.detail?.globals?.widgetState));
+new ResizeObserver(()=>{const w=host.clientWidth,h=host.clientHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();}).observe(host);
+renderer.setAnimationLoop(()=>{orbit.update();renderer.render(scene,camera);});
+}catch(e){host.appendChild(loading);loading.textContent='3D view could not start: '+e.message;loading.setAttribute('role','alert');}
+})();
+</script>
+

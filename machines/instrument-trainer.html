@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bench guide: Park NX10</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bench:#cfd7d9; --bench-hi:#e9eeee; --paper:#f6f7f5; --paper-2:#ecefed; --ink:#161b1e; --ink-2:#4d585e; --rule:#d3d9da;
+  --signal:#1b6f8c; --signal-ink:#ffffff; --signal-wash:#e2f0f4;
+  --caution-bg:#fff2cc; --caution-edge:#d49600; --caution-ink:#453300;
+  --body:"Barlow","Helvetica Neue",Arial,sans-serif; --display:"Barlow Semi Condensed","Arial Narrow","Helvetica Neue",Arial,sans-serif;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bench:#171c20; --bench-hi:#262e33; --paper:#101417; --paper-2:#181e22; --ink:#e7ecec; --ink-2:#9ba7ac; --rule:#2a3338;
+  --signal:#64b9d6; --signal-ink:#06212b; --signal-wash:#14303a;
+  --caution-bg:#332909; --caution-edge:#e2a91c; --caution-ink:#f5e2ab;
+}}
+:root[data-theme="dark"]{
+  --bench:#171c20; --bench-hi:#262e33; --paper:#101417; --paper-2:#181e22; --ink:#e7ecec; --ink-2:#9ba7ac; --rule:#2a3338;
+  --signal:#64b9d6; --signal-ink:#06212b; --signal-wash:#14303a;
+  --caution-bg:#332909; --caution-edge:#e2a91c; --caution-ink:#f5e2ab;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{height:100%;margin:0;background:var(--paper);color:var(--ink);font:400 16px/1.5 var(--body);-webkit-font-smoothing:antialiased}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+.app{display:grid;height:100%;grid-template-columns:minmax(0,1fr) clamp(360px,36vw,470px)}
+
+/* ---------- 3D viewport ---------- */
+.viewport{position:relative;min-height:0;overflow:hidden;background:radial-gradient(ellipse 70% 60% at 46% 44%,var(--bench-hi),var(--bench) 75%)}
+#stage{position:absolute;inset:0;touch-action:none}
+#stage canvas{display:block;width:100%;height:100%}
+#stage .fail{position:absolute;inset:0;display:grid;place-items:center;padding:2rem;text-align:center;color:var(--ink-2)}
+#leaders{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#leaders line{stroke:var(--signal);stroke-width:1.5}
+#leaders circle{fill:var(--signal);stroke:var(--paper);stroke-width:1.5}
+#labels{position:absolute;inset:0;pointer-events:none}
+.callout{position:absolute;top:0;left:0;padding:.3rem .6rem .35rem;background:var(--paper);border-left:3px solid var(--signal);font:600 .95rem/1.2 var(--display);letter-spacing:.01em;white-space:nowrap;box-shadow:0 1px 0 rgba(0,0,0,.18)}
+.vp-top{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;padding:1rem 1.25rem;pointer-events:none}
+.vp-top > *{pointer-events:auto}
+.machine{padding:.45rem .8rem .5rem;background:var(--paper);border:1px solid var(--rule);border-left:3px solid var(--ink)}
+.machine h1{margin:0;font:600 1.7rem/1.05 var(--display);letter-spacing:-.005em}
+.machine p{margin:.15rem 0 0;color:var(--ink-2);font-size:.9rem}
+.tools{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;justify-content:flex-end}
+.tools label,.tools button{display:inline-flex;align-items:center;gap:.4rem;padding:.35rem .7rem;background:var(--paper);border:1px solid var(--rule);border-radius:3px;font-size:.875rem;cursor:pointer}
+.tools input{accent-color:var(--signal);margin:0}
+.hint{position:absolute;right:1.25rem;bottom:.9rem;margin:0;font-size:.8rem;color:var(--ink-2)}
+#inspect{position:absolute;left:1.25rem;bottom:1rem;max-width:min(22rem,calc(100% - 2.5rem));padding:.8rem 2.2rem .85rem .9rem;background:var(--paper);border:1px solid var(--rule);border-left:3px solid var(--signal)}
+#inspect h2{margin:0 0 .2rem;font:600 1.05rem/1.2 var(--display)}
+#inspect p{margin:0;font-size:.875rem;color:var(--ink-2)}
+#inspect .uses{margin-top:.5rem;display:flex;flex-wrap:wrap;gap:.3rem;align-items:center;font-size:.8rem;color:var(--ink-2)}
+#inspect .uses button{padding:.05rem .5rem;border:1px solid var(--signal);background:none;color:var(--signal);border-radius:2px;cursor:pointer;font:600 .85rem var(--display)}
+#inspect .close{position:absolute;top:.35rem;right:.35rem;width:1.7rem;height:1.7rem;border:0;background:none;cursor:pointer;color:var(--ink-2);font-size:1.1rem;line-height:1}
+
+/* ---------- procedure panel ---------- */
+.panel{display:flex;flex-direction:column;min-height:0;border-left:1px solid var(--rule);background:var(--paper)}
+.panel-head{padding:1rem 1.25rem .9rem;border-bottom:1px solid var(--rule)}
+.panel-head label{display:block;font-size:.8rem;color:var(--ink-2);margin-bottom:.25rem}
+.panel-head select{width:100%;padding:.5rem .6rem;background:var(--paper-2);border:1px solid var(--rule);border-radius:3px;font:600 1.1rem/1.2 var(--display)}
+#summary{margin:.6rem 0 0;font-size:.9rem;color:var(--ink-2);max-width:60ch}
+.draft{margin:.6rem 0 0;font-size:.8rem;color:var(--caution-ink);background:var(--caution-bg);padding:.35rem .55rem;border-left:3px solid var(--caution-edge)}
+#steps{list-style:none;margin:0;padding:.5rem 1.25rem 1.5rem;overflow-y:auto;flex:1;min-height:0}
+.step{position:relative}
+.step::before{content:"";position:absolute;left:1.05rem;top:2.7rem;bottom:-.35rem;width:1px;background:var(--rule)}
+.step:last-child::before{display:none}
+.step-head{display:grid;grid-template-columns:2.1rem 1fr auto;gap:.75rem;align-items:start;width:100%;padding:.6rem 0;border:0;background:none;text-align:left;cursor:pointer}
+.num{display:grid;place-items:center;width:2.1rem;height:2.1rem;border:1.5px solid var(--rule);border-radius:50%;background:var(--paper);font:600 1.05rem/1 var(--display);color:var(--ink-2)}
+.step-title{display:block;font:600 1.08rem/1.25 var(--display);padding-top:.15rem}
+.step-where{display:block;font-size:.8rem;color:var(--ink-2);margin-top:.1rem}
+.step-flag{font-size:.78rem;color:var(--ink-2);padding-top:.35rem}
+.is-done .num{background:var(--signal-wash);border-color:var(--signal);color:var(--signal)}
+.is-done .step-title{color:var(--ink-2)}
+.is-current .num{background:var(--signal);border-color:var(--signal);color:var(--signal-ink)}
+.is-current .step-title{font-size:1.3rem}
+.step-body{margin:0 0 .9rem 2.85rem;max-width:58ch}
+.step-body p{margin:0 0 .75rem}
+.caution{margin:0 0 .75rem;padding:.55rem .75rem .6rem;background:var(--caution-bg);border-left:4px solid var(--caution-edge);color:var(--caution-ink);font-size:.92rem}
+.caution strong{display:block;font:600 .9rem var(--display);margin-bottom:.1rem}
+.check{display:flex;gap:.6rem;align-items:flex-start;margin:0 0 .75rem;padding:.6rem .75rem;border:1.5px solid var(--signal);border-radius:3px;cursor:pointer;font-size:.95rem}
+.check input{margin:.2rem 0 0;width:1.05rem;height:1.05rem;accent-color:var(--signal);flex:none}
+.check small{display:block;color:var(--ink-2);font-size:.8rem}
+.jump{display:inline-block;margin:0 0 .75rem;padding:.4rem .7rem;border:1px solid var(--rule);background:var(--paper-2);border-radius:3px;cursor:pointer;font-size:.9rem;text-align:left}
+details.schema{margin-top:.25rem;font-size:.82rem;color:var(--ink-2)}
+details.schema summary{cursor:pointer}
+details.schema pre{margin:.4rem 0 0;padding:.6rem .7rem;background:var(--paper-2);border:1px solid var(--rule);overflow-x:auto;font:400 .78rem/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--ink)}
+.complete{margin:.5rem 0 0 2.85rem;padding:.9rem 1rem;border:1.5px solid var(--signal);background:var(--signal-wash)}
+.complete h2{margin:0 0 .25rem;font:600 1.2rem var(--display)}
+.complete p{margin:0 0 .7rem;font-size:.92rem}
+.panel-foot{display:grid;grid-template-columns:auto 1fr auto;gap:.75rem;align-items:center;padding:.75rem 1.25rem;padding-bottom:calc(.75rem + env(safe-area-inset-bottom,0px));border-top:1px solid var(--rule);background:var(--paper)}
+.btn{padding:.6rem 1.1rem;border-radius:3px;border:1px solid var(--rule);background:var(--paper-2);cursor:pointer;font:600 1rem var(--display)}
+.btn.primary{background:var(--signal);border-color:var(--signal);color:var(--signal-ink);min-width:9.5rem}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+#count{text-align:center;font-size:.85rem;color:var(--ink-2)}
+
+@media (max-width:820px){
+  .app{grid-template-columns:1fr;grid-template-rows:42% minmax(0,1fr)}
+  .panel{border-left:0;border-top:1px solid var(--rule)}
+  .machine{padding:.3rem .6rem}.machine h1{font-size:1.15rem;white-space:nowrap}.tools{flex-wrap:nowrap;gap:.35rem}.tools label,.tools button{font-size:.75rem;padding:.3rem .45rem;white-space:nowrap}.machine p,.hint{display:none}
+  .vp-top{padding:.6rem .75rem}
+  .panel-head,.panel-foot{padding-left:.9rem;padding-right:.9rem}
+  #steps{padding-left:.9rem;padding-right:.9rem}
+  #summary{display:none}
+  #inspect{left:.75rem;bottom:.6rem}
+}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <section class="viewport" aria-label="3D view of the instrument">
+    <div id="stage"></div>
+    <svg id="leaders" aria-hidden="true"></svg>
+    <div id="labels" aria-hidden="true"></div>
+    <div class="vp-top">
+      <div class="machine"><h1 id="m-name"></h1><p id="m-kind"></p></div>
+      <div class="tools">
+        <label><input type="checkbox" id="covers" checked>Exterior covers</label>
+        <button type="button" id="reset">Back to step view</button>
+      </div>
+    </div>
+    <div id="inspect" hidden></div>
+    <p class="hint">Drag to orbit, scroll to zoom, click a part to identify it</p>
+  </section>
+
+  <aside class="panel" aria-label="Procedure">
+    <div class="panel-head">
+      <label for="proc">Procedure</label>
+      <select id="proc"></select>
+      <p id="summary"></p>
+      <p class="draft">Example content for this prototype. Swap in your lab's approved SOP before training anyone with it.</p>
+    </div>
+    <ol id="steps"></ol>
+    <div class="panel-foot">
+      <button type="button" class="btn" id="back">Back</button>
+      <span id="count"></span>
+      <button type="button" class="btn primary" id="next">Next step</button>
+    </div>
+    <p class="sr" id="live" aria-live="polite"></p>
+  </aside>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+/* =====================================================================
+   1. MACHINE DEFINITION  — what the app knows about one instrument.
+      parts:  ids that procedures may point at (must match groups in the model)
+      views:  named camera poses, so a procedure says view:"head", not coordinates
+   ===================================================================== */
+const MACHINE = {
+  id: 'park-nx10', name: 'Park NX10', kind: 'Atomic force microscope',
+  parts: {
+    optics: { label: 'Optical microscope', blurb: 'On-axis camera view looking straight down at the probe and sample.' },
+    head:   { label: 'AFM head',           blurb: 'Carries the Z scanner, the probe, and the two beam alignment knobs.' },
+    sample: { label: 'Sample chuck',       blurb: 'Magnetic chuck on the XY scanner. Your sample disk sits here.' },
+    xy:     { label: 'XY stage',           blurb: 'Motorised coarse positioning of the sample under the probe.' },
+    z:      { label: 'Z stage',            blurb: 'Raises and lowers the head. Drives the approach to the surface.' },
+    focus:  { label: 'Focus stage',        blurb: 'Moves the optical microscope up and down to focus the camera view.' }
+  },
+  views: {
+    overview: { pos: [-7.5, 5.8, 9.5], target: [0, 2.7, 0] },
+    head:     { pos: [-2.4, 2.9, 4.3], target: [.22, 1.98, .3] },
+    tip:      { pos: [-2.0, 2.3, 3.6], target: [.22, 1.7, .38] },
+    approach: { pos: [-3.4, 3.2, 5.4], target: [.22, 2.2, .1] },
+    sample:   { pos: [-1.9, 3.0, 3.5], target: [.22, 1.6, .36] },
+    optics:   { pos: [-4.4, 4.6, 6.4], target: [.22, 3.4, .1] },
+    zstage:   { pos: [-4.6, 4.4, 5.6], target: [.24, 3.0, -.3] },
+    xystage:  { pos: [-3.0, 3.6, 4.4], target: [.1, 1.25, .1] },
+    bench:    { pos: [-3.2, 3.1, 5.2], target: [.22, 2.0, .9] }
+  }
+};
+
+/* =====================================================================
+   2. PROCEDURES — plain data. Many per machine.
+      Each step names the parts to point at, a view, and only the machine
+      state that CHANGES at that step. The player folds states forward, so
+      jumping to any step always shows the machine as it should be then.
+   ===================================================================== */
+const PROCEDURES = [
+{ id: 'nc-scan', title: 'Non-contact topography scan', minutes: 25,
+  summary: 'From an idle instrument to a first image, then back to a safe state.',
+  start: { lift: 0, headOut: false, sample: false, probe: true, covers: true },
+  steps: [
+  { title: 'Raise the head clear of the chuck', where: 'software', parts: ['z'], view: 'zstage', state: { lift: 1, covers: false },
+    body: 'Drive the Z stage up until the probe sits well above the sample chuck. Do this first, even if the last user says they already did.',
+    caution: 'Loading a sample under a lowered head is the most common way probes get broken and samples get scratched.' },
+  { title: 'Mount the sample', where: 'instrument', parts: ['sample'], view: 'sample', state: { sample: true },
+    body: 'Fix your sample to a magnetic disk. Holding the disk by its edge with tweezers, set it on the centre of the chuck. Check that it sits flat and does not rock.',
+    caution: 'Check the sample height against the lab limit before mounting. A tall sample can meet the probe during approach.' },
+  { title: 'Check the probe', where: 'instrument', parts: ['head'], view: 'head',
+    body: 'Look at the probe carrier under the head. Confirm in the logbook that the installed probe suits non-contact mode and that nobody flagged it as worn.',
+    link: { procedure: 'probe-exchange', step: 0, label: 'Probe is wrong or worn? Open probe exchange' } },
+  { title: 'Focus on the cantilever', where: 'software', parts: ['optics', 'focus'], view: 'optics',
+    body: 'Open the camera view and move the focus stage until the cantilever is sharp. You should see the whole cantilever and the edge of its chip.' },
+  { title: 'Align the beam on the cantilever', where: 'instrument', parts: ['head'], view: 'head',
+    body: 'Turn the two knobs on the front of the head to bring the beam spot to the free end of the cantilever. Then centre the detector so the vertical and lateral signals read close to zero.',
+    caution: 'A low sum signal usually means the spot is on the chip, not the cantilever. Fix it now. Approaching with a bad alignment fails or crashes the tip.',
+    check: 'Sum signal is in the expected range and both deflection signals are near zero' },
+  { title: 'Move to your region of interest', where: 'software', parts: ['xy'], view: 'xystage',
+    body: 'Refocus the camera on the sample surface, then move the XY stage until the area you want sits under the end of the cantilever.',
+    caution: 'Only move the XY stage while the head is raised.' },
+  { title: 'Tune the cantilever', where: 'software', parts: ['head'], view: 'head',
+    body: 'Run a frequency sweep and choose the drive frequency and amplitude set point the way your SOP specifies for this probe type.' },
+  { title: 'Approach the surface', where: 'software', parts: ['z', 'head'], view: 'approach', state: { lift: 0 },
+    body: 'Start the automatic approach and watch the Z scanner indicator until the software reports that the tip has engaged.',
+    caution: 'Hands off the table and the enclosure during approach. Vibration here can drive the tip into the surface.',
+    check: 'Sample is mounted, beam is aligned, and nobody is touching the table' },
+  { title: 'Scan', where: 'software', parts: ['sample', 'head'], view: 'tip',
+    body: 'Begin with a small, slow scan. Check that the trace and retrace lines overlap, adjust gain and set point until they do, and only then scale up to the full area.' },
+  { title: 'Lift the head before touching anything', where: 'software', parts: ['z'], view: 'zstage', state: { lift: 1 },
+    body: 'Stop the scan and lift the Z stage all the way up. Save your data.',
+    check: 'Head is fully raised',
+    link: { procedure: 'shutdown', step: 0, label: 'Continue with end of session' } }
+  ] },
+
+{ id: 'probe-exchange', title: 'Probe exchange', minutes: 10,
+  summary: 'Swap a worn or wrong probe without damaging the new one or the head.',
+  start: { lift: 0, headOut: false, sample: false, probe: true, covers: true },
+  steps: [
+  { title: 'Raise the head fully', where: 'software', parts: ['z'], view: 'zstage', state: { lift: 1, covers: false },
+    body: 'Lift the Z stage to the top of its travel so the head has room to slide out.' },
+  { title: 'Unlock the head and slide it out', where: 'instrument', parts: ['head'], view: 'bench', state: { headOut: true },
+    body: 'Release the head lock, then slide the head straight toward you out of its mount. Rest it on the head stand with the probe facing up.',
+    caution: 'Support the head with both hands, and never set it down on its probe side.' },
+  { title: 'Remove the used probe', where: 'instrument', parts: ['head'], view: 'bench', state: { probe: false },
+    body: 'Grip the chip carrier by its edges with tweezers and lift it off the mount. Put it in the used-probe box and note it in the logbook.' },
+  { title: 'Seat the new probe', where: 'instrument', parts: ['head'], view: 'bench', state: { probe: true },
+    body: 'Pick up the new pre-mounted probe by the carrier edges and lower it onto the mount. It should settle into place on its own, with no force.',
+    caution: 'Never touch the cantilever end of the chip. If you drop a probe, treat it as broken.' },
+  { title: 'Slide the head back and lock it', where: 'instrument', parts: ['head'], view: 'head', state: { headOut: false },
+    body: 'Slide the head back into the mount until it stops, then engage the lock.',
+    caution: 'An unlocked head drifts during a scan and can shift during approach.',
+    check: 'Head is fully seated and the lock is engaged' },
+  { title: 'Realign the beam', where: 'instrument', parts: ['head', 'optics'], view: 'head',
+    body: 'Every probe sits slightly differently, so the old alignment no longer holds. Pick the scan procedure back up at the focus step.',
+    link: { procedure: 'nc-scan', step: 3, label: 'Go to “Focus on the cantilever”' } }
+  ] },
+
+{ id: 'shutdown', title: 'End of session', minutes: 5,
+  summary: 'Leave the instrument safe and documented for the next person.',
+  start: { lift: 1, headOut: false, sample: true, probe: true, covers: false },
+  steps: [
+  { title: 'Confirm the head is raised', where: 'software', parts: ['z'], view: 'zstage',
+    body: 'Check the Z stage position in the software and look at the gap between probe and sample yourself.',
+    check: 'I can see clear space between the probe and the sample' },
+  { title: 'Remove your sample', where: 'instrument', parts: ['sample'], view: 'sample', state: { sample: false },
+    body: 'Lift the sample disk off the chuck by its edge with tweezers. Slide it sideways first to break the magnetic hold, rather than pulling straight up.' },
+  { title: 'Log the session', where: 'logbook', parts: ['head'], view: 'head',
+    body: 'Record which probe is installed, its condition, and anything the next user should know. If you think the probe is worn, say so.' },
+  { title: 'Close up', where: 'instrument', parts: [], view: 'overview', state: { covers: true },
+    body: 'Close the enclosure door, leave the software idle, and clear tweezers and sample boxes off the bench.' }
+  ] }
+];
+const WHERE = { software: 'In the control software', instrument: 'At the instrument', logbook: 'In the logbook' };
+
+/* =====================================================================
+   3. MODEL — your NX10 geometry, unchanged except that the probe, the
+      specimen and the Z carriage are kept in variables so states can move them.
+   ===================================================================== */
+const reduceMotion = matchMedia('(prefers-reduced-motion:reduce)').matches;
+const stageEl = document.getElementById('stage');
+let rig = null;
+try { rig = buildRig(); } catch (e) {
+  stageEl.innerHTML = '<p class="fail" role="alert">The 3D view could not start (' + e.message + '). The procedure still works without it.</p>';
+}
+
+function buildRig() {
+  const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(36, 1, .05, 100);
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = .9;
+  renderer.domElement.setAttribute('role', 'img');
+  renderer.domElement.setAttribute('aria-label', 'Interactive 3D model of the ' + MACHINE.name + '. The current step highlights the parts it involves.');
+  stageEl.appendChild(renderer.domElement);
+  const orbit = new THREE.OrbitControls(camera, renderer.domElement);
+  orbit.enableDamping = true; orbit.minDistance = 1.5; orbit.maxDistance = 18;
+
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x79808a, .75));
+  function light(color, intensity, x, y, z) { const l = new THREE.DirectionalLight(color, intensity); l.position.set(x, y, z); scene.add(l); return l; }
+  const key = light(0xffffff, 1.5, 4, 9, 6); key.castShadow = true; key.shadow.mapSize.set(2048, 2048);
+  Object.assign(key.shadow.camera, { left: -5, right: 5, top: 8, bottom: -5 }); key.shadow.bias = -.0005;
+  light(0xc4d9ff, .7, -5, 4, 2); light(0xffffff, 1.5, 2, 6, -5);
+
+  const model = new THREE.Group(); scene.add(model); const covers = new THREE.Group(); model.add(covers);
+  const white = new THREE.MeshStandardMaterial({ color: 0xe9e9e6, metalness: .28, roughness: .3 }), black = new THREE.MeshStandardMaterial({ color: 0x171b1e, metalness: .35, roughness: .34 }), silver = new THREE.MeshStandardMaterial({ color: 0xb9c1c5, metalness: .78, roughness: .27 }), dark = new THREE.MeshStandardMaterial({ color: 0x3f4449, metalness: .7, roughness: .3 }), rubber = new THREE.MeshStandardMaterial({ color: 0x0d1013, roughness: .8 }), gold = new THREE.MeshStandardMaterial({ color: 0xc8a457, metalness: .7, roughness: .24 });
+  const parts = {}; for (const name of Object.keys(MACHINE.parts)) { parts[name] = new THREE.Group(); parts[name].name = name; model.add(parts[name]); }
+  function mesh(geo, mat, parent, x, y, z) { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true; parent.add(m); return m; }
+  function box(w, h, d, x, y, z, mat = black, p = model) { return mesh(new THREE.BoxGeometry(w, h, d), mat, p, x, y, z); }
+  function rounded(w, h, d, r, x, y, z, mat, p = model) { const s = new THREE.Shape(), a = -w / 2, b = -h / 2; s.moveTo(a + r, b); s.lineTo(a + w - r, b); s.quadraticCurveTo(a + w, b, a + w, b + r); s.lineTo(a + w, b + h - r); s.quadraticCurveTo(a + w, b + h, a + w - r, b + h); s.lineTo(a + r, b + h); s.quadraticCurveTo(a, b + h, a, b + h - r); s.lineTo(a, b + r); s.quadraticCurveTo(a, b, a + r, b); const g = new THREE.ExtrudeGeometry(s, { depth: d, bevelEnabled: true, bevelSegments: 3, steps: 1, bevelSize: .025, bevelThickness: .025, curveSegments: 12 }); g.translate(0, 0, -d / 2); return mesh(g, mat, p, x, y, z); }
+  function cyl(r, h, x, y, z, mat = silver, p = model, axis = 'y') { const m = mesh(new THREE.CylinderGeometry(r, r, h, 40), mat, p, x, y, z); if (axis === 'z') m.rotation.x = Math.PI / 2; if (axis === 'x') m.rotation.z = Math.PI / 2; return m; }
+  function screw(x, y, z, p = model) { cyl(.033, .022, x, y, z, dark, p, 'z'); box(.041, .006, .008, x, y, z + .015, black, p); }
+  function text(label, w, h, x, y, z, p = model) { const c = document.createElement('canvas'); c.width = 512; c.height = 128; const ctx = c.getContext('2d'); ctx.clearRect(0, 0, 512, 128); ctx.fillStyle = '#969c9c'; ctx.font = 'italic 72px Georgia'; ctx.textAlign = 'center'; ctx.fillText(label, 256, 87); const t = new THREE.CanvasTexture(c); return mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: t, transparent: true, depthWrite: false }), p, x, y, z); }
+  // Lower chassis, feet and rounded black working surface.
+  for (const x of [-1.15, 1.15]) for (const z of [-.95, .95]) cyl(.22, .16, x, .13, z, rubber);
+  rounded(3.05, .58, 2.65, .18, 0, .47, 0, white);
+  rounded(3.5, .35, 3.03, .16, 0, .85, 0, white, covers);
+  rounded(3.43, .09, 2.95, .2, 0, 1.08, 0, black, covers);
+  box(.68, .23, .08, -.9, .4, 1.335, rubber); text('NX10', .47, .12, 1.05, .83, 1.54, covers);
+  // Rigid rear support and the sculpted side covers.
+  box(2.48, 3.47, .42, 0, 2.65, -1.12, black); rounded(2.88, 3.7, .18, .09, 0, 2.78, -1.42, white, covers);
+  function cheek(x) { const s = new THREE.Shape(); s.moveTo(-1.35, 1.04); s.lineTo(.5, 1.04); s.lineTo(.5, 2.73); s.quadraticCurveTo(.5, 3.38, 1.1, 3.38); s.lineTo(1.1, 4.65); s.lineTo(-1.35, 4.65); s.closePath(); const g = new THREE.ExtrudeGeometry(s, { depth: .25, bevelEnabled: true, bevelSize: .035, bevelThickness: .035, bevelSegments: 3, curveSegments: 18 }); const m = mesh(g, white, covers, x, 0, 0); m.rotation.y = -Math.PI / 2; }
+  cheek(-1.2); cheek(1.46); rounded(2.87, .14, 1.56, .08, 0, 4.62, -.57, white, covers);
+  // Z and focus guides and lead screws.
+  box(1.15, 4.56, .32, .24, 3.42, -.7, black, parts.z);
+  for (const x of [-.16, .63]) { box(.09, 3.85, .09, x, 3.35, -.47, silver, parts.z); for (let y = 1.55; y < 5.2; y += .4) screw(x, y, -.407, parts.z); }
+  cyl(.075, 3.64, .27, 3.37, -.43, silver, parts.z); for (let i = 0; i < 55; i++) cyl(.095, .016, .27, 1.65 + i * .062, -.43, dark, parts.z);
+  const zCarriage = box(.68, .46, .26, .25, 2.23, -.23, dark, parts.z);
+  box(.8, .88, .3, .22, 3.88, -.17, dark, parts.focus); for (const x of [-.12, .56]) cyl(.045, 1.75, x, 4.2, .01, silver, parts.focus);
+  // Tall optical housing and exposed on-axis objective.
+  rounded(.98, 2.94, .83, .06, .22, 4.52, .14, white, covers); box(.32, 2.85, .015, -.07, 4.53, .575, black, covers); text('Park', .5, .2, .4, 3.45, .589, covers);
+  box(.46, .7, .43, .22, 5.32, .13, dark, parts.optics); cyl(.19, 2.2, .22, 4.05, .25, silver, parts.optics);
+  rounded(1.04, .4, .85, .08, .22, 3.03, .2, silver, parts.optics);
+  cyl(.275, .22, .22, 2.74, .28, black, parts.optics); cyl(.225, .58, .22, 2.38, .28, silver, parts.optics);
+  for (const y of [2.12, 2.18, 2.58, 2.63]) cyl(.236, .025, .22, y, .28, dark, parts.optics); cyl(.234, .024, .22, 2.1, .28, gold, parts.optics); cyl(.145, .12, .22, 2.02, .28, black, parts.optics);
+  for (const x of [-.4, .85]) { cyl(.075, .23, x, 3.02, .27, silver, parts.optics, 'x'); cyl(.09, .09, x, 3.02, .38, silver, parts.optics, 'z'); } screw(-.12, 3.03, .651, parts.optics);
+  // Rounded AFM head, adjustment knobs, probe carrier and cantilever.
+  rounded(.79, .92, .24, .22, .22, 1.97, -.22, silver, parts.head); rounded(.77, .29, .67, .13, .22, 1.89, .21, silver, parts.head); rounded(.5, .32, .14, .12, .22, 1.88, .61, silver, parts.head);
+  for (const x of [-.09, .53]) { cyl(.075, .11, x, 2.04, .49, silver, parts.head); cyl(.072, .1, x, 1.75, .55, silver, parts.head, 'z'); screw(x, 1.86, .7, parts.head); }
+  const probe = new THREE.Group(); parts.head.add(probe);
+  box(.19, .09, .21, .22, 1.68, .34, dark, probe); box(.028, .012, .16, .22, 1.62, .43, gold, probe); mesh(new THREE.ConeGeometry(.018, .05, 8), silver, probe, .22, 1.59, .5).rotation.z = Math.PI;
+  // XY stage below the sample, exposed when the deck is removed.
+  rounded(1.9, .13, 1.7, .06, .1, .99, .08, silver, parts.xy); box(1.55, .16, 1.24, .1, 1.14, .08, dark, parts.xy); for (const x of [-.54, .73]) box(.11, .12, 1.39, x, 1.2, .08, silver, parts.xy); box(1.31, .13, .95, .1, 1.29, .15, silver, parts.xy);
+  rounded(.61, .15, .61, .05, .22, 1.42, .36, silver, parts.sample);
+  const specimen = new THREE.Group(); parts.sample.add(specimen);
+  cyl(.2, .046, .22, 1.52, .36, black, specimen); box(.19, .015, .19, .22, 1.55, .36, new THREE.MeshStandardMaterial({ color: 0x6a7f97, metalness: .9, roughness: .19 }), specimen);
+  for (const x of [-.02, .46]) for (const z of [.12, .6]) cyl(.025, .016, x, 1.51, z, dark, parts.sample);
+  // Expansion module and restrained fastener detail.
+  box(.3, .74, .35, -.69, 1.89, -.1, black); for (let y = 1.68; y < 2.1; y += .12) box(.12, .025, .01, -.69, y, .081, silver); for (const x of [-1.32, 1.32]) for (const y of [1.35, 4.37]) screw(x, y, -1.31);
+  // Rear ventilation grille.
+  for (let x = -.94; x < 1; x += .13) box(.04, .67, .022, x, 2.5, -1.525, dark, covers);
+  const floor = mesh(new THREE.PlaneGeometry(200, 200), new THREE.ShadowMaterial({ opacity: .15 }), scene, 0, .035, 0); floor.rotation.x = -Math.PI / 2; floor.castShadow = false;
+
+  /* ---- highlighting: one emissive clone per base material, shared ---- */
+  const hiCache = new Map(), pickables = [];
+  for (const g of Object.values(parts)) g.traverse(o => { if (o.isMesh) { o.userData.base = o.material; pickables.push(o); } });
+  function hiMat(m) { if (!hiCache.has(m)) { const c = m.clone(); c.emissive = new THREE.Color(0x2587ab); c.emissiveIntensity = .4; hiCache.set(m, c); } return hiCache.get(m); }
+  function highlight(ids) { for (const [name, g] of Object.entries(parts)) { const on = ids.includes(name); g.traverse(o => { if (o.isMesh) o.material = on ? hiMat(o.userData.base) : o.userData.base; }); } }
+
+  /* ---- machine state: targets are set by steps, values ease toward them ---- */
+  const LIFT = .3, SLIDE = 1.15, CLEAR = .2;
+  const val = { lift: 0, out: 0 }, goal = { lift: 0, out: 0 };
+  function setState(st, instant) {
+    goal.lift = st.lift ? 1 : 0; goal.out = st.headOut ? 1 : 0;
+    specimen.visible = !!st.sample; probe.visible = !!st.probe; covers.visible = !!st.covers;
+    if (instant || reduceMotion) Object.assign(val, goal);
+  }
+  function pose() {
+    const y = val.lift * LIFT;
+    parts.head.position.set(0, y, val.out * SLIDE); zCarriage.position.y = 2.23 + y;
+    parts.optics.position.y = parts.focus.position.y = y + val.out * CLEAR;
+  }
+
+  /* ---- camera moves ---- */
+  let tween = null;
+  const V = a => new THREE.Vector3(a[0], a[1], a[2]);
+  function goTo(viewName, instant) {
+    const v = MACHINE.views[viewName] || MACHINE.views.overview, target = V(v.target), pos = V(v.pos);
+    const stretch = camera.aspect < 1.25 ? Math.min(1.25 / camera.aspect, 1.9) : 1;   // pull back on narrow screens
+    pos.sub(target).multiplyScalar(stretch).add(target);
+    if (instant || reduceMotion) { camera.position.copy(pos); orbit.target.copy(target); tween = null; orbit.update(); return; }
+    tween = { p0: camera.position.clone(), t0: orbit.target.clone(), p1: pos, t1: target, start: performance.now(), ms: 950 };
+  }
+  orbit.addEventListener('start', () => { tween = null; });
+
+  /* ---- callout labels pinned to parts ---- */
+  const labelsEl = document.getElementById('labels'), leadersEl = document.getElementById('leaders');
+  let callouts = [];
+  const NS = 'http://www.w3.org/2000/svg', bb = new THREE.Box3(), c3 = new THREE.Vector3();
+  function setCallouts(ids) {
+    labelsEl.textContent = ''; leadersEl.textContent = '';
+    callouts = ids.map(id => {
+      const el = document.createElement('div'); el.className = 'callout'; el.textContent = MACHINE.parts[id].label; labelsEl.appendChild(el);
+      const line = document.createElementNS(NS, 'line'), dot = document.createElementNS(NS, 'circle'); dot.setAttribute('r', 4);
+      leadersEl.append(line, dot); return { id, el, line, dot };
+    });
+  }
+  function placeCallouts() {
+    const w = stageEl.clientWidth, h = stageEl.clientHeight;
+    callouts.forEach((c, i) => {
+      bb.setFromObject(parts[c.id]).getCenter(c3).project(camera);
+      const ax = (c3.x + 1) / 2 * w, ay = (1 - c3.y) / 2 * h, lw = c.el.offsetWidth, lh = c.el.offsetHeight;
+      const off = c3.z > 1 || ax < 0 || ax > w || ay < 0 || ay > h;
+      c.el.style.visibility = c.line.style.visibility = c.dot.style.visibility = off ? 'hidden' : 'visible';
+      const right = i % 2 === 0;
+      let lx = right ? ax + 80 : ax - 80 - lw, ly = ay - 70 - lh / 2;
+      lx = Math.max(10, Math.min(w - lw - 10, lx)); ly = Math.max(70, Math.min(h - lh - 10, ly));
+      c.el.style.transform = 'translate(' + lx.toFixed(1) + 'px,' + ly.toFixed(1) + 'px)';
+      const ex = lx + lw / 2 < ax ? lx + lw : lx, ey = ly + lh / 2;
+      c.line.setAttribute('x1', ax); c.line.setAttribute('y1', ay); c.line.setAttribute('x2', ex); c.line.setAttribute('y2', ey);
+      c.dot.setAttribute('cx', ax); c.dot.setAttribute('cy', ay);
+    });
+  }
+
+  /* ---- click a part to identify it ---- */
+  const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(); let down = null, onPick = () => {};
+  renderer.domElement.addEventListener('pointerdown', e => { down = [e.clientX, e.clientY]; });
+  renderer.domElement.addEventListener('pointerup', e => {
+    if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 5) return;
+    const r = renderer.domElement.getBoundingClientRect();
+    ndc.set((e.clientX - r.left) / r.width * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); ray.setFromCamera(ndc, camera);
+    const pool = covers.visible ? pickables.concat(covers.children) : pickables;
+    const hit = ray.intersectObjects(pool, false).find(h => h.object.visible && (h.object.parent.visible));
+    let o = hit && hit.object; while (o && !(o.name in MACHINE.parts)) o = o.parent;
+    onPick(o ? o.name : null);
+  });
+
+  new ResizeObserver(() => { const w = stageEl.clientWidth, h = stageEl.clientHeight; if (!w || !h) return; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }).observe(stageEl);
+  camera.aspect = Math.max(stageEl.clientWidth, 1) / Math.max(stageEl.clientHeight, 1); camera.updateProjectionMatrix();
+
+  let last = performance.now();
+  renderer.setAnimationLoop(now => {
+    const dt = Math.min((now - last) / 1000, .1); last = now;
+    const k = 1 - Math.exp(-dt * 4.5); val.lift += (goal.lift - val.lift) * k; val.out += (goal.out - val.out) * k; pose();
+    if (tween) { let t = Math.min((now - tween.start) / tween.ms, 1); const e = t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; camera.position.lerpVectors(tween.p0, tween.p1, e); orbit.target.lerpVectors(tween.t0, tween.t1, e); if (t === 1) tween = null; }
+    const pulse = reduceMotion ? .4 : .34 + .16 * Math.sin(now / 320); hiCache.forEach(m => { m.emissiveIntensity = pulse; });
+    orbit.update(); renderer.render(scene, camera); placeCallouts();
+  });
+
+  return { setState, goTo, highlight, setCallouts, set onPick(fn) { onPick = fn; }, get coversVisible() { return covers.visible; }, set coversVisible(v) { covers.visible = v; } };
+}
+
+/* =====================================================================
+   4. PLAYER — generic. Knows nothing about AFMs; it only reads the data above.
+   ===================================================================== */
+const $ = id => document.getElementById(id);
+const procSel = $('proc'), list = $('steps'), backBtn = $('back'), nextBtn = $('next'), countEl = $('count'), coversBox = $('covers'), inspectEl = $('inspect');
+const STORE = 'bench-guide:' + MACHINE.id;
+let saved = {}; try { saved = JSON.parse(localStorage.getItem(STORE)) || {}; } catch (e) { saved = {}; }
+const progress = saved.progress || {};            // per procedure: { cur, done:[], checked:[] }
+let proc = PROCEDURES.find(p => p.id === saved.proc) || PROCEDURES[0], inspected = null, lastCovers = null;
+const P = () => progress[proc.id] || (progress[proc.id] = { cur: 0, done: [], checked: [] });
+function persist() { try { localStorage.setItem(STORE, JSON.stringify({ proc: proc.id, progress })); } catch (e) {} }
+
+function stateAt(i) { const st = Object.assign({}, proc.start); for (let k = 0; k <= i && k < proc.steps.length; k++) Object.assign(st, proc.steps[k].state || {}); return st; }
+
+function h(tag, props, ...kids) { const el = document.createElement(tag); Object.assign(el, props || {}); for (const k of kids) if (k != null) el.append(k); return el; }
+
+function render() {
+  const p = P(), n = proc.steps.length, finished = p.cur >= n;
+  list.textContent = '';
+  proc.steps.forEach((s, i) => {
+    const current = i === p.cur, done = p.done.includes(i);
+    const li = h('li', { className: 'step' + (current ? ' is-current' : '') + (done ? ' is-done' : '') });
+    if (current) li.setAttribute('aria-current', 'step');
+    const head = h('button', { type: 'button', className: 'step-head' },
+      h('span', { className: 'num' }, String(i + 1)),
+      h('span', null, h('span', { className: 'step-title' }, s.title), h('span', { className: 'step-where' }, WHERE[s.where] || '')),
+      h('span', { className: 'step-flag' }, done ? 'Done' : (s.check ? 'Checkpoint' : '')));
+    head.onclick = () => go(i);
+    li.append(head);
+    if (current) {
+      const body = h('div', { className: 'step-body' }, h('p', null, s.body));
+      if (s.caution) body.append(h('div', { className: 'caution' }, h('strong', null, 'Where this goes wrong'), s.caution));
+      if (s.check) {
+        const cb = h('input', { type: 'checkbox', checked: p.checked.includes(i) });
+        cb.onchange = () => { p.checked = cb.checked ? p.checked.concat(i) : p.checked.filter(x => x !== i); persist(); syncFoot(); };
+        body.append(h('label', { className: 'check' }, cb, h('span', null, s.check, h('small', null, 'Confirm this to continue'))));
+      }
+      if (s.link) { const b = h('button', { type: 'button', className: 'jump' }, s.link.label); b.onclick = () => openProc(s.link.procedure, s.link.step); body.append(b); }
+      body.append(h('details', { className: 'schema' }, h('summary', null, 'How this step is defined'), h('pre', null, JSON.stringify(s, null, 2))));
+      li.append(body);
+    }
+    list.append(li);
+  });
+  if (finished) {
+    const again = h('button', { type: 'button', className: 'btn' }, 'Start again');
+    again.onclick = () => { progress[proc.id] = { cur: 0, done: [], checked: [] }; go(0); };
+    list.append(h('li', { className: 'step' }, h('div', { className: 'complete' }, h('h2', null, 'Procedure complete'), h('p', null, 'All ' + n + ' steps of “' + proc.title + '” are done.'), again)));
+  }
+  $('summary').textContent = proc.summary + ' ' + n + ' steps, about ' + proc.minutes + ' minutes.';
+  syncFoot();
+  const focusRow = list.querySelector('.is-current') || list.lastElementChild;
+  if (focusRow) focusRow.scrollIntoView({ block: 'nearest', behavior: reduceMotion ? 'auto' : 'smooth' });
+}
+
+function syncFoot() {
+  const p = P(), n = proc.steps.length, s = proc.steps[p.cur];
+  backBtn.disabled = p.cur === 0;
+  nextBtn.disabled = p.cur >= n || !!(s && s.check && !p.checked.includes(p.cur));
+  nextBtn.textContent = p.cur >= n - 1 ? 'Finish procedure' : 'Next step';
+  countEl.textContent = p.cur >= n ? 'Complete' : 'Step ' + (p.cur + 1) + ' of ' + n;
+}
+
+function applyToRig(instant) {
+  const p = P(), i = Math.min(p.cur, proc.steps.length - 1), s = proc.steps[i], st = stateAt(i);
+  if (lastCovers !== null && st.covers === lastCovers && rig) st.covers = rig.coversVisible;   // keep the trainee's own cover choice unless the step changes it
+  else lastCovers = stateAt(i).covers;
+  coversBox.checked = st.covers;
+  if (!rig) return;
+  rig.setState(st, instant); rig.goTo(s.view, instant);
+  const ids = s.parts.concat(inspected && !s.parts.includes(inspected) ? [inspected] : []);
+  rig.highlight(ids); rig.setCallouts(ids);
+}
+
+function go(i, instant) {
+  const p = P(); p.cur = Math.max(0, Math.min(proc.steps.length, i)); inspected = null; showInspect(null);
+  persist(); render(); applyToRig(instant);
+  const s = proc.steps[p.cur]; $('live').textContent = s ? 'Step ' + (p.cur + 1) + ' of ' + proc.steps.length + ': ' + s.title : 'Procedure complete';
+}
+function openProc(id, step) {
+  proc = PROCEDURES.find(x => x.id === id) || proc; procSel.value = proc.id; lastCovers = null;
+  if (rig) rig.setState(Object.assign({}, proc.start), false);
+  go(step == null ? P().cur : step);
+}
+
+function showInspect(id) {
+  inspected = id; inspectEl.textContent = ''; inspectEl.hidden = !id; if (!id) return;
+  const part = MACHINE.parts[id], uses = proc.steps.map((s, i) => s.parts.includes(id) ? i : -1).filter(i => i >= 0);
+  const close = h('button', { type: 'button', className: 'close', ariaLabel: 'Close' }, '×'); close.setAttribute('aria-label', 'Close part details');
+  close.onclick = () => { showInspect(null); applyToRig(); };
+  const usesEl = h('div', { className: 'uses' }, uses.length ? 'Used in step' + (uses.length > 1 ? 's' : '') : 'Not used in this procedure');
+  uses.forEach(i => { const b = h('button', { type: 'button' }, String(i + 1)); b.setAttribute('aria-label', 'Go to step ' + (i + 1)); b.onclick = () => go(i); usesEl.append(b); });
+  inspectEl.append(close, h('h2', null, part.label), h('p', null, part.blurb), usesEl);
+}
+
+/* ---- wiring ---- */
+$('m-name').textContent = MACHINE.name; $('m-kind').textContent = MACHINE.kind;
+PROCEDURES.forEach(p => procSel.append(h('option', { value: p.id }, p.title))); procSel.value = proc.id;
+procSel.onchange = () => openProc(procSel.value);
+backBtn.onclick = () => go(P().cur - 1);
+nextBtn.onclick = () => { const p = P(); if (!p.done.includes(p.cur)) p.done.push(p.cur); go(p.cur + 1); };
+coversBox.onchange = () => { if (rig) rig.coversVisible = coversBox.checked; };
+$('reset').onclick = () => applyToRig();
+if (rig) rig.onPick = id => { showInspect(id); const s = proc.steps[Math.min(P().cur, proc.steps.length - 1)]; const ids = s.parts.concat(id && !s.parts.includes(id) ? [id] : []); rig.highlight(ids); rig.setCallouts(ids); };
+addEventListener('keydown', e => {
+  if (/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
+  if (e.key === 'ArrowRight' && !nextBtn.disabled) nextBtn.click();
+  if (e.key === 'ArrowLeft' && !backBtn.disabled) backBtn.click();
+});
+
+/* First paint: show the instrument as found, then move into the current step. */
+render();
+if (rig) { rig.setState(Object.assign({}, proc.start), true); rig.goTo('overview', true); coversBox.checked = proc.start.covers; }
+setTimeout(() => applyToRig(false), rig && !reduceMotion ? 700 : 0);
+</script>
+</body>
+</html>
