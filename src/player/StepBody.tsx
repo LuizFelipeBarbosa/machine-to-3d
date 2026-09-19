@@ -6,6 +6,7 @@ type StepBodyProps = {
   checked: boolean;
   onChecked(checked: boolean): void;
   linkTargets: Record<string, string[]>;
+  mediaUrls?: Record<string, string>;
   onOpenProcedure(procedureSlug: string, stepId?: string): void;
 };
 
@@ -13,9 +14,11 @@ function looksLikeUrl(value: string): boolean {
   return /^(https?:\/\/|\/|blob:)/i.test(value);
 }
 
-export function StepBody({ step, checked, onChecked, linkTargets, onOpenProcedure }: StepBodyProps): JSX.Element {
+export function StepBody({ step, checked, onChecked, linkTargets, mediaUrls, onOpenProcedure }: StepBodyProps): JSX.Element {
   const link = step.link;
   const targetSteps = link ? linkTargets[link.procedureSlug] : undefined;
+  const mediaUrl = step.media && (mediaUrls?.[step.media.fileId]
+    ?? (looksLikeUrl(step.media.fileId) ? step.media.fileId : undefined));
 
   function openLinkedProcedure(): void {
     if (!link || !targetSteps) return;
@@ -49,7 +52,7 @@ export function StepBody({ step, checked, onChecked, linkTargets, onOpenProcedur
           {link.label}
         </button>
       )}
-      {step.media && looksLikeUrl(step.media.fileId) && <img src={step.media.fileId} alt={step.media.alt} />}
+      {step.media && mediaUrl && <img className="step-media" src={mediaUrl} alt={step.media.alt} />}
     </div>
   );
 }

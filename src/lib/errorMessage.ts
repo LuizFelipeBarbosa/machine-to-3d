@@ -1,5 +1,6 @@
 import { ConvexError } from 'convex/values';
 
 export function errorMessage(error: unknown): string {
-  return error instanceof ConvexError ? String(error.data) : 'Something went wrong';
+  if (error instanceof ConvexError) return String(error.data);
+  return error instanceof Error ? error.message : 'Something went wrong';
 }

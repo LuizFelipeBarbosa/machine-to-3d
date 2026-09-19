@@ -8,6 +8,7 @@ export type ProcedureRecord = {
   content: ProcedureContent;
   placeholder: boolean;
   versionId?: string;
+  mediaUrls?: Record<string, string>;
   /** The machine snapshot approved with this procedure, when served by the backend. */
   machineVersion?: Pick<MachineRecord, 'modelUrl' | 'definition'>;
 };

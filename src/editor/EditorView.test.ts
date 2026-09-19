@@ -16,6 +16,8 @@ import { selectSelectedStep, useEditorStore } from './editorStore';
 const camera = vi.hoisted(() => ({ goToView: vi.fn(), getCurrentView: vi.fn() }));
 let sceneProps: MachineSceneProps;
 
+vi.mock('../data/mode', () => ({ isConvexMode: false }));
+
 vi.mock('../scene', async () => {
   const { createElement, forwardRef, useImperativeHandle } = await import('react');
   return {
@@ -56,7 +58,7 @@ describe('procedure editor', () => {
   it('loads local content, folds inherited state, and leaves the orbit alone during edits', () => {
     renderEditor();
     expect(screen.getByText('Local demo: changes are not saved')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Save draft' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Save now' })).toBeNull();
     expect(sceneProps.initialView).toEqual(procedure.steps[0].view);
     expect(useEditorStore.getState().dirty).toBe(false);
 
@@ -143,25 +145,27 @@ describe('procedure editor', () => {
     const onSave = vi.fn(() => new Promise<void>((resolve) => { finishSave = resolve; }));
     const onPreview = vi.fn();
     renderEditor({ onSave, onPreview });
-    expect((screen.getByRole('button', { name: 'Save draft' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: 'Save now' }) as HTMLButtonElement).disabled).toBe(true);
     act(() => useEditorStore.getState().togglePart(procedure.steps[0].id, 'missing-part'));
     expect(screen.getByText('1 validation issue')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Save draft' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save now' }));
+    await act(async () => {});
     expect(onSave).toHaveBeenCalledOnce();
     fireEvent.change(screen.getByLabelText('Step title'), { target: { value: 'Changed during save' } });
     await act(async () => finishSave());
     expect(useEditorStore.getState().dirty).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
-    expect(onPreview).toHaveBeenCalledWith(useEditorStore.getState().content);
-    fireEvent.click(screen.getByRole('button', { name: 'Save draft' }));
+    await act(async () => {});
+    expect(onPreview).not.toHaveBeenCalled();
     await act(async () => finishSave());
+    expect(onPreview).toHaveBeenCalledWith(useEditorStore.getState().content);
     expect(useEditorStore.getState().dirty).toBe(false);
   });
 
   it('keeps failed saves dirty and reports the error', async () => {
     renderEditor({ onSave: async () => { throw new Error('Save failed'); } });
     fireEvent.change(screen.getByLabelText('Step title'), { target: { value: 'Edited' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Save draft' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save now' }));
     expect((await screen.findByRole('alert')).textContent).toContain('Save failed');
     expect(useEditorStore.getState().dirty).toBe(true);
   });

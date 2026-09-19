@@ -386,7 +386,7 @@ describe('procedure queries and authorization', () => {
     expect(await author.query(api.procedures.getVersion, { versionId })).toEqual({
       _id: versionId, procedureId, version: 1, status: 'draft', machineVersionId,
       content: emptyProcedureContent('Procedure', definition), createdBy: authorId,
-      modelUrl: expect.any(String), definition, linkTargets: {},
+      modelUrl: expect.any(String), definition, linkTargets: { procedure: ['step-1'] }, mediaUrls: {},
       machineSlug: 'machine', procedureSlug: 'procedure',
     });
     await expect(trainee.query(api.procedures.getVersion, { versionId }))
@@ -445,5 +445,112 @@ describe('procedures.discardDraft', () => {
     expect(await t.run((ctx) => ctx.db.get(procedureId))).toMatchObject({ approvedVersionId: versionId });
     expect(await t.run((ctx) => ctx.db.get(versionId))).toEqual(before);
     expect(await author.query(api.procedures.listVersions, { procedureId })).toHaveLength(1);
+  });
+});
+
+describe('editor queries and media', () => {
+  test('rejects trainees and signed-out users from author queries', async () => {
+    const { t, trainee, machineId } = await setup();
+    for (const role of ['signed out', 'trainee']) {
+      const client = role === 'signed out' ? t : trainee;
+      const data = role === 'signed out' ? 'Not signed in' : 'Not authorized';
+      await expect(client.query(api.procedures.getEditorContext, {
+        machineSlug: 'machine', procedureSlug: 'procedure',
+      })).rejects.toMatchObject({ data });
+      await expect(client.query(api.procedures.listForMachine, { machineId }))
+        .rejects.toMatchObject({ data });
+    }
+  });
+
+  test('returns newest versions, both current ids, approved targets and draft self-links', async () => {
+    const { author, approver, machineId, procedureId, versionId } = await setup();
+    await approver.mutation(api.procedures.approve, { versionId, changeNote: 'Initial' });
+    const target = await author.mutation(api.procedures.create, { machineId, slug: 'target', title: 'Target' });
+    await approver.mutation(api.procedures.approve, { versionId: target.versionId, changeNote: 'Target ready' });
+    await author.mutation(api.procedures.create, { machineId, slug: 'unpublished', title: 'Unpublished' });
+    const draftId = await author.mutation(api.procedures.createDraft, { procedureId });
+    const content = emptyProcedureContent('Working title', definition);
+    content.steps[0].id = 'draft-step';
+    await author.mutation(api.procedures.saveDraft, { versionId: draftId, content });
+
+    const context = await author.query(api.procedures.getEditorContext, {
+      machineSlug: 'machine', procedureSlug: 'procedure',
+    });
+    expect(context).toMatchObject({
+      machineId, procedureId, draftId, approvedId: versionId,
+      machineSlug: 'machine', machineName: 'Machine', definition,
+      modelUrl: expect.any(String),
+      linkTargets: { procedure: ['step-1', 'draft-step'], target: ['step-1'] },
+      procedureTitles: { procedure: 'Working title', target: 'Target' },
+      mediaUrls: {},
+    });
+    expect(context?.linkTargets).not.toHaveProperty('unpublished');
+    expect(context?.versions).toEqual([
+      { _id: draftId, version: 2, status: 'draft', _creationTime: expect.any(Number) },
+      {
+        _id: versionId, version: 1, status: 'approved', _creationTime: expect.any(Number),
+        approvedAt: expect.any(Number), changeNote: 'Initial',
+      },
+    ]);
+    expect(await author.query(api.procedures.getVersion, { versionId: draftId }))
+      .toMatchObject({ linkTargets: { procedure: ['draft-step'], target: ['step-1'] } });
+    expect(await author.query(api.procedures.listForMachine, { machineId })).toEqual([
+      { _id: target.procedureId, slug: 'target', title: 'Target', hasDraft: false, hasApproved: true },
+      { _id: expect.any(String), slug: 'unpublished', title: 'Unpublished', hasDraft: true, hasApproved: false },
+      { _id: procedureId, slug: 'procedure', title: 'Working title', hasDraft: true, hasApproved: true },
+    ]);
+  });
+
+  test('resolves draft and approved media while tolerating URL and missing-file references', async () => {
+    const { t, author, approver, trainee, procedureId, versionId } = await setup();
+    const approvedFile = await t.run((ctx) => ctx.storage.store(new Blob(['approved image'])));
+    const draftFile = await t.run((ctx) => ctx.storage.store(new Blob(['draft image'])));
+    const missingFile = await t.run(async (ctx) => {
+      const id = await ctx.storage.store(new Blob(['deleted image']));
+      await ctx.storage.delete(id);
+      return id;
+    });
+    const content = emptyProcedureContent('Screenshot', definition);
+    content.steps[0].where = 'software';
+    content.steps[0].media = { fileId: approvedFile, alt: 'Approved screen' };
+    await author.mutation(api.procedures.saveDraft, { versionId, content });
+    await approver.mutation(api.procedures.approve, { versionId, changeNote: 'With screenshot' });
+    const approvedUrl = await t.run((ctx) => ctx.storage.getUrl(approvedFile));
+    expect(await trainee.query(api.procedures.getForPlay, {
+      machineSlug: 'machine', procedureSlug: 'procedure',
+    })).toMatchObject({ mediaUrls: { [approvedFile]: approvedUrl } });
+
+    const draftId = await author.mutation(api.procedures.createDraft, { procedureId });
+    content.steps[0].media = { fileId: draftFile, alt: 'Draft screen' };
+    content.steps.push(
+      { ...content.steps[0], id: 'url', media: { fileId: '/image.png', alt: 'URL' } },
+      { ...content.steps[0], id: 'missing', media: { fileId: missingFile, alt: 'Missing' } },
+    );
+    await author.mutation(api.procedures.saveDraft, { versionId: draftId, content });
+    const draftUrl = await t.run((ctx) => ctx.storage.getUrl(draftFile));
+    const context = await author.query(api.procedures.getEditorContext, {
+      machineSlug: 'machine', procedureSlug: 'procedure',
+    });
+    expect(context?.mediaUrls).toEqual({ [approvedFile]: approvedUrl, [draftFile]: draftUrl });
+    expect(await author.query(api.procedures.getVersion, { versionId: draftId }))
+      .toMatchObject({ mediaUrls: { [draftFile]: draftUrl } });
+  });
+
+  test('handles missing routes and starts a draft for a procedure without versions', async () => {
+    const { t, author, machineId } = await setup();
+    for (const args of [
+      { machineSlug: 'absent', procedureSlug: 'procedure' },
+      { machineSlug: 'machine', procedureSlug: 'absent' },
+    ]) {
+      expect(await author.query(api.procedures.getEditorContext, args)).toBeNull();
+    }
+    const procedureId = await t.run((ctx) => ctx.db.insert('procedures', { machineId, slug: 'empty' }));
+    expect(await author.query(api.procedures.getEditorContext, {
+      machineSlug: 'machine', procedureSlug: 'empty',
+    })).toMatchObject({ procedureId, versions: [] });
+    const draftId = await author.mutation(api.procedures.createDraft, { procedureId });
+    expect(await author.query(api.procedures.getVersion, { versionId: draftId })).toMatchObject({
+      version: 1, status: 'draft', content: emptyProcedureContent('empty', definition),
+    });
   });
 });

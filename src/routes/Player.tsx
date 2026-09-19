@@ -1,8 +1,9 @@
 import { useCallback, useRef, useState } from 'react';
-import { useMutation } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
+import { RequireRole } from '../auth/RequireRole';
 import { useCatalog } from '../data/CatalogContext';
 import { isConvexMode } from '../data/mode';
 import { errorMessage } from '../lib/errorMessage';
@@ -45,7 +46,47 @@ function RecordingPlayer(props: PlayerViewProps) {
   );
 }
 
-export function PlayerRoute() {
+function VersionPreview({ versionId }: { versionId: Id<'procedureVersions'> }) {
+  const { machine, procedure } = useParams<{ machine: string; procedure: string }>();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const version = useQuery(api.procedures.getVersion, { versionId });
+  const machineRecord = useQuery(api.machines.getBySlug, machine ? { slug: machine } : 'skip');
+  if (version === undefined || machineRecord === undefined) {
+    return <p className="notice" role="status">Loading preview…</p>;
+  }
+  if (!machineRecord || version.machineSlug !== machine || version.procedureSlug !== procedure) {
+    return <p className="notice" role="alert">This version does not belong to this procedure.</p>;
+  }
+  if (!version.modelUrl) return <p className="notice" role="alert">The machine model is unavailable.</p>;
+  const initialStepId = searchParams.get('step') ?? undefined;
+  return (
+    <PlayerView
+      key={`${versionId}/${initialStepId ?? ''}`}
+      machine={{
+        slug: machineRecord.slug, name: machineRecord.name, kind: machineRecord.kind,
+        modelUrl: version.modelUrl, definition: version.definition,
+      }}
+      procedure={{
+        slug: version.procedureSlug, machineSlug: version.machineSlug,
+        content: version.content, versionId, placeholder: false,
+      }}
+      preview
+      initialStepId={initialStepId}
+      linkTargets={version.linkTargets}
+      mediaUrls={version.mediaUrls}
+      onOpenProcedure={(slug, stepId) => {
+        const query = new URLSearchParams();
+        if (slug === version.procedureSlug) query.set('version', versionId);
+        if (stepId) query.set('step', stepId);
+        const suffix = query.size > 0 ? `?${query}` : '';
+        void navigate(`/m/${encodeURIComponent(version.machineSlug)}/${encodeURIComponent(slug)}${suffix}`);
+      }}
+    />
+  );
+}
+
+function CatalogPlayer() {
   const { machine, procedure } = useParams<{ machine: string; procedure: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -76,6 +117,7 @@ export function PlayerRoute() {
         machine={data.machine}
         procedure={data.procedure}
         linkTargets={data.linkTargets}
+        mediaUrls={data.procedure.mediaUrls}
         initialStepId={initialStepId}
         onOpenProcedure={(slug, stepId) => {
           const query = stepId === undefined ? '' : `?${new URLSearchParams({ step: stepId })}`;
@@ -95,4 +137,13 @@ export function PlayerRoute() {
       </header>
     </main>
   );
+}
+
+export function PlayerRoute() {
+  const [searchParams] = useSearchParams();
+  const versionId = searchParams.get('version');
+  if (isConvexMode && versionId) {
+    return <RequireRole minimum="author"><VersionPreview versionId={versionId as Id<'procedureVersions'>} /></RequireRole>;
+  }
+  return <CatalogPlayer />;
 }

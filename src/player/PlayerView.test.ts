@@ -39,6 +39,38 @@ afterEach(() => {
 });
 
 describe('completion reporting', () => {
+  it('previews from the first step without reading, persisting, or recording training progress', () => {
+    const recordedProgress = { cur: 1, checked: ['confirm'], done: ['confirm'] };
+    usePlayerStore.setState({ progress: { [progressKey]: recordedProgress } });
+    const onComplete = vi.fn();
+    render(createElement(PlayerView, {
+      machine, procedure, linkTargets: {}, onOpenProcedure: vi.fn(), onComplete, preview: true,
+    }));
+    expect(screen.getByText('Draft preview — not recorded')).toBeTruthy();
+    expect((screen.getByRole('checkbox', { name: /Setup is ready/ }) as HTMLInputElement).checked).toBe(false);
+    fireEvent.click(screen.getByRole('checkbox', { name: /Setup is ready/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Finish procedure' }));
+    expect(screen.getByRole('heading', { name: 'Procedure complete' })).toBeTruthy();
+    expect(onComplete).not.toHaveBeenCalled();
+    expect(usePlayerStore.getState().progress[progressKey]).toEqual(recordedProgress);
+  });
+
+  it('renders stored media URLs and preserves URL-based local images', () => {
+    const withMedia: ProcedureRecord = {
+      ...procedure,
+      content: {
+        ...procedure.content,
+        steps: [{ ...procedure.content.steps[0], media: { fileId: 'storage-id', alt: 'Scan settings' } }],
+      },
+    };
+    const props = { machine, procedure: withMedia, linkTargets: {}, onOpenProcedure: vi.fn() };
+    const view = render(createElement(PlayerView, { ...props, mediaUrls: { 'storage-id': '/screenshot.png' } }));
+    expect(screen.getByRole('img', { name: 'Scan settings' }).getAttribute('src')).toBe('/screenshot.png');
+    withMedia.content.steps[0].media = { fileId: '/local.png', alt: 'Local screenshot' };
+    view.rerender(createElement(PlayerView, props));
+    expect(screen.getByRole('img', { name: 'Local screenshot' }).getAttribute('src')).toBe('/local.png');
+  });
+
   it('reports checked steps once, ignores revisiting completion, and allows another run after restart', () => {
     const onComplete = vi.fn();
     vi.spyOn(Date, 'now').mockReturnValue(123456);

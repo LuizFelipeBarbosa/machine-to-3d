@@ -2,6 +2,7 @@ import type { JSX } from 'react';
 import type { MachineDefinition, MachineState } from '../../shared/machine';
 import type { Step, StepLocation } from '../../shared/procedure';
 import type { MachineSceneHandle } from '../scene';
+import { MediaField } from './MediaField';
 import { PartsField } from './PartsField';
 import { StepStateControls } from './StepStateControls';
 import { ViewCapture } from './ViewCapture';
@@ -12,13 +13,15 @@ type StepFormProps = {
   inherited: MachineState;
   linkTargets: Record<string, string[]>;
   procedureTitles?: Record<string, string>;
+  mediaUrls?: Record<string, string>;
   scene: MachineSceneHandle | null;
   onPatch(patch: Partial<Omit<Step, 'id'>>): void;
   onTogglePart(name: string): void;
   onSetState(name: string, value: boolean | null): void;
+  onUploadStateChange?(uploading: boolean): void;
 };
 
-export function StepForm({ step, machine, inherited, linkTargets, procedureTitles, scene, onPatch, onTogglePart, onSetState }: StepFormProps): JSX.Element {
+export function StepForm({ step, machine, inherited, linkTargets, procedureTitles, mediaUrls, scene, onPatch, onTogglePart, onSetState, onUploadStateChange }: StepFormProps): JSX.Element {
   const link = step.link;
   const targetSteps = link ? linkTargets[link.procedureSlug] ?? [] : [];
 
@@ -96,6 +99,8 @@ export function StepForm({ step, machine, inherited, linkTargets, procedureTitle
           </>
         )}
       </fieldset>
+      <MediaField key={step.id} media={step.media} mediaUrls={mediaUrls}
+        onChange={(media) => onPatch({ media })} onUploadStateChange={onUploadStateChange} />
       <PartsField parts={machine.parts} selected={step.parts} onToggle={onTogglePart} />
       <ViewCapture view={step.view} presets={machine.presetViews} scene={scene} onCapture={(view) => onPatch({ view })} />
       <StepStateControls stateVars={machine.stateVars} state={step.state} inherited={inherited} onChange={onSetState} />

@@ -46,6 +46,7 @@ export function createConvexCatalog(client: ConvexReactClient): Catalog {
         machineSlug,
         content,
         versionId,
+        mediaUrls: procedure.mediaUrls,
         machineVersion: { modelUrl: procedure.modelUrl, definition: procedure.definition },
         placeholder: /\bplaceholder\b/i.test(text),
       };

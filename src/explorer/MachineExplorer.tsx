@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import type { JSX } from 'react';
+import type { JSX, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import type { MachineState } from '../../shared/machine';
 import type { MachineRecord } from '../data/catalog';
@@ -8,10 +8,12 @@ import type { MachineSceneHandle } from '../scene';
 
 type MachineExplorerProps = {
   machine: MachineRecord;
-  procedures: { slug: string; title: string; minutes: number }[];
+  procedures: { slug: string; title: string; minutes?: number; hasDraft?: boolean; hasApproved?: boolean }[];
+  canEdit?: boolean;
+  procedureTools?: ReactNode;
 };
 
-export function MachineExplorer({ machine, procedures }: MachineExplorerProps): JSX.Element {
+export function MachineExplorer({ machine, procedures, canEdit = false, procedureTools }: MachineExplorerProps): JSX.Element {
   const { definition } = machine;
   const scene = useRef<MachineSceneHandle>(null);
   const [sceneKey, setSceneKey] = useState(0);
@@ -125,16 +127,27 @@ export function MachineExplorer({ machine, procedures }: MachineExplorerProps): 
           </section>
           <section className="explorer-section">
             <h3>Procedures</h3>
+            {procedureTools}
             {procedures.length === 0 ? (
               <p>No procedures yet</p>
             ) : (
               <ul>
                 {procedures.map((procedure) => (
                   <li key={procedure.slug}>
-                    <Link to={`/m/${encodeURIComponent(machine.slug)}/${encodeURIComponent(procedure.slug)}`}>
-                      {procedure.title}
-                    </Link>
-                    {' — '}{procedure.minutes} min
+                    {!canEdit || procedure.hasApproved ? (
+                      <Link to={`/m/${encodeURIComponent(machine.slug)}/${encodeURIComponent(procedure.slug)}`}>
+                        {procedure.title}
+                      </Link>
+                    ) : <span>{procedure.title}</span>}
+                    {procedure.minutes !== undefined && <> — {procedure.minutes} min</>}
+                    {canEdit && (
+                      <div className="version-actions">
+                        {procedure.hasDraft && <span className="status-chip draft">Draft</span>}
+                        {procedure.hasApproved && <span className="status-chip">Approved</span>}
+                        {!procedure.hasDraft && !procedure.hasApproved && <span className="status-chip">Unpublished</span>}
+                        <Link to={`/m/${encodeURIComponent(machine.slug)}/${encodeURIComponent(procedure.slug)}/edit`}>Edit</Link>
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>

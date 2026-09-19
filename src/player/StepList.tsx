@@ -14,12 +14,13 @@ type StepListProps = {
   progress: Progress;
   currentRowRef: Ref<HTMLLIElement>;
   linkTargets: Record<string, string[]>;
+  mediaUrls?: Record<string, string>;
   onGo(index: number): void;
   onChecked(stepId: string, checked: boolean): void;
   onOpenProcedure(procedureSlug: string, stepId?: string): void;
 };
 
-export function StepList({ steps, progress, currentRowRef, linkTargets, onGo, onChecked, onOpenProcedure }: StepListProps): JSX.Element {
+export function StepList({ steps, progress, currentRowRef, linkTargets, mediaUrls, onGo, onChecked, onOpenProcedure }: StepListProps): JSX.Element {
   return (
     <ol className="steps">
       {steps.map((step, index) => {
@@ -42,6 +43,7 @@ export function StepList({ steps, progress, currentRowRef, linkTargets, onGo, on
                 checked={progress.checked.includes(step.id)}
                 onChecked={(checked) => onChecked(step.id, checked)}
                 linkTargets={linkTargets}
+                mediaUrls={mediaUrls}
                 onOpenProcedure={onOpenProcedure}
               />
             )}
