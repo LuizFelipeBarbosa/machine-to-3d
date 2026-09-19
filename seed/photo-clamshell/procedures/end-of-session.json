@@ -9,11 +9,11 @@
   "steps": [
     {
       "id": "end-of-session-01",
-      "title": "Confirm the covers are closed and the tube is cool",
+      "title": "Confirm the furnace housing is closed and the tube is cool",
       "where": "instrument",
       "parts": ["lid"],
-      "body": "Confirm that the access covers are closed and the thermocouple reading indicates that the tube is at room temperature. Verify that the sulfur line is closed before proceeding.",
-      "check": "Covers closed, tube at room temperature, sulfur line closed",
+      "body": "Confirm that the furnace housing is closed and the tube is cool.",
+      "check": "Furnace housing closed, tube cool",
       "view": {
         "pos": [4.211, 5.772, 7.334],
         "target": [0.0, 3.201, 0.02]
@@ -21,10 +21,10 @@
     },
     {
       "id": "end-of-session-02",
-      "title": "Close the gas supply valves",
+      "title": "Close the argon valve and restore the outlet configuration",
       "where": "instrument",
       "parts": ["plumbing"],
-      "body": "Close the gas supply valves using the site isolation sequence. Check that the pressure gauge reads as expected for an idle, isolated system (SOP: __ [pressure units: __]).",
+      "body": "Close the argon valve, restore the outlet/exhaust configuration, and release any vacuum as required.",
       "view": {
         "pos": [6.388, 6.541, 11.317],
         "target": [-0.127, 2.562, 0.0]
@@ -32,10 +32,10 @@
     },
     {
       "id": "end-of-session-03",
-      "title": "Leave the controller and exhaust in their idle state",
+      "title": "Switch off the water cooler and leave the controller idle",
       "where": "instrument",
-      "parts": ["controls"],
-      "body": "Confirm that the heating program has ended and leave the controller idle. Leave the exhaust running or switch it off as required by the site SOP (SOP: exhaust idle state __).",
+      "parts": ["controls", "plumbing"],
+      "body": "Switch off the water cooler and dispose of the ice bath. Leave the controller idle.",
       "view": {
         "pos": [3.917, 3.019, 8.363],
         "target": [0.0, 0.628, 1.56]
@@ -46,7 +46,7 @@
       "title": "Record the session in the logbook",
       "where": "logbook",
       "parts": [],
-      "body": "Record the sample id, sulfur mass used, and the program used in the logbook. Note any deviations or abnormal behaviour and the final furnace condition.",
+      "body": "Record the sample id, sulfur mass, and program used in the logbook.",
       "view": {
         "pos": [5.372, 5.319, 9.598],
         "target": [-0.12, 1.966, 0.059]
