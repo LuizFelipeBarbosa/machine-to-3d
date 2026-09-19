@@ -78,11 +78,11 @@ Roles inherit the permissions of every lower role; these permissions are enforce
 
 In backend mode, authors and higher roles can add `?version=<versionId>` to preview a specific procedure version, including a draft, without recording training. The UI also exposes `/records`, admin-only role management at `/users`, and admin-only machine publishing at `/admin/machines` (shown as “Machines admin” in the nav). In demo mode, `/records` and `/users` redirect to `/`. `/sign-in` redirects to `/`; unauthenticated backend sessions show the sign-in form before the app routes.
 
-Authors open `/m/:machine/:procedure/edit` to create a draft from any existing version, or start a first draft if no versions exist. In backend mode, edits autosave with a 1.5 second debounce. "Preview" saves pending edits and opens `/m/:machine/:procedure?version=<draftVersionId>` in the workspace, which shows a "Draft preview — not recorded" banner and does not save a training record. Approvers approve a draft with a required, non-empty change note; approval retires the previously approved version and promotes the draft. Steps located "In the control software" (`StepLocation` `software`) can carry an uploaded screenshot in the step's `media` field.
+Authors open `/m/:machine/:procedure/edit` to create a draft from any existing version, or start a first draft if no versions exist. In backend mode, edits autosave with a 1.5 second debounce. "Preview" saves pending edits and opens `/m/:machine/:procedure?version=<draftVersionId>` in the workspace, which shows a "Draft preview — not recorded" banner and does not save a training record. Approvers approve a draft with a required, non-empty change note; approval retires the previously approved version and promotes the draft. Steps located "In the control software" (`StepLocation` `software`) can carry an uploaded screenshot in optional `media: { fileId, alt }`, rendered inline by the player; the same field supports seed step images.
 
 ## Content model
 
-**Machine definition:** `seed/<slug>/machine.json` follows `shared/machine.ts`, with `formatVersion: 1`, a GLB `rootNode`, ordered `parts` (`name`, `label`, `blurb`), named `presetViews` with camera `pos` and `target`, and boolean `stateVars` of kind `toggle`.
+**Machine definition:** `seed/<slug>/machine.json` follows `shared/machine.ts`, with `formatVersion: 1`, a GLB `rootNode`, ordered `parts` (`name`, `label`, `blurb`), named `presetViews` with camera `pos` and `target`, and state variables with `kind: 'toggle' | 'fraction'`.
 
 Each state variable has effects referencing named GLB nodes or animation clips:
 
@@ -91,11 +91,15 @@ Each state variable has effects referencing named GLB nodes or animation clips:
 - `rotate`: apply `angle` in radians around the node's origin on axis `x`, `y`, or `z`, scaled by the eased state value.
 - `clip`: scrub a named GLB animation clip to the eased state value multiplied by its duration.
 
+`fraction` is a 0..1 progress value. With a `clip` effect it scrubs a named GLB animation clip to that progress (the value multiplied by the clip's duration); with `translate` and `rotate` effects it scales the offset or angle the same way toggle values do.
+
 `userToggle: true` lets the trainee flip the variable directly in the player UI; otherwise it changes through procedure state. A backend machine version pins one GLB plus one machine definition.
 
-**Procedure content:** `seed/<slug>/procedures/<procedure-slug>.json` follows `shared/procedure.ts`, with `formatVersion: 1`, `title`, `summary`, positive integer `minutes`, initial boolean `start` state, and ordered `steps`.
+**Procedure content:** `seed/<slug>/procedures/<procedure-slug>.json` follows `shared/procedure.ts`, with `formatVersion: 1`, `title`, `summary`, positive integer `minutes`, initial `start` state, ordered `steps`, and an optional `video: { fileId, label? }`.
 
 Each step has a stable `id` (never an array index), `title`, `where` (`instrument`, `software`, or `logbook`), `body`, referenced `parts`, and an inline camera `view: { pos, target }`. Optional fields include `caution`, checkpoint prompt `check`, `media: { fileId, alt }`, and `link: { procedureSlug, stepId?, label }` to another procedure on the same machine. Links identify steps by slug plus stable step ID, never by index.
+
+The player renders a procedure `video` as a **Reference video** button that opens a modal dialog with a `<video>` player. In seed content, `fileId` values for both step `media` and procedure `video` are relative paths under the machine's seed folder, such as `reference.mp4` or `media/step-01.jpg`. The seed script uploads these through its media logic (`seedMediaFile` and `uploadProcedureMedia`, referred to here as `seedMedia`) and rewrites the paths to Convex storage IDs before publishing.
 
 A step's optional `state` is an **absolute set**: `{ "lift": true }` means lift is on from that step onward, regardless of its prior value. Repeating the value is a no-op; list only variables that change.
 
@@ -138,7 +142,7 @@ the worker, stub testing, workspace layout, job stages, and troubleshooting.
 
 ## Seed content inventory
 
-All 11 machines in `seed/manifest.ts` have procedures. Titles below come from their procedure JSON files.
+All 12 machines in `seed/manifest.ts` have procedures. Titles below come from their procedure JSON files.
 
 | Machine slug | Name | Kind | Procedures: slug — title |
 | --- | --- | --- | --- |
@@ -152,15 +156,18 @@ All 11 machines in `seed/manifest.ts` have procedures. Titles below come from th
 | `ppms-dynacool` | Quantum Design PPMS DynaCool | Physical property measurement system | `mount-and-measure` — “Mount a puck and measure properties”; `end-of-session` — “End of session” |
 | `rise-raman-sem` | RISE Raman-SEM | Correlative Raman + scanning electron microscope | `sem-raman-correlation` — “Correlate SEM images and Raman spectra”; `end-of-session` — “End of session” |
 | `teslatronpt-plus` | TeslatronPT Plus | Cryogen-free superconducting magnet system | `cooldown-and-sweep` — “Cool down a sample and sweep field”; `end-of-session` — “End of session” |
-| `photo-clamshell` | Photo-clamshell split tube furnace | Split-tube furnace | `sulfurization-anneal` — “Sulfurization and in-situ anneal of MoSe₂”; `end-of-session` — “End of session” |
+| `photo-clamshell` | Photo-clamshell split tube furnace | Split-tube furnace | `sulfurization-anneal` — “Sulfurization run (lab draft)”; `end-of-session` — “End of session” |
+| `camera-demonstration` | Canon EOS 60D (reconstruction) | DSLR camera — demonstration | `battery-card-and-monitor` — “Battery, memory card and monitor handling” |
+
+The `camera-demonstration` procedure has 12 steps driven by a 78-second GLB animation clip, with a reference video and one frame image per step. Unlike the other machines, it is an educational reconstruction of a demonstration video, not a real lab instrument's SOP, and is separate from the illustrative laboratory-practice content below.
 
 ### Placeholder content
 
-**All seeded procedures across all 11 machines are illustrative placeholder content written from general laboratory practice, not manufacturer or lab-specific official SOPs.** Each has been technically reviewed once for plausibility and consistency; this does not make them validated SOPs. Many steps contain literal SOP blanks beginning `(SOP: __` (with units or ranges). Instrument owners or lab staff must fill these in with site-specific parameters before use.
+**The seeded procedures for the lab instruments are illustrative placeholder content written from general laboratory practice, not manufacturer or lab-specific official SOPs.** Each has been technically reviewed once for plausibility and consistency; this does not make them validated SOPs. Many steps contain literal SOP blanks beginning `(SOP: __` (with units or ranges). Instrument owners or lab staff must fill these in with site-specific parameters before use.
 
 The Plasma Etch PE-25 cleaning procedure assumes manual PLC sequencing of pumping, gas, RF, and venting. Owners must confirm the installed unit's mode; units configured for an automatic PLC cycle require their owner-approved automatic-cycle SOP instead.
 
-The photo-clamshell furnace’s sulfurization-anneal procedure follows the published sequence reported in Nano Lett. 2025, 25, 10123: a 700 °C / 10 min sulfurization step, a precursor purge, and a 900 °C / 5 min in-situ anneal, with flows and ramp rates left as blanks for the instrument owner to fill in.
+The photo-clamshell furnace’s `sulfurization-anneal` procedure is an 18-step draft combining the lab's furnace notes with the published Nano Lett. 2025 sequence. It lists the published program and the local recipe separately; unspecified settings must come from the lab's own furnace procedure.
 
 ## Testing
 
