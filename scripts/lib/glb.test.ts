@@ -17,22 +17,37 @@ function makeGlb(document: unknown): Uint8Array {
 
 describe('reference instrument GLBs', () => {
   it.each([
-    ['cryoraman', 'WITec_attocube_cryoRaman', 9.57],
-    ['rise-raman-sem', 'RISE_Raman_SEM', 7.26],
-  ] as const)('summarizes %s', async (file, root, height) => {
-    const bytes = await readFile(new URL(`../../machines/${file}.glb`, import.meta.url));
+    {
+      file: 'rise-raman-sem',
+      root: 'RISE_Raman_SEM',
+      height: 7.26,
+      animationCount: 1,
+      namedNodes: [
+        'base', 'chamber', 'column', 'raman', 'cart', 'spectrometer', 'cables',
+        'SEM_access_door', 'interior', 'sample', 'detectors',
+      ],
+    },
+    {
+      file: 'park-nx10',
+      root: 'Park_NX10',
+      height: 5.97,
+      animationCount: 0,
+      namedNodes: [
+        'optics', 'head', 'sample', 'xy', 'z', 'focus', 'covers', 'probe',
+        'specimen', 'zCarriage',
+      ],
+    },
+  ])('summarizes $file', async ({ file, root, height, animationCount, namedNodes }) => {
+    const bytes = await readFile(new URL(`../../seed/${file}/model.glb`, import.meta.url));
     const summary = summarizeGlb(bytes);
-    expect(summary.generator).toBe('THREE.GLTFExporter');
+    expect(summary.generator).toMatch(/^THREE\.GLTFExporter\b/);
     expect(summary.rootNodes).toEqual([root]);
-    expect(summary.animationCount).toBe(0);
+    expect(summary.animationCount).toBe(animationCount);
+    expect(summary.extensionsUsed).toContain('KHR_materials_unlit');
+    expect(summary.namedNodes).toEqual(expect.arrayContaining(namedNodes));
     expect(summary.boundingBox).not.toBeNull();
     const bounds = summary.boundingBox!;
     expect(Math.abs(bounds.max[1] - bounds.min[1] - height)).toBeLessThanOrEqual(0.05);
-    if (file === 'cryoraman') {
-      expect(summary.namedNodes).toEqual(expect.arrayContaining([
-        'cabinet', 'controls', 'cooling', 'platform', 'cryostat', 'optics', 'tower', 'cables',
-      ]));
-    }
   });
 });
 
