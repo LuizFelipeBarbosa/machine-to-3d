@@ -1,23 +1,21 @@
 import { ConvexError, v } from 'convex/values';
 import type { Infer } from 'convex/values';
 import { contentHash } from '../shared/contentHash';
-import { referencedClips } from '../shared/machine';
-import type { MachineDefinition } from '../shared/machine';
 import type { ProcedureContent } from '../shared/procedure';
 import { validateProcedure } from '../shared/validateProcedure';
-import type { LinkTargets } from '../shared/validateProcedure';
 import type { Doc, Id } from './_generated/dataModel';
 import { internalMutation, internalQuery, mutation, query } from './_generated/server';
 import type { MutationCtx, QueryCtx } from './_generated/server';
 import { hasRole, requireRole } from './lib/authz';
 import {
   getApprovedVersion,
-  getDraft,
   getLatestVersion,
   linkTargetsForMachine,
   parseContent,
   parseDefinition,
   publishMachineVersion,
+  requireAdditiveDefinition,
+  requireCompatibleApprovedProcedures,
   requireMachine,
   requireMachineVersion,
   requireProcedure,
@@ -101,6 +99,7 @@ async function requireAccessibleJob(ctx: QueryCtx, jobId: Id<'draftJobs'>) {
 
 function requireLease(job: Doc<'draftJobs'>, workerId: string) {
   if (job.workerId !== workerId) throw new ConvexError('Lease lost');
+  if (job.status !== 'running') throw new ConvexError('Job is not running');
 }
 
 async function requireAvailableWorkspace(ctx: QueryCtx, workspaceKey: string) {
@@ -232,7 +231,7 @@ export const listMine = query({
   handler: async (ctx) => {
     const user = await requireRole(ctx, 'author');
     const jobs = await ctx.db.query('draftJobs')
-      .withIndex('by_requester', (q) => q.eq('requestedBy', user._id)).order('desc').collect();
+      .withIndex('by_requester', (q) => q.eq('requestedBy', user._id)).order('desc').take(100);
     return Promise.all(jobs.map((job) => summarizeJob(ctx, job)));
   },
 });
@@ -278,8 +277,8 @@ export const events = query({
   handler: async (ctx, { jobId }) => {
     await requireAccessibleJob(ctx, jobId);
     const rows = await ctx.db.query('jobEvents')
-      .withIndex('by_job', (q) => q.eq('jobId', jobId)).collect();
-    return rows.sort((a, b) => a.at - b.at).map(({ at, level, message }) => ({ at, level, message }));
+      .withIndex('by_job_at', (q) => q.eq('jobId', jobId)).order('asc').take(500);
+    return rows.map(({ at, level, message }) => ({ at, level, message }));
   },
 });
 
@@ -291,7 +290,9 @@ export const cancel = mutation({
     if (job.status !== 'queued' && job.status !== 'running') {
       throw new ConvexError('Job is not active');
     }
-    await ctx.db.patch(jobId, { status: 'cancelled', updatedAt: Date.now() });
+    await ctx.db.patch(jobId, {
+      status: 'cancelled', workerId: undefined, leaseUntil: undefined, updatedAt: Date.now(),
+    });
     return null;
   },
 });
@@ -302,13 +303,30 @@ export const retry = mutation({
   handler: async (ctx, { jobId }) => {
     const job = await requireAccessibleJob(ctx, jobId);
     if (job.status !== 'failed') throw new ConvexError('Only failed jobs can be retried');
-    if (job.targetProcedureVersionId !== undefined) {
+    let refreshedInputs: {
+      sourceContentHash: string;
+      snapshotContent: ProcedureContent;
+    } | undefined;
+    if (job.kind === 'revise') {
+      if (job.targetProcedureVersionId === undefined) {
+        throw new ConvexError('Target draft no longer exists');
+      }
+      await requireAvailableTarget(ctx, job.targetProcedureVersionId);
+      const target = await ctx.db.get(job.targetProcedureVersionId);
+      if (target?.status !== 'draft') {
+        throw new ConvexError('Target draft no longer exists');
+      }
+      refreshedInputs = {
+        sourceContentHash: contentHash(target.content),
+        snapshotContent: parseContent(target.content),
+      };
+    } else if (job.targetProcedureVersionId !== undefined) {
       await requireAvailableTarget(ctx, job.targetProcedureVersionId);
     }
     await requireAvailableWorkspace(ctx, job.workspaceKey);
     await ctx.db.patch(jobId, {
       status: 'queued', lastError: undefined, workerId: undefined,
-      leaseUntil: undefined, updatedAt: Date.now(),
+      leaseUntil: undefined, updatedAt: Date.now(), ...refreshedInputs,
     });
     return null;
   },
@@ -379,21 +397,44 @@ async function buildClaimPayload(
   };
 }
 
+async function failExhaustedJob(ctx: MutationCtx, job: Doc<'draftJobs'>, at: number) {
+  await ctx.db.patch(job._id, {
+    status: 'failed', lastError: 'Too many attempts', leaseUntil: undefined, updatedAt: at,
+  });
+  await ctx.db.insert('jobEvents', {
+    jobId: job._id, at, level: 'error', message: 'Too many attempts',
+  });
+}
+
 export const claim = internalMutation({
   args: { workerId: v.string(), leaseSeconds: v.number() },
   returns: v.union(v.null(), claimedJobValidator),
-  handler: async (ctx, { workerId, leaseSeconds }) => {
-    if (!Number.isFinite(leaseSeconds) || leaseSeconds <= 0) {
+  handler: async (ctx, { workerId, leaseSeconds: requestedLeaseSeconds }) => {
+    if (!Number.isFinite(requestedLeaseSeconds)) {
       throw new ConvexError('Lease length must be positive');
     }
+    const leaseSeconds = Math.min(3600, Math.max(30, requestedLeaseSeconds));
     const now = Date.now();
-    let job = await ctx.db.query('draftJobs')
-      .withIndex('by_status', (q) => q.eq('status', 'queued')).order('asc').first();
+    let job: Doc<'draftJobs'> | null = null;
+    const queued = ctx.db.query('draftJobs')
+      .withIndex('by_status', (q) => q.eq('status', 'queued')).order('asc');
+    for await (const candidate of queued) {
+      if (candidate.attempts >= 5) {
+        await failExhaustedJob(ctx, candidate, now);
+        continue;
+      }
+      job = candidate;
+      break;
+    }
     if (job === null) {
       const running = ctx.db.query('draftJobs')
         .withIndex('by_status', (q) => q.eq('status', 'running')).order('asc');
       for await (const candidate of running) {
         if (candidate.leaseUntil !== undefined && candidate.leaseUntil < now) {
+          if (candidate.attempts >= 5) {
+            await failExhaustedJob(ctx, candidate, now);
+            continue;
+          }
           job = candidate;
           break;
         }
@@ -429,8 +470,8 @@ export const heartbeat = internalMutation({
   returns: v.object({ status: v.union(v.literal('running'), v.literal('cancelled')) }),
   handler: async (ctx, { jobId, workerId }) => {
     const job = await requireJob(ctx, jobId);
-    requireLease(job, workerId);
     if (job.status === 'cancelled') return { status: 'cancelled' as const };
+    requireLease(job, workerId);
     const now = Date.now();
     await ctx.db.patch(jobId, {
       leaseUntil: now + (job.leaseSeconds ?? 300) * 1000, heartbeatAt: now,
@@ -478,43 +519,6 @@ const deliveryModelValidator = v.object({
   sourceFileId: v.optional(v.id('_storage')),
   definition: v.any(),
 });
-
-function requireAdditiveDefinition(current: MachineDefinition, definition: MachineDefinition) {
-  const parts = new Set(definition.parts.map((part) => part.name));
-  const stateVars = new Set(definition.stateVars.map((stateVar) => stateVar.name));
-  const clips = new Set(referencedClips(definition));
-  const missing = [
-    ...current.parts.filter((part) => !parts.has(part.name))
-      .map((part) => `missing part "${part.name}"`),
-    ...current.stateVars.filter((stateVar) => !stateVars.has(stateVar.name))
-      .map((stateVar) => `missing state var "${stateVar.name}"`),
-    ...referencedClips(current).filter((clip) => !clips.has(clip))
-      .map((clip) => `missing clip "${clip}"`),
-  ];
-  if (missing.length > 0) {
-    throw new ConvexError(`Model change is not additive: ${missing.join(', ')}`);
-  }
-}
-
-async function requireCompatibleApprovedProcedures(
-  ctx: QueryCtx,
-  machineId: Id<'machines'>,
-  definition: MachineDefinition,
-  linkTargets: LinkTargets,
-) {
-  const procedures = await ctx.db.query('procedures')
-    .withIndex('by_machine', (q) => q.eq('machineId', machineId)).collect();
-  for (const procedure of procedures) {
-    const approved = await getApprovedVersion(ctx, procedure);
-    if (approved === null) continue;
-    const issues = validateProcedure(parseContent(approved.content), definition, linkTargets)
-      .filter((issue) => issue.path !== 'start' && !issue.path.startsWith('start.'));
-    if (issues.length > 0) {
-      const details = issues.map((issue) => `${issue.path}: ${issue.message}`).join('; ');
-      throw new ConvexError(`Approved procedure "${procedure.slug}" breaks on the new model: ${details}`);
-    }
-  }
-}
 
 async function machineVersionForDelivery(
   ctx: MutationCtx,
@@ -592,16 +596,12 @@ async function writeProcedureDraft(
     .withIndex('by_machine_slug', (q) =>
       q.eq('machineId', machineVersion.machineId).eq('slug', job.procedureSlug),
     ).unique();
-  const procedureId = procedure?._id ?? await ctx.db.insert('procedures', {
+  if (procedure !== null) {
+    throw new ConvexError('Procedure slug already exists; choose another slug');
+  }
+  const procedureId = await ctx.db.insert('procedures', {
     machineId: machineVersion.machineId, slug: job.procedureSlug,
   });
-  const draft = await getDraft(ctx, procedureId);
-  if (draft !== null) {
-    await ctx.db.patch(draft._id, {
-      content, machineVersionId: machineVersion._id, contentRevision: (draft.contentRevision ?? 0) + 1,
-    });
-    return draft._id;
-  }
   const latest = await getLatestVersion(ctx, procedureId);
   return ctx.db.insert('procedureVersions', {
     procedureId,
@@ -631,10 +631,9 @@ export const deliver = internalMutation({
     procedureVersionId: v.id('procedureVersions'),
     machineVersionId: v.id('machineVersions'),
   }),
-  handler: async (ctx, { jobId, workerId, modelChanged, model, procedure }) => {
+  handler: async (ctx, { jobId, workerId, modelChanged, model, procedure, mediaFileIds }) => {
     const job = await requireJob(ctx, jobId);
     requireLease(job, workerId);
-    if (job.status !== 'running') throw new ConvexError('Job is not running');
 
     const machineVersion = await machineVersionForDelivery(ctx, job, modelChanged, model, procedure.content);
 
@@ -658,6 +657,7 @@ export const deliver = internalMutation({
       producedProcedureVersionId: procedureVersionId,
       leaseUntil: undefined,
       workerId: undefined,
+      ...(mediaFileIds === undefined ? {} : { mediaFileIds }),
       updatedAt: now,
     });
     await ctx.db.insert('jobEvents', {

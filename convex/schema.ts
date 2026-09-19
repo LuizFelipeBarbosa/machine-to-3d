@@ -99,6 +99,7 @@ export default defineSchema({
     heartbeatAt: v.optional(v.number()),
     lastError: v.optional(v.string()),
     modelChanged: v.optional(v.boolean()),
+    mediaFileIds: v.optional(v.array(v.string())),
     producedMachineVersionId: v.optional(v.id('machineVersions')),
     producedProcedureVersionId: v.optional(v.id('procedureVersions')),
     updatedAt: v.number(),
@@ -113,7 +114,7 @@ export default defineSchema({
     at: v.number(),
     level: jobEventLevelValidator,
     message: v.string(),
-  }).index('by_job', ['jobId']),
+  }).index('by_job_at', ['jobId', 'at']),
 
   trainingRecords: defineTable({
     userId: v.id('users'),

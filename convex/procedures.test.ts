@@ -422,6 +422,41 @@ describe('procedures.approve draft machine versions', () => {
     expect(await t.run((ctx) => ctx.db.get(procedureId))).toMatchObject({ approvedVersionId: versionId });
   });
 
+  test('rechecks additive compatibility against the current model when publishing a stale draft', async () => {
+    const { t, author, approver, machineId, machineVersionId, procedureId, versionId, publishArgs } = await setup();
+    const extraPart = { name: 'extra', label: 'Extra', blurb: '' };
+    const withExtra = await t.run((ctx) => publishMachineVersion(ctx, {
+      ...publishArgs, definition: { ...definition, parts: [...definition.parts, extraPart] }, publish: false,
+    }));
+    const withoutExtra = await t.run((ctx) => publishMachineVersion(ctx, {
+      ...publishArgs, definition, publish: false,
+    }));
+    await t.run((ctx) => ctx.db.patch(versionId, { machineVersionId: withExtra.machineVersionId }));
+    await approver.mutation(api.procedures.approve, { versionId, changeNote: 'Extra part reviewed' });
+    expect(await t.run((ctx) => ctx.db.get(machineId))).toMatchObject({
+      currentVersionId: withExtra.machineVersionId,
+    });
+
+    const other = await author.mutation(api.procedures.create, {
+      machineId, slug: 'other', title: 'Other',
+    });
+    await t.run((ctx) => ctx.db.patch(other.versionId, { machineVersionId: withoutExtra.machineVersionId }));
+    const before = await t.run((ctx) => ctx.db.get(machineId));
+    const error = await approver.mutation(api.procedures.approve, {
+      versionId: other.versionId, changeNote: 'Stale model',
+    }).catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(ConvexError);
+    expect(error).toMatchObject({
+      data: expect.stringMatching(/^Model change is not additive:.*missing part "extra"/),
+    });
+    expect(await t.run((ctx) => ctx.db.get(machineId))).toMatchObject({
+      currentVersionId: before!.currentVersionId,
+    });
+    expect(await t.run((ctx) => ctx.db.get(withoutExtra.machineVersionId))).toMatchObject({ status: 'draft' });
+    expect(await t.run((ctx) => ctx.db.get(other.versionId))).toMatchObject({ status: 'draft' });
+    expect(machineVersionId).not.toBe(withExtra.machineVersionId);
+  });
+
   test('rejects a superseded draft machine without retiring the existing approval', async () => {
     const { t, admin, author, approver, machineId, procedureId, versionId, publishArgs } = await setup();
     await approver.mutation(api.procedures.approve, { versionId, changeNote: 'Original' });

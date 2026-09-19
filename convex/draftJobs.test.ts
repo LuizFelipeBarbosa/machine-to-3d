@@ -268,6 +268,8 @@ describe('draftJobs.cancel and retry', () => {
     const client = status === 'queued' ? author : approver;
     expect(await client.mutation(api.draftJobs.cancel, { jobId })).toBeNull();
     expect(await t.run((ctx) => ctx.db.get(jobId))).toMatchObject({ status: 'cancelled' });
+    expect(await t.run((ctx) => ctx.db.get(jobId))).not.toHaveProperty('workerId');
+    expect(await t.run((ctx) => ctx.db.get(jobId))).not.toHaveProperty('leaseUntil');
   });
 
   test.each(['failed', 'done', 'cancelled'] as const)('rejects cancellation from %s', async (status) => {
@@ -313,6 +315,46 @@ describe('draftJobs.cancel and retry', () => {
     await expect(author.mutation(api.draftJobs.retry, { jobId }))
       .rejects.toMatchObject({ data: 'A job is already running for this machine' });
     expect(await t.run((ctx) => ctx.db.get(jobId))).toMatchObject({ status: 'failed' });
+  });
+
+  test('refreshes revise inputs before retrying and delivers the refreshed draft', async () => {
+    const { t, author, versionId, machineVersionId } = await setup();
+    const jobId = await author.mutation(api.draftJobs.createRevision, {
+      procedureVersionId: versionId, instruction: 'Clarify',
+    });
+    await t.mutation(api.draftJobs.claim, worker);
+    await t.mutation(api.draftJobs.fail, { jobId, workerId: worker.workerId, error: 'Worker failed' });
+    const content = emptyProcedureContent('Edited after failure', definition);
+    await author.mutation(api.procedures.saveDraft, { versionId, content });
+    await author.mutation(api.draftJobs.retry, { jobId });
+    expect(await t.run((ctx) => ctx.db.get(jobId))).toMatchObject({
+      sourceContentHash: contentHash(content), snapshotContent: content, status: 'queued',
+    });
+
+    const claimed = await t.mutation(api.draftJobs.claim, worker);
+    expect(claimed).toMatchObject({
+      target: {
+        procedureVersionId: versionId, machineVersionId,
+        content, contentHash: contentHash(content),
+      },
+    });
+    await expect(t.mutation(api.draftJobs.deliver, {
+      jobId, workerId: worker.workerId, modelChanged: false,
+      procedure: { content }, report: {},
+    })).resolves.toEqual({ procedureVersionId: versionId, machineVersionId });
+    expect(await t.run((ctx) => ctx.db.get(versionId))).toMatchObject({ content, machineVersionId });
+  });
+
+  test('rejects retry after its revise target was discarded', async () => {
+    const { t, author, versionId } = await setup();
+    const jobId = await author.mutation(api.draftJobs.createRevision, {
+      procedureVersionId: versionId, instruction: 'Clarify',
+    });
+    await t.mutation(api.draftJobs.claim, worker);
+    await t.mutation(api.draftJobs.fail, { jobId, workerId: worker.workerId, error: 'Worker failed' });
+    await author.mutation(api.procedures.discardDraft, { versionId });
+    await expect(author.mutation(api.draftJobs.retry, { jobId }))
+      .rejects.toMatchObject({ data: 'Target draft no longer exists' });
   });
 });
 
@@ -429,6 +471,29 @@ describe('draftJobs worker lifecycle', () => {
     expect(await t.run((ctx) => ctx.db.get(jobId))).toEqual(cancelled);
   });
 
+  test('clamps lease duration and skips exhausted queued jobs', async () => {
+    const { t, author, createArgs } = await setup();
+    const exhaustedId = await author.mutation(api.draftJobs.create, createArgs);
+    const nextId = await author.mutation(api.draftJobs.create, {
+      ...createArgs, machineId: undefined, newMachine,
+    });
+    await t.run((ctx) => ctx.db.patch(exhaustedId, { attempts: 5 }));
+    expect(await t.mutation(api.draftJobs.claim, { workerId: 'worker-2', leaseSeconds: 0 }))
+      .toMatchObject({ jobId: nextId, leaseSeconds: 30 });
+    const exhausted = await t.run((ctx) => ctx.db.get(exhaustedId));
+    expect(exhausted).toMatchObject({ status: 'failed', lastError: 'Too many attempts' });
+    expect(exhausted).not.toHaveProperty('leaseUntil');
+    expect(await t.run((ctx) => ctx.db.query('jobEvents')
+      .withIndex('by_job_at', (q) => q.eq('jobId', exhaustedId)).collect()))
+      .toMatchObject([{ level: 'error', message: 'Too many attempts' }]);
+    await author.mutation(api.draftJobs.cancel, { jobId: nextId });
+    const largeJobId = await author.mutation(api.draftJobs.create, {
+      ...createArgs, machineId: undefined, newMachine: { ...newMachine, slug: 'large' },
+    });
+    expect(await t.mutation(api.draftJobs.claim, { workerId: 'worker-2', leaseSeconds: 999999 }))
+      .toMatchObject({ jobId: largeJobId, leaseSeconds: 3600 });
+  });
+
   test('records progress and errors and preserves a session when only the stage changes', async () => {
     const { t, author, createArgs } = await setup();
     const jobId = await author.mutation(api.draftJobs.create, createArgs);
@@ -506,6 +571,7 @@ describe('draftJobs.deliver', () => {
     const job = await t.run((ctx) => ctx.db.get(jobId));
     expect(job).toMatchObject({
       status: 'done', stage: 'done', modelChanged: true,
+      mediaFileIds: [],
       producedMachineVersionId: result.machineVersionId,
       producedProcedureVersionId: result.procedureVersionId, updatedAt: expect.any(Number),
     });
@@ -827,7 +893,7 @@ describe('draftJobs.deliver', () => {
     });
   });
 
-  test.each([false, true])('reuses an existing procedure from a partial create (hasDraft: %s)', async (hasDraft) => {
+  test.each([false, true])('rejects a create when a procedure slug is claimed while it runs (hasDraft: %s)', async (hasDraft) => {
     const { t, author, approver, createArgs, machineId, machineVersionId } = await setup(templateDefinition);
     const jobId = await author.mutation(api.draftJobs.create, createArgs);
     await t.mutation(api.draftJobs.claim, worker);
@@ -837,17 +903,15 @@ describe('draftJobs.deliver', () => {
     if (hasDraft) await t.run((ctx) => ctx.db.patch(partial.versionId, { contentRevision: 3 }));
     else await approver.mutation(api.procedures.approve, { versionId: partial.versionId, changeNote: 'Earlier version' });
     const content = emptyProcedureContent('Finished', templateDefinition);
-    const result = await t.mutation(api.draftJobs.deliver, {
+    await expect(t.mutation(api.draftJobs.deliver, {
       jobId, workerId: worker.workerId, modelChanged: false, procedure: { content }, report: {},
+    })).rejects.toMatchObject({ data: 'Procedure slug already exists; choose another slug' });
+    expect(await t.run((ctx) => ctx.db.get(jobId))).toMatchObject({ status: 'running' });
+    expect(await t.run((ctx) => ctx.db.get(partial.versionId))).toMatchObject({
+      procedureId: partial.procedureId, machineVersionId,
     });
-    if (hasDraft) expect(result.procedureVersionId).toBe(partial.versionId);
-    else expect(result.procedureVersionId).not.toBe(partial.versionId);
-    expect(await t.run((ctx) => ctx.db.get(result.procedureVersionId))).toMatchObject({
-      procedureId: partial.procedureId, content, machineVersionId,
-      version: hasDraft ? 1 : 2, contentRevision: hasDraft ? 4 : 1,
-    });
-    expect(await t.run((ctx) => ctx.db.query('procedureVersions')
-      .withIndex('by_procedure', (q) => q.eq('procedureId', partial.procedureId)).collect()))
-      .toHaveLength(hasDraft ? 1 : 2);
+    if (hasDraft) {
+      expect(await t.run((ctx) => ctx.db.get(partial.versionId))).toMatchObject({ contentRevision: 3 });
+    }
   });
 });

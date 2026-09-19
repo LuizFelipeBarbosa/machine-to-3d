@@ -54,7 +54,7 @@ The startup line shows the worker ID (`<hostname>-<pid>`), repo root, and home d
 <timestamp> [info] worker <workerId> starting; repoRoot=<repoRoot>; home=<home>
 ```
 
-Each stage transition and event is logged with an ISO timestamp and level. The worker claims one job at a time and sends heartbeats every 30 seconds; the claim route defaults to a 300-second lease. With no available job, it waits for `WORKER_POLL_MS` before polling again.
+Stage transitions and job events are sent to the Convex deployment via `/worker/stage` and `/worker/event` and appear on the job's page in the app with a timestamp and an `info`/`warn`/`error` level; they are not printed to the local console. While the worker runs, the local console shows the startup line, `shutdown requested (<signal>)` on Ctrl-C, `worker stopped` on exit, and an `error` line when a heartbeat or lease operation fails or a job failure cannot be reported to the deployment. The worker claims one job at a time and sends heartbeats every 30 seconds; the claim route defaults to a 300-second lease. With no available job, it waits for `WORKER_POLL_MS` before polling again.
 
 Stop with Ctrl-C. The SIGINT/SIGTERM handler logs `shutdown requested (<signal>)` and requests that the loop stop; the handler itself does not forcibly kill in-flight work. Interrupted jobs are resumable: after the lease expires, the same restarted worker or another worker can claim them again. A re-claimed job runs the pipeline again and reuses the machine's workspace where it exists; it does not simply skip to its last recorded stage.
 

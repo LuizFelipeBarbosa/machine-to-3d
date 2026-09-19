@@ -182,11 +182,19 @@ describe('POST /worker/claim', () => {
     });
   });
 
-  test('maps other ConvexErrors to 400', async () => {
+  test('clamps a zero lease duration to the minimum', async () => {
     const { t, jobId } = await setup();
     const response = await t.fetch('/worker/claim', post({ workerId, leaseSeconds: 0 }));
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ jobId, leaseSeconds: 30 });
+    expect(await t.run((ctx) => ctx.db.get(jobId))).toMatchObject({ status: 'running', leaseSeconds: 30 });
+  });
+
+  test('rejects a string lease duration with a 400', async () => {
+    const { t, jobId } = await setup();
+    const response = await t.fetch('/worker/claim', post({ workerId, leaseSeconds: 'soon' }));
     expect(response.status).toBe(400);
-    expect(await response.json()).toEqual({ error: 'Lease length must be positive' });
+    expect(await response.json()).toEqual({ error: 'leaseSeconds must be a number' });
     expect(await t.run((ctx) => ctx.db.get(jobId))).toMatchObject({ status: 'queued' });
   });
 });
@@ -224,6 +232,13 @@ describe('POST /worker/event', () => {
     expect(await author.query(api.draftJobs.events, { jobId })).toEqual([
       { at: expect.any(Number), level: 'info', message: 'Started' },
     ]);
+  });
+
+  test('rejects an unsupported event level with a 400', async () => {
+    const { t, jobId } = await setup({ claim: true });
+    const response = await t.fetch('/worker/event', post({ jobId, workerId, level: 'debug', message: 'Progress' }));
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: 'level must be one of info, warn, error' });
   });
 });
 
@@ -277,6 +292,34 @@ describe('POST /worker/deliver', () => {
     expect(response.status).toBe(400);
     expect(await response.json()).toEqual({ error: 'procedure is required and must be an object' });
     expect(await t.run((ctx) => ctx.db.get(jobId))).toMatchObject({ status: 'running' });
+  });
+
+  test('rejects a wrong-typed modelChanged with a 400 and leaves the job running', async () => {
+    const { t, jobId } = await setup({ claim: true });
+    const response = await t.fetch('/worker/deliver', post({
+      jobId, workerId, modelChanged: 'yes', procedure: { content: {} }, report: {},
+    }));
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: 'modelChanged is required and must be a boolean' });
+    expect(await t.run((ctx) => ctx.db.get(jobId))).toMatchObject({ status: 'running' });
+  });
+
+  test('rejects a non-object procedure content with a 400', async () => {
+    const { t, jobId } = await setup({ claim: true });
+    const response = await t.fetch('/worker/deliver', post({
+      jobId, workerId, modelChanged: true, procedure: { content: 'not-an-object' }, report: {},
+    }));
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: 'procedure.content is required and must be an object' });
+  });
+
+  test('rejects a missing report with a 400', async () => {
+    const { t, jobId } = await setup({ claim: true });
+    const response = await t.fetch('/worker/deliver', post({
+      jobId, workerId, modelChanged: true, procedure: { content: {} },
+    }));
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: 'report is required' });
   });
 
   test('delivers a new machine and procedure and finishes the job', async () => {

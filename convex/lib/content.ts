@@ -1,9 +1,11 @@
 import { ConvexError } from 'convex/values';
 import { ZodError } from 'zod';
-import { MachineDefinitionSchema } from '../../shared/machine';
+import { MachineDefinitionSchema, referencedClips } from '../../shared/machine';
 import type { MachineDefinition } from '../../shared/machine';
 import { ProcedureContentSchema } from '../../shared/procedure';
 import type { ProcedureContent } from '../../shared/procedure';
+import { validateProcedure } from '../../shared/validateProcedure';
+import type { LinkTargets } from '../../shared/validateProcedure';
 import type { Doc, Id } from '../_generated/dataModel';
 import type { MutationCtx, QueryCtx } from '../_generated/server';
 
@@ -136,6 +138,43 @@ export async function linkTargetsForMachine(
   return Object.fromEntries(entries);
 }
 
+export function requireAdditiveDefinition(current: MachineDefinition, definition: MachineDefinition) {
+  const parts = new Set(definition.parts.map((part) => part.name));
+  const stateVars = new Set(definition.stateVars.map((stateVar) => stateVar.name));
+  const clips = new Set(referencedClips(definition));
+  const missing = [
+    ...current.parts.filter((part) => !parts.has(part.name))
+      .map((part) => `missing part "${part.name}"`),
+    ...current.stateVars.filter((stateVar) => !stateVars.has(stateVar.name))
+      .map((stateVar) => `missing state var "${stateVar.name}"`),
+    ...referencedClips(current).filter((clip) => !clips.has(clip))
+      .map((clip) => `missing clip "${clip}"`),
+  ];
+  if (missing.length > 0) {
+    throw new ConvexError(`Model change is not additive: ${missing.join(', ')}`);
+  }
+}
+
+export async function requireCompatibleApprovedProcedures(
+  ctx: QueryCtx,
+  machineId: Id<'machines'>,
+  definition: MachineDefinition,
+  linkTargets: LinkTargets,
+) {
+  const procedures = await ctx.db.query('procedures')
+    .withIndex('by_machine', (q) => q.eq('machineId', machineId)).collect();
+  for (const procedure of procedures) {
+    const approved = await getApprovedVersion(ctx, procedure);
+    if (approved === null) continue;
+    const issues = validateProcedure(parseContent(approved.content), definition, linkTargets)
+      .filter((issue) => issue.path !== 'start' && !issue.path.startsWith('start.'));
+    if (issues.length > 0) {
+      const details = issues.map((issue) => `${issue.path}: ${issue.message}`).join('; ');
+      throw new ConvexError(`Approved procedure "${procedure.slug}" breaks on the new model: ${details}`);
+    }
+  }
+}
+
 export function emptyProcedureContent(
   title: string,
   definition: MachineDefinition,
@@ -211,6 +250,10 @@ export async function publishDraftMachineVersion(
     if (currentVersion.version >= version.version) {
       throw new ConvexError('Machine version superseded');
     }
+    const definition = parseDefinition(version.definition);
+    requireAdditiveDefinition(parseDefinition(currentVersion.definition), definition);
+    const linkTargets = await linkTargetsForMachine(ctx, machine._id);
+    await requireCompatibleApprovedProcedures(ctx, machine._id, definition, linkTargets);
   }
   await ctx.db.patch(version._id, { status: 'published' });
   await ctx.db.patch(machine._id, { currentVersionId: version._id });

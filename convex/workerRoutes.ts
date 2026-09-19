@@ -67,8 +67,50 @@ async function readBody(
   return fields;
 }
 
+function requireBoolean(fields: Record<string, unknown>, field: string): void {
+  if (typeof fields[field] !== 'boolean') {
+    throw new ConvexError(`${field} is required and must be a boolean`);
+  }
+}
+
+function requireNumberIfPresent(fields: Record<string, unknown>, field: string): void {
+  if (fields[field] !== undefined && typeof fields[field] !== 'number') {
+    throw new ConvexError(`${field} must be a number`);
+  }
+}
+
+function requirePresent(fields: Record<string, unknown>, field: string): void {
+  if (fields[field] === undefined) {
+    throw new ConvexError(`${field} is required`);
+  }
+}
+
+function requireObjectProperty(
+  fields: Record<string, unknown>,
+  objectField: string,
+  property: string,
+): void {
+  const parent = fields[objectField];
+  if (
+    parent === null || typeof parent !== 'object' || Array.isArray(parent)
+    || (parent as Record<string, unknown>)[property] === null
+    || typeof (parent as Record<string, unknown>)[property] !== 'object'
+    || Array.isArray((parent as Record<string, unknown>)[property])
+  ) {
+    throw new ConvexError(`${objectField}.${property} is required and must be an object`);
+  }
+}
+
+function requireEventLevel(fields: Record<string, unknown>): void {
+  if (!['info', 'warn', 'error'].includes(fields.level as string)) {
+    throw new ConvexError('level must be one of info, warn, error');
+  }
+}
+
 async function claim(ctx: ActionCtx, req: Request): Promise<Response> {
-  const { workerId, leaseSeconds = 300 } = await readBody(req, ['workerId']) as
+  const fields = await readBody(req, ['workerId']);
+  requireNumberIfPresent(fields, 'leaseSeconds');
+  const { workerId, leaseSeconds = 300 } = fields as
     FunctionArgs<typeof internal.draftJobs.claim>;
   const job = await ctx.runMutation(internal.draftJobs.claim, { workerId, leaseSeconds });
   return job === null
@@ -83,7 +125,9 @@ async function heartbeat(ctx: ActionCtx, req: Request): Promise<Response> {
 }
 
 async function event(ctx: ActionCtx, req: Request): Promise<Response> {
-  const { jobId, workerId, level, message } = await readBody(req, ['jobId', 'workerId', 'level', 'message']) as
+  const fields = await readBody(req, ['jobId', 'workerId', 'level', 'message']);
+  requireEventLevel(fields);
+  const { jobId, workerId, level, message } = fields as
     FunctionArgs<typeof internal.draftJobs.appendEvent>;
   await ctx.runMutation(internal.draftJobs.appendEvent, { jobId, workerId, level, message });
   return new Response(null, { status: 204, headers: { 'Content-Type': 'application/json' } });
@@ -105,8 +149,12 @@ async function uploadUrl(ctx: ActionCtx, req: Request): Promise<Response> {
 }
 
 async function deliver(ctx: ActionCtx, req: Request): Promise<Response> {
+  const fields = await readBody(req, ['jobId', 'workerId'], ['procedure']);
+  requireBoolean(fields, 'modelChanged');
+  requirePresent(fields, 'report');
+  requireObjectProperty(fields, 'procedure', 'content');
   const { jobId, workerId, modelChanged, model, procedure, mediaFileIds, sourceContentHash, report } =
-    await readBody(req, ['jobId', 'workerId'], ['procedure']) as FunctionArgs<typeof internal.draftJobs.deliver>;
+    fields as FunctionArgs<typeof internal.draftJobs.deliver>;
   return Response.json(await ctx.runMutation(internal.draftJobs.deliver, {
     jobId, workerId, modelChanged, model, procedure, mediaFileIds, sourceContentHash, report,
   }));
