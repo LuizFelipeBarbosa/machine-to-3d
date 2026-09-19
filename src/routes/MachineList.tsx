@@ -17,7 +17,7 @@ export function MachineList() {
         {machines?.length === 0 && <p>No machines yet</p>}
         {machines?.map((machine) => (
           <section key={machine.slug}>
-            <h2>{machine.name}</h2>
+            <h2><Link to={`/m/${encodeURIComponent(machine.slug)}`}>{machine.name}</Link></h2>
             <p>{machine.kind}</p>
             {machine.procedures.length === 0 ? (
               <p>No procedures yet</p>

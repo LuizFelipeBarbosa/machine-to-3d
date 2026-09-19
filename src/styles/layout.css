@@ -517,3 +517,44 @@ details.schema pre {
     scroll-behavior:auto!important;
   }
 }
+
+.part-list {
+  list-style:none;
+  margin:0;
+  padding:0;
+}
+
+.part-row {
+  display:block;
+  width:100%;
+  margin:0 0 .4rem;
+  padding:.6rem .7rem;
+  border:1px solid var(--rule);
+  border-radius:3px;
+  background:var(--paper-2);
+  color:var(--ink);
+  font:600 1rem var(--display);
+  text-align:left;
+  cursor:pointer;
+}
+
+.part-row:hover,.part-row[aria-pressed="true"] {
+  border-color:var(--signal);
+  background:var(--paper);
+}
+
+.part-blurb {
+  display:block;
+  margin-top:.2rem;
+  font-size:.875rem;
+  font-weight:400;
+  color:var(--ink-2);
+}
+
+.explorer-section h3 {
+  margin:1rem 0 .4rem;
+  font-size:.8rem;
+  font-weight:400;
+  color:var(--ink-2);
+  text-transform:none;
+}
