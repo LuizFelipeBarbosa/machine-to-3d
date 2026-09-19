@@ -13,7 +13,7 @@
         "base"
       ],
       "body": "Check that the microscope base is stable and the viewing area is clear. Switch on transmitted illumination at low brightness and increase it only enough to see the specimen.",
-      "caution": "Selecting a different illumination mode can expose the specimen to unwanted light; confirm transmitted brightfield before viewing.",
+      "caution": "If a reflected-light/Colibri fluorescence module is fitted, keep its shutter closed and the light-path selector on transmitted light; never look into the eyepieces with fluorescence excitation on.",
       "id": "brightfield-imaging-01",
       "view": {
         "pos": [
@@ -123,8 +123,7 @@
       "title": "Center the region of interest",
       "where": "instrument",
       "parts": [
-        "stage",
-        "head"
+        "stage"
       ],
       "body": "Use the stage movement controls to bring the desired feature into the center of the field. Check that the holder remains secure and note a recognizable nearby feature so you can find the region again.",
       "id": "brightfield-imaging-06",
@@ -166,13 +165,34 @@
       }
     },
     {
+      "title": "Switch the light path to the camera",
+      "where": "instrument",
+      "parts": [
+        "head",
+        "camera"
+      ],
+      "body": "Pull the light-path selector on the binocular tube to the camera position before displaying the live image in the acquisition software.",
+      "id": "brightfield-imaging-10",
+      "view": {
+        "pos": [
+          1.386,
+          5.745,
+          2.366
+        ],
+        "target": [
+          0.007,
+          4.902,
+          -0.029
+        ]
+      }
+    },
+    {
       "title": "Capture and save the image",
       "where": "software",
       "parts": [
-        "camera",
-        "head"
+        "camera"
       ],
-      "body": "Display the live camera image and adjust exposure so useful detail is visible without bright regions saturating. Capture the selected field and save it with the sample identifier, objective magnification, and any available calibration information.",
+      "body": "Display the live camera image with the binocular-tube light-path selector already in the camera position. Adjust exposure so useful detail is visible without bright regions saturating. Capture the selected field and save it with the sample identifier, objective magnification, and any available calibration information.",
       "id": "brightfield-imaging-08",
       "view": {
         "pos": [

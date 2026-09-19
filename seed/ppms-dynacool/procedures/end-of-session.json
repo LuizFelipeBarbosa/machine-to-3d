@@ -14,7 +14,7 @@
         "computer",
         "console"
       ],
-      "body": "Ramp the field to zero at the approved rate and wait for the controller to report completion. Confirm that the sample remains at room temperature, then run the approved sample-exchange pressure cycle and wait for safe access status.",
+      "body": "Ramp the field to zero at the approved rate (SOP: __ Oe/s) and wait for the controller to report completion. Confirm that the sample remains at room temperature, then run the approved sample-exchange pressure cycle and wait for safe access status (SOP access pressure: __ [units: __]).",
       "check": "Reported field is zero, sample temperature is stable at room temperature, and chamber pressure permits access.",
       "id": "end-of-session-01",
       "view": {
@@ -59,10 +59,9 @@
       "title": "Close and restore the chamber",
       "where": "instrument",
       "parts": [
-        "access",
-        "Removable_front_cover"
+        "access"
       ],
-      "body": "Check that no tools or loose wires remain, then lower and secure the access deck and refit the designated cover. Run the approved empty-chamber purge and sealing cycle and confirm the required standby status while leaving cooling services running.",
+      "body": "Check that no tools or loose wires remain, then lower and secure the access deck and refit the sample-access cap. Run the approved empty-chamber purge and sealing cycle and confirm the required standby status while leaving cooling services running.",
       "state": {
         "open": false
       },

@@ -8,13 +8,33 @@
   },
   "steps": [
     {
-      "title": "Retract and remove the cover",
+      "title": "Stop patterning and confirm retraction",
+      "where": "software",
+      "parts": [
+        "head"
+      ],
+      "body": "Use the software to confirm patterning has stopped, disable probe heating, and lift the head to the approved clearance position. Confirm retraction and heater-off status before handling the cover.",
+      "id": "end-of-session-05",
+      "view": {
+        "pos": [
+          -2.716,
+          4.032,
+          -4.988
+        ],
+        "target": [
+          -0.079,
+          2.422,
+          -0.408
+        ]
+      }
+    },
+    {
+      "title": "Remove the amber cover",
       "where": "instrument",
       "parts": [
-        "head",
         "enclosure"
       ],
-      "body": "Use the software to confirm patterning has stopped, probe heating is disabled, and the head is lifted to the approved clearance position before handling the cover. Remove the amber cover using the approved handling method and set it on a stable surface.",
+      "body": "With the software confirmation complete and the head visibly clear of the sample, remove the amber cover using the approved handling method and set it on a stable surface.",
       "state": {
         "coverOn": false
       },
@@ -39,7 +59,7 @@
       "parts": [
         "stage"
       ],
-      "body": "Wait until the sample and holder meet the laboratory-approved handling conditions, then release the sample restraint. Lift the sample by its edges with suitable tweezers and put it in a labeled container without reaching beneath the probe tip.",
+      "body": "No cooling wait is needed unless the stage heater was used; then wait for the stage readback to reach room temperature. Release the sample restraint, lift the sample by its edges with suitable tweezers, and put it in a labeled container without reaching beneath the probe tip.",
       "id": "end-of-session-02",
       "view": {
         "pos": [

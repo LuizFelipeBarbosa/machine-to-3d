@@ -4,11 +4,11 @@
   "summary": "Swap a worn or wrong probe without damaging the new one or the head. Placeholder content written from general AFM practice, not from the manufacturer's manual.",
   "minutes": 10,
   "start": {
-    "lift": false,
+    "lift": true,
     "headOut": false,
-    "sample": false,
+    "sample": true,
     "probe": true,
-    "covers": true
+    "covers": false
   },
   "steps": [
     {
@@ -68,7 +68,7 @@
       "parts": [
         "head"
       ],
-      "body": "Grip the chip carrier by its edges with tweezers and lift it off the mount. Put it in the used-probe box and note it in the logbook.",
+      "body": "Grip the chip carrier by its edges with tweezers and lift it off the mount. Put it in the used-probe box.",
       "view": {
         "pos": [
           -3.2,

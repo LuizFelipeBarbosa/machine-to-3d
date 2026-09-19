@@ -1,7 +1,7 @@
 {
   "formatVersion": 1,
   "title": "Mount a puck and measure properties",
-  "summary": "Load a sample puck, collect a temperature and field sequence, and return the sample to room temperature. Placeholder content written from general laboratory practice, not from the manufacturer's manual.",
+  "summary": "Load a sample puck, collect a temperature and field sequence, return the field to zero, and then warm the sample to room temperature. Placeholder content written from general laboratory practice, not from the manufacturer's manual.",
   "minutes": 180,
   "start": {
     "open": false
@@ -31,13 +31,34 @@
       }
     },
     {
+      "title": "Vent and purge the sample chamber for access",
+      "where": "software",
+      "parts": [
+        "computer",
+        "access"
+      ],
+      "body": "Run the sample-chamber vent/purge cycle using the sample-exchange controls to reach access pressure (SOP: __ [pressure units: __]). Wait for cycle completion and the access-ready indication before opening the top port.",
+      "id": "mount-and-measure-09",
+      "view": {
+        "pos": [
+          -3.064,
+          4.112,
+          2.366
+        ],
+        "target": [
+          -1.72,
+          3.292,
+          0.033
+        ]
+      }
+    },
+    {
       "title": "Open the sample access",
       "where": "instrument",
       "parts": [
-        "access",
-        "Removable_front_cover"
+        "access"
       ],
-      "body": "Use the approved sample-exchange controls to bring the sample chamber to its permitted access pressure and wait for completion. Open the designated sample access and lift the access deck as directed by the local loading procedure.",
+      "body": "Open the designated top sample port only after the software reports that the vent/purge cycle has completed and access pressure is safe. Lift the access deck as directed by the local loading procedure.",
       "state": {
         "open": true
       },
@@ -83,10 +104,9 @@
       "title": "Close the access",
       "where": "instrument",
       "parts": [
-        "access",
-        "Removable_front_cover"
+        "access"
       ],
-      "body": "Withdraw the insertion tool and inspect the accessible seal for debris. Lower and secure the access deck, then refit the designated cover without trapping wires.",
+      "body": "Withdraw the insertion tool and inspect the accessible seal for debris. Lower and secure the access deck, then refit the sample-access cap without trapping wires.",
       "state": {
         "open": false
       },
@@ -111,7 +131,7 @@
         "computer",
         "access"
       ],
-      "body": "Start the approved sample-chamber purge and sealing cycle using the configured gas supply. Wait for the chamber status to indicate that the cycle has completed and the pressure is suitable for measurement.",
+      "body": "Start the approved sample-chamber purge and sealing cycle using the configured gas supply. Wait for the chamber status to indicate that the cycle has completed and the pressure is suitable for measurement (SOP pressure range: __ to __ [units: __]).",
       "caution": "Cooling before the purge is complete can trap moisture and contaminate the sample chamber.",
       "check": "Access is secured, the purge is complete, and chamber pressure is within the approved measurement range.",
       "id": "mount-and-measure-05",
@@ -135,7 +155,7 @@
         "computer",
         "console"
       ],
-      "body": "Enter the sample identifier, measurement mode, and data location. Set temperature points, field points, ramp rates, settling criteria, and excitation within the limits approved for this sample and instrument. Review the complete sequence before enabling it.",
+      "body": "Enter the sample identifier, measurement mode, and data location. Set the approved temperature points (SOP: __ K), field points (SOP: __ Oe), ramp rates (SOP temperature ramp: __ K/min; field ramp: __ Oe/s), settling criteria (SOP stability bands: __ K, __ Oe; hold: __ s), and excitation (SOP limit and units: __). End the sequence with Set Field 0 Oe, wait for zero-field completion, then Set Temperature 300 K using the approved warming rate (SOP: __ K/min). Review the complete sequence before enabling it.",
       "id": "mount-and-measure-06",
       "view": {
         "pos": [
@@ -173,13 +193,13 @@
       }
     },
     {
-      "title": "Warm the sample to room temperature",
+      "title": "Zero the field, then warm the sample",
       "where": "software",
       "parts": [
         "computer",
-        "access"
+        "sample"
       ],
-      "body": "Finish the acquisition and save the data with the sequence settings. Return the sample to room temperature using the approved controlled warming sequence and wait for a stable reading. Keep the access closed and continue to end of session to zero the field before unloading.",
+      "body": "Finish the acquisition and save the data with the sequence settings. Execute the final Set Field 0 Oe command at the field ramp rate entered in the sequence and wait for confirmed zero-field completion. Then execute Set Temperature 300 K at the approved warming rate entered in the sequence and wait for a stable reading. Keep the access closed and continue to end of session for the access-pressure cycle and unloading.",
       "id": "mount-and-measure-08",
       "view": {
         "pos": [

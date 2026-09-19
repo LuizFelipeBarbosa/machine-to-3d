@@ -12,8 +12,8 @@
       "title": "Confirm laser emission is off",
       "where": "software",
       "parts": [
-        "microscope",
-        "housing"
+        "optics",
+        "microscope"
       ],
       "body": "Stop any acquisition and verify that the shutter is closed and laser emission is disabled using the status indicators. Complete the local laser standby or shutdown sequence before reaching toward the sample.",
       "check": "Acquisition has stopped, the shutter is closed, and laser emission is disabled.",
@@ -36,9 +36,10 @@
       "where": "instrument",
       "parts": [
         "stage",
-        "objectives"
+        "objectives",
+        "microscope"
       ],
-      "body": "Lower the stage until the objective has clear space above the sample, then release the holder. Remove the sample by its edges and clear loose material using the locally approved cleaning method.",
+      "body": "Lower the stage until the objective has clear space above the sample, then select the lowest-power objective and switch off white-light illumination. Release the holder, remove the sample by its edges, and clear loose material using the locally approved cleaning method.",
       "view": {
         "pos": [
           -3.98,

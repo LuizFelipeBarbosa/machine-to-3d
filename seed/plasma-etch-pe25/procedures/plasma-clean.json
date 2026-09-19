@@ -1,12 +1,34 @@
 {
   "formatVersion": 1,
   "title": "Clean samples with plasma",
-  "summary": "Prepare compatible samples, complete a plasma cleaning cycle, and recover the samples safely. Placeholder content written from general laboratory practice, not from the manufacturer's manual.",
+  "summary": "Prepare compatible samples, complete a manually sequenced plasma cleaning cycle, and recover the samples safely. Placeholder content for manual-control mode only; the owner must confirm the installed unit's mode (SOP mode: __) before use. This is general laboratory content, not the manufacturer's manual.",
   "minutes": 30,
   "start": {
     "doorOpen": false
   },
   "steps": [
+    {
+      "id": "plasma-clean-10",
+      "title": "Switch on the unit and pump",
+      "where": "instrument",
+      "parts": [
+        "rear",
+        "controls"
+      ],
+      "body": "Switch on the rear power switch and pump at the rear panel, and confirm the PLC display lights. Keep RF power disabled.",
+      "view": {
+        "pos": [
+          2.066,
+          4.521,
+          6.569
+        ],
+        "target": [
+          -0.36,
+          3.04,
+          2.355
+        ]
+      }
+    },
     {
       "id": "plasma-clean-01",
       "title": "Check the gas supply",
@@ -14,7 +36,7 @@
       "parts": [
         "gas"
       ],
-      "body": "Confirm that the connected gas and supply pressure match the locally approved cleaning recipe. Check the visible tubing and flowmeter for damage, and keep the process gas valve closed until the pumping sequence calls for flow.",
+      "body": "Confirm that the connected gas and supply pressure match the locally approved cleaning recipe (SOP gas: __; supply pressure: __ [units: __]). Check the visible tubing and flowmeter for damage, and keep the process gas valve closed until the pumping sequence calls for flow.",
       "caution": "An incorrect gas or damaged gas line can create an unsafe discharge; stop and notify the instrument owner if either is uncertain.",
       "view": {
         "pos": [
@@ -108,7 +130,7 @@
       "parts": [
         "controls"
       ],
-      "body": "Enter the exposure time and set the power level from the approved recipe for your sample material. Review both values before proceeding, and keep plasma power disabled while preparing the vacuum.",
+      "body": "Confirm on the PLC that this unit uses the owner-approved manual-control mode (owner-confirmed SOP mode: __). Steps 06–08 describe manual pump, gas, RF, and vent sequencing; if the unit is configured for an automatic PLC cycle, stop and use its owner-approved automatic-cycle SOP instead. Enter the recipe exposure time and power (SOP: __ s, __ W). Review both values and keep plasma power disabled while preparing the vacuum.",
       "view": {
         "pos": [
           2.066,
@@ -124,13 +146,13 @@
     },
     {
       "id": "plasma-clean-06",
-      "title": "Pump down and check pressure",
+      "title": "Pump down and establish gas flow",
       "where": "instrument",
       "parts": [
         "controls",
         "gas"
       ],
-      "body": "Start the approved pump-down sequence and watch the pressure decrease to the recipe limit. Admit process gas only at the prescribed point, then adjust the flow and wait for pressure to stabilize within the operating range.",
+      "body": "Start pump-down in manual mode and watch the pressure decrease. Once the display shows the recipe base pressure (SOP: __ [pressure units: __]), open the flowmeter valve to the recipe flow (SOP: __ sccm) and wait for pressure to stabilise in the operating band (SOP: __ to __ [pressure units: __]).",
       "caution": "Failure to reach a stable operating pressure can indicate a leak or incorrect flow; do not ignite the plasma to compensate.",
       "view": {
         "pos": [
@@ -153,7 +175,7 @@
         "controls",
         "door"
       ],
-      "body": "Start the timed plasma cycle with the door latched and the operating pressure stable. Monitor the pressure and instrument status throughout the run, and use the trained stop sequence if there is arcing, an alarm, or unstable operation.",
+      "body": "Enable RF for the timed plasma exposure in manual mode with the door latched and the operating pressure stable. Monitor the pressure and instrument status throughout the run, and use the trained stop sequence if there is arcing, an alarm, or unstable operation.",
       "check": "The door is latched, pressure and gas flow match the recipe, and the exposure time and power have been reviewed.",
       "view": {
         "pos": [
@@ -176,7 +198,7 @@
         "controls",
         "gas"
       ],
-      "body": "Confirm that the timed cycle has ended and plasma power is off, then close the process gas valve. Follow the local pump isolation and controlled vent sequence, waiting until the pressure indicates atmosphere and the samples have cooled.",
+      "body": "Confirm that the timed RF exposure has ended and plasma power is off, then close the process gas valve. Follow the local pump isolation and controlled vent sequence, waiting until the pressure indicates atmosphere and the samples have cooled to the handling range (SOP: __ to __ °C).",
       "view": {
         "pos": [
           2.066,

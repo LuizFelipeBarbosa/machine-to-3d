@@ -1,7 +1,7 @@
 {
   "formatVersion": 1,
   "title": "Acquire a Raman spectrum",
-  "summary": "Prepare a sample, inspect the illustrated spectrometer safely, and acquire and save a Raman spectrum. Placeholder content written from general laboratory practice, not from the manufacturer's manual.",
+  "summary": "Prepare a sample and acquire and save a Raman spectrum with the spectrometer cover installed throughout. Placeholder content written from general laboratory practice, not from the manufacturer's manual.",
   "minutes": 35,
   "start": {
     "open": false
@@ -60,7 +60,7 @@
         "microscope",
         "objectives"
       ],
-      "body": "Choose an objective suited to the sample height and focus with ordinary microscope illumination while the laser remains disabled. Watch the objective clearance from the side during coarse motion, then use fine focus to bring the surface into view.",
+      "body": "Start with the lowest-power objective and focus with ordinary microscope illumination while the laser remains disabled. Watch objective clearance from the side during coarse motion, then sharpen with fine focus. Switch to the working objective with fine focus only.",
       "caution": "Raising a tall sample too quickly can drive it into the objective and damage both surfaces.",
       "view": {
         "pos": [
@@ -76,43 +76,13 @@
       }
     },
     {
-      "id": "raman-spectrum-04",
-      "title": "Inspect the illustrated grating",
-      "where": "instrument",
-      "parts": [
-        "Removable_spectrometer_cover",
-        "grating"
-      ],
-      "body": "Open the cover in this training model and identify the grating that separates the collected light. On the physical instrument, cover removal is reserved for authorized personnel following the local isolation procedure with laser emission disabled. Inspect without touching optical surfaces or adjusting mounts.",
-      "state": {
-        "open": true
-      },
-      "caution": "Removing a physical cover without proper isolation can expose a laser beam; this model view is not authorization to open the instrument.",
-      "view": {
-        "pos": [
-          5.283,
-          3.849,
-          6.19
-        ],
-        "target": [
-          1.65,
-          1.631,
-          -0.121
-        ]
-      }
-    },
-    {
-      "id": "raman-spectrum-05",
-      "title": "Replace the cover and select grating",
+      "id": "raman-spectrum-09",
+      "title": "Select the grating and spectral range",
       "where": "software",
       "parts": [
-        "Removable_spectrometer_cover",
-        "housing"
+        "grating"
       ],
-      "body": "Close the model cover and confirm that the physical spectrometer cover is installed and its safety controls are restored. Select the approved grating and spectral range through the normal software controls with laser emission still disabled.",
-      "state": {
-        "open": false
-      },
+      "body": "Select the approved grating and spectral range through the normal software controls with laser emission still disabled (SOP grating: __ grooves/mm; spectral range: __ to __ cm⁻¹). Keep the physical spectrometer cover installed.",
       "view": {
         "pos": [
           5.283,
@@ -131,10 +101,10 @@
       "title": "Select laser and filter settings",
       "where": "software",
       "parts": [
-        "microscope",
-        "detector"
+        "optics",
+        "beamPath"
       ],
-      "body": "Select the approved excitation wavelength and matching filters for the sample and spectral range. Begin with the locally approved low sample power and short exposure, keeping emission disabled until acquisition is ready.",
+      "body": "Select the approved excitation wavelength and matching filters for the sample and spectral range (SOP wavelength: __ nm; filters: __). Begin with the locally approved low sample power and short exposure (SOP sample power: __ mW; trial exposure: __ s), keeping emission disabled until acquisition is ready.",
       "caution": "Excessive laser power can burn the sample or saturate the detector before a useful spectrum is collected.",
       "view": {
         "pos": [
@@ -157,7 +127,7 @@
         "detector",
         "microscope"
       ],
-      "body": "Confirm that the enclosure and cover are secure, the beam is contained, and hands are clear before enabling emission through the normal controls. Acquire a short trial spectrum and inspect it for saturation, fluorescence, or sample damage before using the approved acquisition settings. Stop acquisition and disable emission if the sample changes or a safety fault appears.",
+      "body": "Confirm that the enclosure and cover are secure, the beam is contained, and hands are clear before enabling emission through the normal controls. Acquire a short trial spectrum and inspect it for saturation, fluorescence, or sample damage before using the approved acquisition settings (SOP integration time: __ s; accumulations: __). Stop acquisition and disable emission if the sample changes or a safety fault appears.",
       "check": "The spectrometer cover and required enclosure are closed, the beam is contained, and the selected laser, filters, and power are approved.",
       "view": {
         "pos": [

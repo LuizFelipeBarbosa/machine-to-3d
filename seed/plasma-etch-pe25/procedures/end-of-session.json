@@ -15,11 +15,11 @@
         "door",
         "gas"
       ],
-      "body": "Confirm that all samples and tools have been removed and the chamber seal is clean. Close and latch the door, then verify that the process gas valve and any supply isolation valve assigned to operators are closed.",
+      "body": "Confirm that all samples and tools have been removed and the chamber seal is clean. Close and latch the door, then verify that the process gas valve and any supply isolation valve assigned to operators are closed. Leave the empty chamber at atmosphere with the door latched; do not pump it down for standby.",
       "state": {
         "doorOpen": false
       },
-      "check": "The chamber is empty, the door is closed, plasma power is off, and the gas supply is secured.",
+      "check": "The chamber is empty and at atmosphere, the door is latched, plasma power is off, and the gas supply is secured.",
       "view": {
         "pos": [
           2.254,
@@ -40,7 +40,7 @@
       "parts": [
         "controls"
       ],
-      "body": "End any active cycle and return the time and power controls to the locally specified idle settings. Switch the process controls off using the normal shutdown sequence, preserving any pump power required for its separate shutdown.",
+      "body": "End any active cycle and return the time and power controls to the locally specified idle settings (SOP time: __ s; power: __ W). Switch the process controls off using the normal shutdown sequence, preserving any pump power required for its separate shutdown.",
       "view": {
         "pos": [
           2.066,
@@ -61,7 +61,7 @@
       "parts": [
         "rear"
       ],
-      "body": "Follow the local pump isolation and shutdown sequence, including any required purge or cooldown before switching off its supply. Visually check that the rear vacuum hose and exhaust remain connected and ventilation stays clear; leave shared pumps in their assigned standby state.",
+      "body": "Keep the chamber at atmosphere and isolated from the pump. Follow the local pump isolation and shutdown sequence, including any required purge or cooldown before switching off its supply. Visually check that the rear vacuum hose and exhaust remain connected and ventilation stays clear; leave shared pumps in their assigned standby state.",
       "caution": "Stopping a pump before isolating it correctly can allow backflow into the chamber; do not unplug it as a shortcut.",
       "view": {
         "pos": [

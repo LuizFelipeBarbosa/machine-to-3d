@@ -34,15 +34,14 @@
       "title": "Remove the sample-access cover",
       "where": "instrument",
       "parts": [
-        "Removable_cryostat_cover",
         "top"
       ],
-      "body": "Complete the approved sample-space pressure-equalization sequence and wait for the access-ready indication. Remove the designated sample-access cover and place it on a clean surface using the local loading procedure.",
+      "body": "Complete the sample-space pressure-equalization sequence at the gas-panel controls and wait for the access-ready indication (SOP access pressure: __ [units: __]). Establish the SOP slight He overpressure before opening and maintain it while the port is open (SOP He overpressure: __ mbar gauge). Remove the designated sample-access cover and place it on a clean surface using the local loading procedure.",
       "state": {
         "open": true
       },
       "caution": "The moving cryostat shell is illustrative; do not dismantle vacuum or service enclosures to reproduce the animation.",
-      "check": "Field is zero, the probe is at a safe handling temperature, and sample-space pressure permits opening.",
+      "check": "Field is zero, sample space is at the approved loading temperature (SOP: __ K), and sample-space pressure permits opening.",
       "id": "cooldown-and-sweep-02",
       "view": {
         "pos": [
@@ -62,9 +61,10 @@
       "where": "instrument",
       "parts": [
         "sample",
-        "top"
+        "top",
+        "services"
       ],
-      "body": "Secure the specimen and its leads to the compatible probe, checking that no wire projects beyond the permitted envelope. Lower and seat the probe with the designated support, keeping it aligned and stopping if resistance develops.",
+      "body": "Secure the specimen and its leads to the compatible probe, checking that no wire projects beyond the permitted envelope (SOP maximum diameter: __ mm). Keep the sample space under a slight He overpressure (per the gas panel; SOP: __ mbar gauge) while the port is open, and lower the probe slowly. Seat it with the designated support, keeping it aligned and stopping if resistance develops.",
       "caution": "Forcing a misaligned probe can damage wiring or jam the insert inside the sample space.",
       "id": "cooldown-and-sweep-03",
       "view": {
@@ -84,7 +84,6 @@
       "title": "Refit the cover and seal",
       "where": "instrument",
       "parts": [
-        "Removable_cryostat_cover",
         "top"
       ],
       "body": "Secure the probe and check that its leads do not cross sealing surfaces. Refit the designated cover and complete the approved sealing and sample-space preparation cycle before cooling.",
@@ -112,7 +111,7 @@
         "instruments",
         "rack"
       ],
-      "body": "Start the approved cooldown sequence and monitor temperature, pressure, and service status on the rack instruments. Keep the field at zero and pause the sequence through the controls if cooling or pressure readings depart from the permitted range.",
+      "body": "Start the approved cooldown sequence (SOP cooling rate: __ K/min; permitted pressure range: __ to __ [units: __]) and monitor temperature, pressure, and service status on the rack instruments. Keep the field at zero and pause the sequence through the controls if cooling or pressure readings depart from the permitted range.",
       "id": "cooldown-and-sweep-05",
       "view": {
         "pos": [
@@ -134,7 +133,7 @@
         "instruments",
         "rack"
       ],
-      "body": "Wait until the sample thermometer reaches the planned base temperature and remains within the approved stability band for the required settling period. Confirm that cooling and magnet status are ready before enabling a field ramp.",
+      "body": "Wait until the sample thermometer reaches the planned base temperature (SOP: __ K) and remains within the approved stability band (SOP: ±__ K) for the required settling period (SOP: __ s). Confirm that cooling and magnet status are ready before enabling a field ramp.",
       "check": "Sample temperature is stable, cooling is healthy, and the magnet controller permits ramping.",
       "id": "cooldown-and-sweep-06",
       "view": {
@@ -157,7 +156,7 @@
         "magnet",
         "instruments"
       ],
-      "body": "Enter the first approved field target and ramp rate at the magnet controls, checking polarity and units before starting. Watch field, temperature, and controller status throughout the ramp and wait for stable readings before acquisition.",
+      "body": "Enter the first approved field target and ramp rate (SOP target: __ T; ramp: __ T/min) at the magnet controls, checking polarity and units before starting. Watch field, temperature, and controller status throughout the ramp and wait for stable readings before acquisition.",
       "caution": "An excessive ramp rate or loss of cooling can trigger a magnet fault; keep magnetic objects outside the marked exclusion area.",
       "id": "cooldown-and-sweep-07",
       "view": {
@@ -180,7 +179,7 @@
         "instruments",
         "rack"
       ],
-      "body": "Run the planned field points using the approved ramp and settling limits, keeping excitation within the sample limits. Monitor temperature and signal quality, and save each measurement with its actual field and temperature. Stop the sequence through the controls if a fault or unexpected heating occurs.",
+      "body": "Run the planned field points using the approved ramp and settling limits, keeping excitation within the sample limits (SOP field points: __ T; ramp: __ T/min; settling band: ±__ T; hold: __ s; excitation limit and units: __). Monitor temperature and signal quality, and save each measurement with its actual field and temperature. Stop the sequence through the controls if a fault or unexpected heating occurs.",
       "id": "cooldown-and-sweep-08",
       "view": {
         "pos": [
@@ -202,7 +201,7 @@
         "magnet",
         "instruments"
       ],
-      "body": "End acquisition and save the sweep data and settings. Ramp the field to zero at the approved rate and wait for the reported field and controller status to settle. Leave the cover secured and continue to end of session before unloading.",
+      "body": "End acquisition and save the sweep data and settings. Ramp the field to zero at the approved rate (SOP: __ T/min) and wait for the reported field and controller status to settle. Leave the cover secured and continue to end of session before unloading.",
       "id": "cooldown-and-sweep-09",
       "view": {
         "pos": [

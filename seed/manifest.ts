@@ -47,7 +47,7 @@ export const SEED_MACHINES: SeedMachine[] = [
     name: 'HORIBA LabRAM Odyssey',
     kind: 'Raman microscope',
     dir: 'seed/horiba-labram-odyssey',
-    procedureSlugs: ['raman-spectrum', 'end-of-session'],
+    procedureSlugs: ['raman-spectrum', 'end-of-session', 'spectrometer-interior'],
   },
   {
     slug: 'nexdep',

@@ -6,37 +6,15 @@
   "start": {},
   "steps": [
     {
-      "title": "Set the initial chuck temperature",
-      "where": "instrument",
-      "parts": [
-        "controller",
-        "base"
-      ],
-      "body": "Check that the station base is stable and the chuck area is clear, then switch on the temperature controller. Select the laboratory-approved loading temperature for your substrate and stamp, and wait for the measured temperature to settle.",
-      "caution": "A set temperature does not show the current chuck temperature; read the measured value before bringing tools near the chuck.",
-      "id": "dry-transfer-01",
-      "view": {
-        "pos": [
-          5.217,
-          2.264,
-          4.936
-        ],
-        "target": [
-          2.431,
-          0.563,
-          0.096
-        ]
-      }
-    },
-    {
       "title": "Secure the substrate on the chuck",
       "where": "instrument",
       "parts": [
-        "sample"
+        "sample",
+        "controller"
       ],
-      "body": "With the stamp raised clear, use suitable tweezers to place the substrate flat over the chuck vacuum opening. Enable chuck vacuum and confirm that the substrate stays fixed without pressing on its active surface.",
+      "body": "With the stamp manipulator raised clear (no stamp loaded yet), check that the station is stable and switch on the temperature controller with heating disabled. Confirm that the measured chuck temperature is within the handling range (SOP: __ to __ °C). Use suitable tweezers to place the substrate flat over the chuck vacuum opening. Enable chuck vacuum and confirm that the substrate stays fixed without pressing on its active surface.",
       "caution": "A substrate that does not seal the vacuum opening can slide during contact and ruin alignment.",
-      "check": "The substrate is flat, held securely by vacuum, and at the approved loading temperature.",
+      "check": "The substrate is flat and held securely by vacuum; heating remains off until it is secured.",
       "id": "dry-transfer-02",
       "view": {
         "pos": [
@@ -50,6 +28,30 @@
           0.229
         ]
       }
+    },
+    {
+      "title": "Set the initial chuck temperature",
+      "where": "instrument",
+      "parts": [
+        "controller",
+        "sample"
+      ],
+      "body": "With vacuum on, set the loading temperature (SOP: __ °C) and wait for the measured value to settle.",
+      "caution": "A set temperature does not show the current chuck temperature; read the measured value before bringing tools near the chuck.",
+      "id": "dry-transfer-01",
+      "view": {
+        "pos": [
+          5.217,
+          2.264,
+          4.936
+        ],
+        "target": [
+          2.431,
+          0.563,
+          0.096
+        ]
+      },
+      "check": "The substrate remains held securely by vacuum and the measured chuck temperature has settled at the SOP loading temperature (__ °C)."
     },
     {
       "title": "Load the stamp slide",
@@ -148,7 +150,7 @@
         "controller",
         "sample"
       ],
-      "body": "Apply the laboratory-approved release temperature and hold time for this stamp and material system. Watch the measured temperature and contact region throughout the hold, and stop the process if spreading or unexpected movement occurs.",
+      "body": "Apply the laboratory-approved release temperature and hold time for this stamp and material system (SOP release temperature: __ °C; hold: __ s). Watch the measured temperature and contact region throughout the hold, and stop the process if spreading or unexpected movement occurs.",
       "id": "dry-transfer-07",
       "view": {
         "pos": [
@@ -161,16 +163,17 @@
           0.563,
           0.096
         ]
-      }
+      },
+      "caution": "The chuck and slide holder are hot; do not touch them or the slide edge until the measured temperature is back in the handling range (SOP: __ to __ °C)."
     },
     {
       "title": "Lift the stamp slowly",
       "where": "instrument",
       "parts": [
         "stamp",
-        "camera"
+        "microscope"
       ],
-      "body": "At the release condition specified by the approved recipe, raise the stamp slowly while observing separation and stop if the substrate lifts with it. Once the stamp is clear, inspect and save an image of the transferred region, then continue with the end-of-session procedure.",
+      "body": "At the release condition specified by the approved recipe (SOP release temperature: __ °C), raise the stamp slowly while observing separation and stop if the substrate lifts with it. Once the stamp is clear, inspect and save an image of the transferred region, then continue with the end-of-session procedure.",
       "link": {
         "procedureSlug": "end-of-session",
         "stepId": "end-of-session-01",

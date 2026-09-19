@@ -12,7 +12,7 @@
         "objectives",
         "stage"
       ],
-      "body": "Watch the clearance from the side and rotate the lowest-power objective into place, lowering the stage first if needed for clearance. Lower the stage to its loading position and stop any remaining image acquisition.",
+      "body": "Watch the clearance from the side and rotate the lowest-power objective into place, lowering the stage first if needed for clearance. Lower the stage to its loading position.",
       "check": "The lowest-power objective is selected and there is clear space to remove the slide.",
       "id": "end-of-session-01",
       "view": {
@@ -57,7 +57,7 @@
         "objectives",
         "illumination"
       ],
-      "body": "Inspect exposed optics and clean only where needed using approved lens tissue and the laboratory optical-cleaning method. Reduce brightness and switch off illumination, then leave the microscope in its designated parked configuration.",
+      "body": "Inspect exposed optics and clean only where needed using approved lens tissue and the laboratory optical-cleaning method. Reduce brightness and switch off illumination, then leave the microscope in its designated parked configuration and fit the dust cover.",
       "id": "end-of-session-03",
       "view": {
         "pos": [

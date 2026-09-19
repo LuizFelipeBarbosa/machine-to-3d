@@ -10,7 +10,7 @@
     {
       "id": "evaporation-run-01",
       "title": "Check vacuum and system readiness",
-      "where": "instrument",
+      "where": "software",
       "parts": [
         "vacuum",
         "console"
@@ -42,7 +42,7 @@
       "state": {
         "open": true
       },
-      "caution": "Opening against a pressure difference can damage the door mechanism; a resisting door must not be forced.",
+      "caution": "The sliding door will not move against a pressure difference; do not force the handwheel.",
       "view": {
         "pos": [
           1.127,
@@ -85,7 +85,7 @@
       "parts": [
         "source"
       ],
-      "body": "With source power isolated by the approved loading procedure and all source parts cool, load the specified material into its compatible pocket or liner. Stay within the approved fill limit, remove loose fragments, and confirm the shutter path is clear.",
+      "body": "With source power isolated by the approved loading procedure and all source parts cool, load the specified material into its compatible pocket or liner. Stay within the approved fill limit (SOP fill limit and units: __), remove loose fragments, and confirm the shutter path is clear.",
       "caution": "Overfilling a pocket or using an incompatible liner can cause spitting, contamination, or source damage during heating.",
       "view": {
         "pos": [
@@ -98,7 +98,8 @@
           2.99,
           -0.151
         ]
-      }
+      },
+      "check": "Source HV/emission is off and the loading interlock or lockout is applied; crucible is cool to the touch through a glove."
     },
     {
       "id": "evaporation-run-05",
@@ -133,7 +134,7 @@
         "vacuum",
         "console"
       ],
-      "body": "Start the approved pump-down sequence and monitor pressure and pump status at the console. Wait until pressure reaches and remains within the recipe base-pressure limit before enabling source power.",
+      "body": "Start the approved pump-down sequence and monitor pressure and pump status at the console. Wait until pressure reaches and remains within the recipe base-pressure limit (SOP maximum: __ Torr) before enabling source power.",
       "caution": "A pressure that stalls or rises can indicate a leak or outgassing; stop troubleshooting at the operator limit and do not heat the source to compensate.",
       "view": {
         "pos": [
@@ -155,7 +156,7 @@
       "parts": [
         "console"
       ],
-      "body": "Enter the approved source selection, material calibration, target thickness, rate, and power ramp settings. Verify cooling, shutter control, and any substrate motion or heating settings against the recipe while keeping source power disabled.",
+      "body": "Enter the approved source selection, material calibration, target thickness, rate, and power ramp settings (SOP target thickness: __ nm; rate: __ nm/s; power ramp and units: __). Verify cooling, shutter control, and any substrate motion or heating settings against the recipe (SOP motion settings: __; substrate temperature, if heating: __ °C) while keeping source power disabled.",
       "view": {
         "pos": [
           5.011,
@@ -176,7 +177,7 @@
       "parts": [
         "console"
       ],
-      "body": "Confirm that vacuum, cooling, door interlocks, and recipe settings are ready, then start the approved source conditioning sequence with the shutter closed. Once the rate is stable, open the shutter through the normal controls and monitor thickness, rate, pressure, and cooling throughout deposition. At the target thickness, close the shutter and reduce source power to zero using the approved ramp; use the trained stop sequence for any fault.",
+      "body": "Confirm that vacuum, cooling, door interlocks, and recipe settings are ready, then start the approved source conditioning sequence with the shutter closed. Once the rate is stable, open the shutter through the normal controls and monitor thickness, rate, pressure, and cooling throughout deposition. At the target thickness, close the shutter and reduce source power to zero using the approved ramp (SOP ramp-down rate and units: __); use the trained stop sequence for any fault.",
       "check": "The door is secured, interlocks are healthy, base pressure and cooling meet the recipe, and the deposition parameters have been reviewed.",
       "view": {
         "pos": [
@@ -189,7 +190,8 @@
           3.292,
           0.73
         ]
-      }
+      },
+      "caution": "Only view the source through the filtered viewport; never through an unfiltered window while emission is on."
     },
     {
       "id": "evaporation-run-09",
@@ -199,7 +201,7 @@
         "console",
         "vacuum"
       ],
-      "body": "Confirm that the shutter is closed and source power and substrate heating are off, then maintain vacuum and required cooling until the local cooldown criteria are met. Use the approved pump isolation and controlled vent sequence to reach atmospheric pressure, leaving the door closed until end-of-session unloading.",
+      "body": "Confirm that the shutter is closed and source power and substrate heating are off, then maintain vacuum and required cooling until the local cooldown criteria are met (SOP source temperature limit: __ °C; substrate temperature limit: __ °C). Use the approved pump isolation and controlled vent sequence to reach atmospheric pressure, leaving the door closed until end-of-session unloading.",
       "caution": "Venting a hot source can oxidize material or create a burn hazard; elapsed time alone does not establish safe temperature.",
       "link": {
         "procedureSlug": "end-of-session",

@@ -33,8 +33,7 @@
         ]
       },
       "state": {
-        "lift": true,
-        "covers": false
+        "lift": true
       }
     },
     {
@@ -44,8 +43,8 @@
       "parts": [
         "sample"
       ],
-      "body": "Fix your sample to a magnetic disk. Holding the disk by its edge with tweezers, set it on the centre of the chuck. Check that it sits flat and does not rock.",
-      "caution": "Check the sample height against the lab limit before mounting. A tall sample can meet the probe during approach.",
+      "body": "Open the enclosure door. Fix your sample to a magnetic disk. Holding the disk by its edge with tweezers, set it on the centre of the chuck. Check that it sits flat and does not rock.",
+      "caution": "Check the sample height against the lab limit (SOP maximum height: __ mm) before mounting. A tall sample can meet the probe during approach.",
       "view": {
         "pos": [
           -1.9,
@@ -59,7 +58,8 @@
         ]
       },
       "state": {
-        "sample": true
+        "sample": true,
+        "covers": false
       }
     },
     {
@@ -69,7 +69,7 @@
       "parts": [
         "head"
       ],
-      "body": "Look at the probe carrier under the head. Confirm in the logbook that the installed probe suits non-contact mode and that nobody flagged it as worn.",
+      "body": "Look at the probe carrier under the head, then check the logbook entry to confirm that the installed probe suits non-contact mode and that nobody flagged it as worn.",
       "view": {
         "pos": [
           -2.4,
@@ -117,9 +117,31 @@
       "parts": [
         "head"
       ],
-      "body": "Turn the two knobs on the front of the head to bring the beam spot to the free end of the cantilever. Then centre the detector so the vertical and lateral signals read close to zero.",
+      "body": "Turn the two knobs on the front of the head to bring the beam spot to the free end of the cantilever.",
       "caution": "A low sum signal usually means the spot is on the chip, not the cantilever. Fix it now. Approaching with a bad alignment fails or crashes the tip.",
-      "check": "Sum signal is in the expected range and both deflection signals are near zero",
+      "check": "Sum ≥ the SOP minimum for this probe (SOP minimum: __ V).",
+      "view": {
+        "pos": [
+          -2.4,
+          2.9,
+          4.3
+        ],
+        "target": [
+          0.22,
+          1.98,
+          0.3
+        ]
+      }
+    },
+    {
+      "id": "nc-scan-11",
+      "title": "Centre the detector in software",
+      "where": "software",
+      "parts": [
+        "head"
+      ],
+      "body": "Use the software PSPD centring controls to centre the detector and bring the vertical (A-B) and lateral (LR) signals into the SOP band. Recheck the sum signal after centring.",
+      "check": "Sum ≥ the SOP minimum for this probe (SOP minimum: __ V); A-B and LR within ±0.5 V (or the SOP band: __ V).",
       "view": {
         "pos": [
           -2.4,
@@ -162,7 +184,7 @@
       "parts": [
         "head"
       ],
-      "body": "Run a frequency sweep and choose the drive frequency and amplitude set point the way your SOP specifies for this probe type.",
+      "body": "Run a frequency sweep and choose the drive frequency and amplitude set point specified for this probe type (SOP: __ kHz, amplitude set point __ [units: __]).",
       "view": {
         "pos": [
           -2.4,
@@ -208,8 +230,8 @@
       "title": "Scan",
       "where": "software",
       "parts": [
-        "sample",
-        "head"
+        "xy",
+        "z"
       ],
       "body": "Begin with a small, slow scan. Check that the trace and retrace lines overlap, adjust gain and set point until they do, and only then scale up to the full area.",
       "view": {

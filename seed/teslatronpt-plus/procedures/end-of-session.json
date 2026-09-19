@@ -14,7 +14,7 @@
         "instruments",
         "rack"
       ],
-      "body": "Confirm that the field is at zero and that the magnet controller has completed its approved zero-field sequence. Disable sample excitation and warm the sample probe through the approved controls until it reaches the permitted handling temperature. Complete the sample-space pressure-equalization sequence and wait for safe access status.",
+      "body": "Confirm that the field is at zero and that the magnet controller has completed its approved zero-field sequence. Disable sample excitation and warm the sample probe through the approved controls until it reaches the permitted handling temperature (SOP: __ K; warming rate: __ K/min). Complete the sample-space pressure-equalization sequence and wait for safe access status (SOP access pressure: __ [units: __]).",
       "check": "Field is zero, excitation is off, the probe is safe to handle, and sample-space pressure permits opening.",
       "id": "end-of-session-01",
       "view": {
@@ -34,10 +34,11 @@
       "title": "Open access and remove the probe",
       "where": "instrument",
       "parts": [
-        "Removable_cryostat_cover",
-        "sample"
+        "top",
+        "sample",
+        "services"
       ],
-      "body": "Remove the designated sample-access cover using the local loading procedure. Disconnect only the approved sample connections, then support and withdraw the probe without forcing it and place it in its designated holder.",
+      "body": "Establish a slight He overpressure at the gas panel before opening the sample port (SOP: __ mbar gauge), and maintain it while the port is open. Remove the designated sample-access cover using the local loading procedure. Disconnect only the approved sample connections, then support and withdraw the probe slowly without forcing it. Cap the port immediately after withdrawing the probe, then place the probe in its designated holder.",
       "state": {
         "open": true
       },
@@ -60,10 +61,9 @@
       "title": "Refit the cover for standby",
       "where": "instrument",
       "parts": [
-        "Removable_cryostat_cover",
         "top"
       ],
-      "body": "Fit the approved empty-port closure and refit the designated cover, checking that no tools remain in the access area. Restore the required sample-space standby condition and leave the compressor and cooling services in the locally prescribed standby state.",
+      "body": "Confirm that the approved empty-port closure fitted immediately after withdrawal is secure and refit the designated cover, checking that no tools remain in the access area. Restore the required sample-space standby condition and leave the compressor and cooling services in the locally prescribed standby state.",
       "state": {
         "open": false
       },

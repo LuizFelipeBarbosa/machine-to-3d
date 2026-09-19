@@ -1,0 +1,83 @@
+{
+  "formatVersion": 1,
+  "title": "Inside the spectrometer (model only)",
+  "summary": "Placeholder illustrative model-only content for identifying the internal optics; this is not an SOP.",
+  "minutes": 5,
+  "start": {
+    "open": false
+  },
+  "steps": [
+    {
+      "id": "spectrometer-interior-01",
+      "title": "Remove the cover in the 3D model",
+      "where": "instrument",
+      "parts": [
+        "Removable_spectrometer_cover"
+      ],
+      "body": "Remove the cover in the 3D model to reveal the illustrative optical bench. Keep the real instrument closed.",
+      "state": {
+        "open": true
+      },
+      "caution": "On the real instrument, cover removal is authorized-service-only because of the Class 3B/4 laser beam and CCD light exposure hazards. This model view is not authorization to open the instrument.",
+      "view": {
+        "pos": [
+          5.283,
+          3.849,
+          6.19
+        ],
+        "target": [
+          1.65,
+          1.631,
+          -0.121
+        ]
+      }
+    },
+    {
+      "id": "spectrometer-interior-02",
+      "title": "Identify the optics, grating, and beam path",
+      "where": "instrument",
+      "parts": [
+        "optics",
+        "grating",
+        "beamPath"
+      ],
+      "body": "Identify the illustrative optics and grating that separates the collected light, then follow the depicted beam path. The internal routing is schematic and is not a manufacturer-verified optical layout or an instruction to touch optics or adjust mounts.",
+      "view": {
+        "pos": [
+          5.283,
+          3.849,
+          6.19
+        ],
+        "target": [
+          1.65,
+          1.631,
+          -0.121
+        ]
+      }
+    },
+    {
+      "id": "spectrometer-interior-03",
+      "title": "Replace the cover in the 3D model",
+      "where": "instrument",
+      "parts": [
+        "Removable_spectrometer_cover"
+      ],
+      "body": "Replace the model cover to finish the illustrative walkthrough. The real spectrometer cover stays installed throughout.",
+      "state": {
+        "open": false
+      },
+      "view": {
+        "pos": [
+          5.283,
+          3.849,
+          6.19
+        ],
+        "target": [
+          1.65,
+          1.631,
+          -0.121
+        ]
+      }
+    }
+  ]
+}

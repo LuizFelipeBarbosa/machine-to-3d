@@ -63,7 +63,7 @@
         "sample",
         "interior"
       ],
-      "body": "Fasten a clean, dry, vacuum-compatible specimen to the holder with the grounding method approved for the sample. Seat and lock the holder, then verify that its height and any protrusions remain within the documented stage-clearance limits.",
+      "body": "Fasten a clean, dry, vacuum-compatible specimen to the holder with the grounding method approved for the sample. Seat and lock the holder, then verify that its height and any protrusions remain within the documented stage-clearance limits (SOP maximum specimen height: __ mm; clearance: __ mm).",
       "caution": "A tall specimen or loose fragment can strike the objective or contaminate the chamber.",
       "id": "sem-raman-correlation-03",
       "view": {
@@ -110,7 +110,7 @@
       "parts": [
         "chamber"
       ],
-      "body": "Start the normal evacuation cycle and monitor the pressure indication. Wait for the approved operating vacuum and interlock-ready status before enabling either measurement mode.",
+      "body": "Start the normal evacuation cycle and monitor the pressure indication. Wait for the approved operating vacuum (SOP maximum pressure: __ [units: __]) and interlock-ready status before enabling either measurement mode.",
       "caution": "Repeatedly restarting evacuation can hide a leak or an unsuitable specimen; stop and report a pressure that fails to recover.",
       "check": "Door is secured, operating vacuum is reached, and measurement interlocks report ready.",
       "id": "sem-raman-correlation-05",
@@ -134,7 +134,7 @@
         "column",
         "detectors"
       ],
-      "body": "Enable SEM imaging with the approved low-dose starting settings and acquire an overview image. Choose a recognizable feature, refine the focus and image settings, and save its image with stage coordinates and nearby landmarks. Respect the recorded specimen height when moving the stage.",
+      "body": "Enable SEM imaging with the sample-specific low-dose starting settings (SOP: __ kV, spot __, dwell __ µs) and acquire an overview image. Choose a recognizable feature, refine the focus and image settings, and save its image with stage coordinates and nearby landmarks. Respect the recorded specimen height when moving the stage.",
       "caution": "Excessive electron exposure can alter the material before its Raman spectrum is measured.",
       "id": "sem-raman-correlation-06",
       "view": {
@@ -157,7 +157,7 @@
         "raman",
         "spectrometer"
       ],
-      "body": "Blank the electron beam and use the approved mode-transfer sequence to position the Raman optics. Use the calibrated coordinate relation and saved landmarks to locate the same feature in the optical view. Keep the laser disabled until positioning is complete.",
+      "body": "Blank the electron beam after SEM imaging (SOP: __ kV, spot __, dwell __ µs), then follow the owner-specified mode-transfer sequence (SOP sequence: __) to position the Raman optics. Use the calibrated coordinate relation (SOP calibration/offsets: __) and saved landmarks to locate the same feature in the optical view. Keep the laser disabled until positioning is complete.",
       "caution": "Uncalibrated coordinate transfer can place the laser on a different feature even when stage coordinates appear similar.",
       "id": "sem-raman-correlation-07",
       "view": {
@@ -180,7 +180,7 @@
         "raman",
         "spectrometer"
       ],
-      "body": "Confirm that the laser enclosure and interlocks are ready, then select the approved wavelength, low starting power, spectral range, and integration time for this specimen. Acquire a short spectrum at the matched feature and check for saturation or sample changes before collecting the final spectrum. Disable the laser when acquisition finishes.",
+      "body": "Confirm that the laser enclosure and interlocks are ready, then select the approved wavelength, low starting power, spectral range, and integration time for this specimen (SOP wavelength: __ nm; sample power: __ mW; spectral range: __ to __ cm⁻¹; integration time: __ s). Acquire a short spectrum at the matched feature and check for saturation or sample changes before collecting the final spectrum. Disable the laser when acquisition finishes.",
       "caution": "High laser power can heat or burn a small feature before a visible change appears.",
       "id": "sem-raman-correlation-08",
       "view": {

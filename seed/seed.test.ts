@@ -50,7 +50,7 @@ describe('seed content', () => {
     });
   }
 
-  it('includes the three Park NX10 procedures with 10, 6, and 4 steps', () => {
+  it('includes the three Park NX10 procedures with 11, 6, and 5 steps', () => {
     const machine = SEED_MACHINES.find((entry) => entry.slug === 'park-nx10')!;
     expect(machine.procedureSlugs).toEqual(['nc-scan', 'probe-exchange', 'shutdown']);
 
@@ -60,6 +60,6 @@ describe('seed content', () => {
       );
       return content.steps.length;
     });
-    expect(stepCounts).toEqual([10, 6, 4]);
+    expect(stepCounts).toEqual([11, 6, 5]);
   });
 });
