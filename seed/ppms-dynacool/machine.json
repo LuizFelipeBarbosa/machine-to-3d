@@ -1,0 +1,176 @@
+{
+  "formatVersion": 1,
+  "rootNode": "Quantum_Design_PPMS_DynaCool",
+  "parts": [
+    {
+      "name": "body",
+      "label": "Body",
+      "blurb": "Cylindrical enclosure with black central band and tapered front inset."
+    },
+    {
+      "name": "base",
+      "label": "Base",
+      "blurb": "Low mobile platform, casters and leveling feet."
+    },
+    {
+      "name": "access",
+      "label": "Access",
+      "blurb": "Simplified top sample-access cap and fittings."
+    },
+    {
+      "name": "side",
+      "label": "Side",
+      "blurb": "Attached side electronics housing."
+    },
+    {
+      "name": "console",
+      "label": "Console",
+      "blurb": "Separate two-tone control cabinet."
+    },
+    {
+      "name": "computer",
+      "label": "Computer",
+      "blurb": "Monitor, keyboard and mouse; screen is illustrative."
+    },
+    {
+      "name": "cables",
+      "label": "Cables",
+      "blurb": "Simplified exterior service connections."
+    },
+    {
+      "name": "Removable_front_cover",
+      "label": "Removable Front Cover",
+      "blurb": "Removable front shell. Motion is illustrative, not a real hinge or service procedure."
+    },
+    {
+      "name": "magnet",
+      "label": "Magnet",
+      "blurb": "Schematic superconducting solenoid, shown in cutaway to expose the central bore."
+    },
+    {
+      "name": "sample",
+      "label": "Sample",
+      "blurb": "Central sample chamber with simplified sample puck at the measurement region."
+    },
+    {
+      "name": "cooling",
+      "label": "Cooling",
+      "blurb": "Schematic two-stage pulse-tube cooler. Placement and connections are illustrative."
+    },
+    {
+      "name": "shield",
+      "label": "Shield",
+      "blurb": "Radiation shield shown with a permanent front cutaway for visibility."
+    }
+  ],
+  "presetViews": [
+    {
+      "name": "perspective",
+      "label": "Perspective",
+      "view": {
+        "pos": [
+          4.785,
+          4.827,
+          8.235
+        ],
+        "target": [
+          0.019,
+          1.918,
+          -0.043
+        ]
+      }
+    },
+    {
+      "name": "front",
+      "label": "Front",
+      "view": {
+        "pos": [
+          0.019,
+          2.664,
+          9.915
+        ],
+        "target": [
+          0.019,
+          1.918,
+          -0.043
+        ]
+      }
+    },
+    {
+      "name": "rear",
+      "label": "Rear",
+      "view": {
+        "pos": [
+          0.019,
+          2.911,
+          -9.978
+        ],
+        "target": [
+          0.019,
+          1.918,
+          -0.043
+        ]
+      }
+    },
+    {
+      "name": "side",
+      "label": "Side",
+      "view": {
+        "pos": [
+          9.955,
+          2.911,
+          -0.043
+        ],
+        "target": [
+          0.019,
+          1.918,
+          -0.043
+        ]
+      }
+    },
+    {
+      "name": "top",
+      "label": "Top",
+      "view": {
+        "pos": [
+          0.019,
+          11.903,
+          -0.038
+        ],
+        "target": [
+          0.019,
+          1.918,
+          -0.043
+        ]
+      }
+    }
+  ],
+  "stateVars": [
+    {
+      "name": "open",
+      "label": "Front cover off, access deck lifted",
+      "kind": "toggle",
+      "userToggle": true,
+      "effects": [
+        {
+          "type": "translate",
+          "node": "Removable_front_cover",
+          "offset": [
+            2.5,
+            0,
+            -0.6
+          ]
+        },
+        {
+          "type": "translate",
+          "node": "access",
+          "offset": [
+            0,
+            0.7,
+            0
+          ]
+        }
+      ]
+    }
+  ]
+}

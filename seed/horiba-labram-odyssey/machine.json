@@ -1,0 +1,162 @@
+{
+  "formatVersion": 1,
+  "rootNode": "HORIBA_LabRAM_Odyssey",
+  "parts": [
+    {
+      "name": "housing",
+      "label": "Housing",
+      "blurb": "Fixed enclosure and base supporting the illustrative optical bench."
+    },
+    {
+      "name": "bay",
+      "label": "Bay",
+      "blurb": "Blue microscope bay and rear support."
+    },
+    {
+      "name": "microscope",
+      "label": "Microscope",
+      "blurb": "Optical head, side ports, focus controls and bellows."
+    },
+    {
+      "name": "objectives",
+      "label": "Objectives",
+      "blurb": "Revolving nosepiece and simplified objective lenses."
+    },
+    {
+      "name": "stage",
+      "label": "Stage",
+      "blurb": "Mechanical sample stage with slide holder and optical opening."
+    },
+    {
+      "name": "detector",
+      "label": "Detector",
+      "blurb": "Right-side detector housing with cooling fins — approximate exterior."
+    },
+    {
+      "name": "cables",
+      "label": "Cables",
+      "blurb": "Visible exterior cables and connectors."
+    },
+    {
+      "name": "Removable_spectrometer_cover",
+      "label": "Removable Spectrometer Cover",
+      "blurb": "Lift-away front and top cover; exploded visualization only."
+    },
+    {
+      "name": "optics",
+      "label": "Optics",
+      "blurb": "Illustrative slit, mirrors and optical bench. Internal routing is not manufacturer-verified."
+    },
+    {
+      "name": "grating",
+      "label": "Grating",
+      "blurb": "Simplified diffraction grating and mount."
+    },
+    {
+      "name": "beamPath",
+      "label": "Beam Path",
+      "blurb": "Illustrative ray path, not a calibrated optical simulation."
+    }
+  ],
+  "presetViews": [
+    {
+      "name": "perspective",
+      "label": "Perspective",
+      "view": {
+        "pos": [
+          7.853,
+          6.369,
+          13.493
+        ],
+        "target": [
+          0.353,
+          1.79,
+          0.467
+        ]
+      }
+    },
+    {
+      "name": "front",
+      "label": "Front",
+      "view": {
+        "pos": [
+          0.353,
+          2.965,
+          16.136
+        ],
+        "target": [
+          0.353,
+          1.79,
+          0.467
+        ]
+      }
+    },
+    {
+      "name": "rear",
+      "label": "Rear",
+      "view": {
+        "pos": [
+          0.353,
+          3.354,
+          -15.169
+        ],
+        "target": [
+          0.353,
+          1.79,
+          0.467
+        ]
+      }
+    },
+    {
+      "name": "side",
+      "label": "Side",
+      "view": {
+        "pos": [
+          15.988,
+          3.354,
+          0.467
+        ],
+        "target": [
+          0.353,
+          1.79,
+          0.467
+        ]
+      }
+    },
+    {
+      "name": "top",
+      "label": "Top",
+      "view": {
+        "pos": [
+          0.353,
+          17.503,
+          0.474
+        ],
+        "target": [
+          0.353,
+          1.79,
+          0.467
+        ]
+      }
+    }
+  ],
+  "stateVars": [
+    {
+      "name": "open",
+      "label": "Spectrometer cover removed",
+      "kind": "toggle",
+      "userToggle": true,
+      "effects": [
+        {
+          "type": "translate",
+          "node": "Removable_spectrometer_cover",
+          "offset": [
+            0,
+            3.1,
+            0
+          ]
+        }
+      ]
+    }
+  ]
+}

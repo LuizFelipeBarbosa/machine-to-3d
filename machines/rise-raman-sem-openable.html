@@ -4,9 +4,9 @@
 *{box-sizing:border-box}body{margin:0;background:#edf0f2;color:#25313a;font:14px system-ui,sans-serif}header{padding:22px 28px 14px;display:flex;gap:20px;align-items:baseline;flex-wrap:wrap}h1{font-size:22px;font-weight:600;margin:0}.muted{color:#596673;font-size:13px}.toolbar{display:flex;flex-wrap:wrap;gap:16px;padding:10px 28px;align-items:center}label{display:flex;gap:8px;align-items:center}select,button{font:inherit;background:white;border:1px solid #bdc7ce;border-radius:6px;padding:9px 12px;color:inherit}button{cursor:pointer}button[aria-pressed=true]{background:#253c50;color:white}#viewer{height:calc(100vh - 220px);min-height:380px;max-height:900px;touch-action:none}#viewer canvas{display:block}footer{padding:10px 28px 22px;line-height:1.6}a{color:#235b80}#status{padding:18px 28px} @media(max-width:600px){header,.toolbar,footer{padding-left:16px;padding-right:16px}.toolbar{gap:10px}#viewer{height:450px;min-height:300px}select{max-width:230px}}
 </style></head><body>
 <header><h1>RISE Raman–SEM</h1><span class="muted">Interactive 3D reconstruction · works offline</span></header>
-<div class="toolbar"><label>View <select id="view"><option value="perspective">Perspective</option><option value="front">Front</option><option value="rear">Rear</option><option value="side">Side</option><option value="top">Top</option></select></label><label>Component <select id="component"><option value="all">Whole instrument</option><option value="base">SEM cabinet</option><option value="chamber">Chamber housing</option><option value="column">SEM column housing</option><option value="raman">Raman optical module</option><option value="cart">Equipment cart</option><option value="spectrometer">Raman peripheral housings</option><option value="cables">Cables and fibres</option></select></label><label><input id="isolate" type="checkbox"> Isolate</label></div>
+<div class="toolbar"><button id="openHatch" aria-pressed="false">Open chamber</button><label>Opening <input id="opening" type="range" min="0" max="100" value="0" aria-label="Chamber opening"></label><label>View <select id="view"><option value="perspective">Perspective</option><option value="front">Front</option><option value="rear">Rear</option><option value="side">Side</option><option value="top">Top</option></select></label><label>Component <select id="component"><option value="all">Whole instrument</option><option value="hatch">Opening chamber panel</option><option value="interior">Chamber interior and pole-piece</option><option value="sample">Sample stage</option><option value="detectors">Detector schematics</option><option value="base">SEM cabinet</option><option value="chamber">Chamber housing</option><option value="column">SEM column housing</option><option value="raman">Raman optical module</option><option value="cart">Equipment cart</option><option value="spectrometer">Raman peripheral housings</option><option value="cables">Cables and fibres</option></select></label><label><input id="isolate" type="checkbox"> Isolate</label></div>
 <div id="viewer" role="img" aria-label="Interactive 3D reconstruction of a RISE Raman-SEM microscope, with white SEM cabinet and column housing, black WITec Raman module and adjacent spectrometer cart."><div id="status">Loading model…</div></div>
-<footer><div id="detail" aria-live="polite">Drag to rotate · scroll or pinch to zoom · right-drag to pan</div><div class="muted">Visual reconstruction from <a href="https://raman.oxinst.com/products/raman-microscopes/raman-sem-rise" target="_blank" rel="noopener">Oxford Instruments’ RISE reference</a>. Standard RISE configuration from the first product photo. Approximate external geometry and relative scale; not manufacturer CAD.</div></footer>
+<footer><div id="detail" aria-live="polite">Drag to rotate · scroll or pinch to zoom · right-drag to pan</div><div class="muted">Visual reconstruction from <a href="https://raman.oxinst.com/products/raman-microscopes/raman-sem-rise" target="_blank" rel="noopener">Oxford Instruments’ RISE reference</a>. Approximate RISE exterior with educational chamber interior. Panel motion and internal layout are illustrative, not manufacturer CAD or a service procedure.</div></footer>
 <script>/**
  * @license
  * Copyright 2010-2021 Three.js Authors
@@ -1067,7 +1067,7 @@ scene.add(new THREE.HemisphereLight(0xffffff,0x828d98,.95));function light(x,y,z
 const mat=(c,m=.3,r=.35)=>new THREE.MeshStandardMaterial({color:c,metalness:m,roughness:r});
 const white=mat(0xdde0df,.25,.28),black=mat(0x17191d,.4,.32),rubber=mat(0x090b0d,0,.77),silver=mat(0xaab5be,.8,.24),blue=mat(0x235296,.55,.31),gold=mat(0xc7a55e,.7,.3),red=mat(0x9e2522,.12,.5),glass=new THREE.MeshPhysicalMaterial({color:0x8ac4d4,transparent:true,opacity:.28,metalness:.1,roughness:.1,depthWrite:false});
 const assembly=new THREE.Group();assembly.name='RISE_Raman_SEM';scene.add(assembly);
-const groups={};for(const name of ['base','chamber','column','raman','cart','spectrometer','cables']){groups[name]=new THREE.Group();groups[name].name=name;assembly.add(groups[name]);}
+const groups={};for(const name of ['base','chamber','column','raman','cart','spectrometer','cables','hatch','interior','sample','detectors']){groups[name]=new THREE.Group();groups[name].name=name;assembly.add(groups[name]);}
 function mesh(g,m,p,x,y,z){const o=new THREE.Mesh(g,m);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;p.add(o);return o;}
 function box(w,h,d,x,y,z,m,p){return mesh(new THREE.BoxGeometry(w,h,d),m,p,x,y,z);}
 function cyl(r,h,x,y,z,m,p,axis='y'){const o=mesh(new THREE.CylinderGeometry(r,r,h,48),m,p,x,y,z);if(axis==='x')o.rotation.z=Math.PI/2;if(axis==='z')o.rotation.x=Math.PI/2;return o;}
@@ -1090,8 +1090,19 @@ for(const x of [-1.79,1.79])for(const y of [.43,3.15])screw(x,y,1.687,base);
 for(const x of [-1.955,1.955]){box(.008,2.64,.018,x,1.75,-.47,charcoal,base);cyl(.034,.015,x,3.05,-.65,aluminum,base,'x');}
 // Vacuum chamber exterior and tall rear SEM column shroud.
 const chamber=groups.chamber;
-cabinetMesh(2.36,1.39,1.86,0,4.095,-.06,shell,chamber);box(1.66,.98,.032,0,4.03,1.015,shell,chamber);
-for(const x of [-.74,.74])for(const y of [3.62,4.44])screw(x,y,1.047,chamber);
+// Hollow chamber and independent front access panel.
+const hatch=groups.hatch;hatch.name='SEM_access_door';
+for(const x of [-1.13,1.13])box(.1,1.39,1.86,x,4.095,-.06,shell,chamber);
+for(const y of [3.435,4.755])box(2.36,.07,1.86,0,y,-.06,shell,chamber);
+box(2.36,1.39,.075,0,4.095,-.953,shell,chamber);
+for(const x of [-.99,.99])box(.31,1.39,.13,x,4.095,.945,shell,chamber);
+for(const y of [3.495,4.675])box(1.72,.18,.13,0,y,.945,shell,chamber);
+for(const x of [-.85,.85])box(.035,1.0,.035,x,4.065,1.02,charcoal,chamber);
+for(const y of [3.57,4.56])box(1.73,.035,.035,0,y,1.02,charcoal,chamber);
+rounded(1.66,.98,.05,0,4.065,1.065,shell,hatch);
+box(.08,.4,.1,-.55,4.065,1.145,charcoal,hatch);
+
+for(const x of [-.74,.74])for(const y of [3.62,4.44])screw(x,y,1.12,hatch);
 box(1.65,.09,1.24,.05,4.835,-.1,white,chamber);
 const column=groups.column;
 box(.15,1.35,.25,-.93,5.07,-.9,aluminum,column);box(.15,1.35,.25,.93,5.07,-.9,aluminum,column);
@@ -1127,13 +1138,32 @@ mesh(new THREE.TubeGeometry(bundle,64,.067,10,false),rubber,cables,0,0,0);for(le
 tube([[.62,4.88,.08],[1.01,4.65,.04],[1.4,3.79,.15],[2.33,3.72,.1],[2.89,3.83,.06]],.024,rubber,cables);
 tube([[cx+.03,4.37,cz-.8],[cx+.41,4.38,cz-.82],[cx+.55,4.01,cz-.81],[cx+.56,3.82,cz-.68]],.023,rubber,cables);
 
+// Educational chamber interior; actual detector and stage configurations vary.
+const inside=groups.interior,sample=groups.sample,detectors=groups.detectors;
+const liner=mat(0x8f9ea8,.5,.37);
+box(2.12,1.2,.02,0,4.09,-.903,liner,inside);box(2.12,.022,1.68,0,3.49,-.03,liner,inside);
+for(const x of [-1.065,1.065])box(.016,1.2,1.68,x,4.09,-.03,liner,inside);
+// X-Y table, rotation platform and specimen stub.
+box(.81,.1,.72,0,3.57,-.05,charcoal,sample);box(.64,.065,.56,.035,3.655,-.05,aluminum,sample);
+for(const x of [-.25,.25])box(.045,.035,.57,x,3.703,-.05,aluminum,sample);
+box(.52,.06,.4,.035,3.744,-.05,charcoal,sample);cyl(.2,.07,.035,3.809,-.05,aluminum,sample);
+cyl(.075,.09,.035,3.889,-.05,aluminum,sample);cyl(.13,.025,.035,3.946,-.05,aluminum,sample);
+box(.075,.016,.058,.035,3.967,-.05,mat(0x458d98,.35,.3),sample);
+// Objective pole-piece beneath the column and generic side detectors.
+mesh(new THREE.CylinderGeometry(.27,.105,.32,48),aluminum,inside,.035,4.52,-.05);
+cyl(.07,.018,.035,4.351,-.05,black,inside);
+cyl(.12,.35,-.85,4.16,-.03,aluminum,detectors,'x');cyl(.09,.018,-.664,4.16,-.03,charcoal,detectors,'x');
+box(.15,.26,.22,.87,4.2,-.26,charcoal,detectors);cyl(.065,.29,.655,4.2,-.26,aluminum,detectors,'x');
+tube([[-.88,4.15,-.14],[-.9,4.01,-.5],[-.6,3.6,-.77]],.015,rubber,detectors);
+label('SAMPLE STAGE',.53,.07,.035,3.65,.248,sample,'#263744','#ffffff');
+assembly.userData.description='Approximate RISE Raman-SEM exterior with illustrative opening access panel, sample stage, objective pole-piece and detectors. Not manufacturer CAD or a service procedure.';
+
 const floor=mesh(new THREE.PlaneGeometry(100,100),new THREE.ShadowMaterial({opacity:.13}),scene,0,.048,0);floor.rotation.x=-Math.PI/2;floor.castShadow=false;
 const view=document.getElementById('view'),selection=document.getElementById('component'),isolate=document.getElementById('isolate'),doorButton=document.getElementById('door'),detail=document.getElementById('detail');let opened=false;
-const descriptions={all:"Drag to rotate · scroll or pinch to zoom · right-drag to pan",base:"SEM instrument cabinet with bowed front and leveling feet.",chamber:"External sample-chamber housing — internal mechanisms are not reconstructed.",column:"Tall white electron-column enclosure.",raman:"Integrated WITec Raman module with optical base and coupling barrel.",cart:"Adjacent equipment cabinet with casters and front door.",spectrometer:"External Raman peripheral housings — approximate visible details.",cables:"External cable guide and signal fibres."};
-function framing(){assembly.updateMatrixWorld(true);const target=isolate.checked&&selection.value!=='all'?groups[selection.value]:assembly;const bounds=new THREE.Box3().setFromObject(target),center=bounds.getCenter(new THREE.Vector3()),size=bounds.getSize(new THREE.Vector3());const dist=Math.max(size.x,size.y,size.z)*2.12*Math.max(1,.9/camera.aspect);const dirs={perspective:[.95,.58,1.65],front:[0,.15,2],rear:[0,.2,-2],side:[2,.2,0],top:[0,2,.001]};orbit.target.copy(center);camera.position.copy(center).add(new THREE.Vector3(...dirs[view.value]).normalize().multiplyScalar(dist));orbit.update();}
+const descriptions={hatch:"Access panel moves aside in an illustrative exploded view.",interior:"Simplified vacuum chamber liner and electron objective pole-piece.",sample:"Illustrative translation table, rotation stage and specimen stub.",detectors:"Generic detector housings; placement and configuration are schematic.",all:"Drag to rotate · scroll or pinch to zoom · right-drag to pan",base:"SEM instrument cabinet with bowed front and leveling feet.",chamber:"Hollow sample chamber with fixed frame and access opening.",column:"Tall white electron-column enclosure.",raman:"Integrated WITec Raman module with optical base and coupling barrel.",cart:"Adjacent equipment cabinet with casters and front door.",spectrometer:"External Raman peripheral housings — approximate visible details.",cables:"External cable guide and signal fibres."};
+let openAmount=0;const hatchButton=document.getElementById("openHatch"),opening=document.getElementById("opening");function setOpening(v){openAmount=v;groups.hatch.position.set(-1.95*v,0,.25*v);opening.value=Math.round(v*100);hatchButton.textContent=v>.5?"Close chamber":"Open chamber";hatchButton.setAttribute("aria-pressed",String(v>0));}hatchButton.onclick=()=>{setOpening(openAmount>.5?0:1);framing();};opening.oninput=()=>{setOpening(Number(opening.value)/100);framing();};function framing(){assembly.updateMatrixWorld(true);const target=isolate.checked&&selection.value!=='all'?groups[selection.value]:assembly;const bounds=new THREE.Box3().setFromObject(target),center=bounds.getCenter(new THREE.Vector3()),size=bounds.getSize(new THREE.Vector3());const dist=Math.max(size.x,size.y,size.z)*1.85*Math.max(1,.9/camera.aspect);const dirs={perspective:[.95,.58,1.65],front:[0,.15,2],rear:[0,.2,-2],side:[2,.2,0],top:[0,2,.001]};orbit.target.copy(center);camera.position.copy(center).add(new THREE.Vector3(...dirs[view.value]).normalize().multiplyScalar(dist));orbit.update();}
 function apply(){for(const [name,g] of Object.entries(groups)){g.visible=!isolate.checked||selection.value==='all'||name===selection.value;g.traverse(o=>{if(o.isMesh){o.userData.original??=o.material;o.material=o.userData.original;if(name===selection.value&&o.material.emissive){o.material=o.material.clone();o.material.emissive.setHex(0x285567);o.material.emissiveIntensity=.12;}}});}detail.textContent=descriptions[selection.value];framing();}
-for(const e of [view,selection,isolate])e.onchange=()=>{apply();};
+for(const e of [view,selection,isolate])e.onchange=()=>{if(["interior","sample","detectors"].includes(selection.value))setOpening(1);apply();};
 new ResizeObserver(()=>{renderer.setSize(host.clientWidth,host.clientHeight);camera.aspect=host.clientWidth/host.clientHeight;camera.updateProjectionMatrix();framing();}).observe(host);apply();status.remove();renderer.setAnimationLoop(()=>{orbit.update();renderer.render(scene,camera);});
 }catch(e){host.appendChild(status);status.setAttribute('role','alert');status.textContent='Unable to start 3D viewer: '+e.message;}})();
 </script></body></html>
-

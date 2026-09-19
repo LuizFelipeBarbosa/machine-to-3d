@@ -4,38 +4,58 @@
   "parts": [
     {
       "name": "base",
-      "label": "SEM Cabinet",
+      "label": "Base",
       "blurb": "SEM instrument cabinet with bowed front and leveling feet."
     },
     {
       "name": "chamber",
-      "label": "Chamber Housing",
-      "blurb": "External sample-chamber housing — internal mechanisms are not reconstructed."
+      "label": "Chamber",
+      "blurb": "Hollow sample chamber with fixed frame and access opening."
     },
     {
       "name": "column",
-      "label": "SEM Column Housing",
+      "label": "Column",
       "blurb": "Tall white electron-column enclosure."
     },
     {
       "name": "raman",
-      "label": "Raman Optical Module",
+      "label": "Raman",
       "blurb": "Integrated WITec Raman module with optical base and coupling barrel."
     },
     {
       "name": "cart",
-      "label": "Equipment Cart",
+      "label": "Cart",
       "blurb": "Adjacent equipment cabinet with casters and front door."
     },
     {
       "name": "spectrometer",
-      "label": "Raman Peripheral Housings",
+      "label": "Spectrometer",
       "blurb": "External Raman peripheral housings — approximate visible details."
     },
     {
       "name": "cables",
-      "label": "Cables and Fibres",
+      "label": "Cables",
       "blurb": "External cable guide and signal fibres."
+    },
+    {
+      "name": "SEM_access_door",
+      "label": "SEM Access Door",
+      "blurb": "Access panel moves aside in an illustrative exploded view."
+    },
+    {
+      "name": "interior",
+      "label": "Interior",
+      "blurb": "Simplified vacuum chamber liner and electron objective pole-piece."
+    },
+    {
+      "name": "sample",
+      "label": "Sample",
+      "blurb": "Illustrative translation table, rotation stage and specimen stub."
+    },
+    {
+      "name": "detectors",
+      "label": "Detectors",
+      "blurb": "Generic detector housings; placement and configuration are schematic."
     }
   ],
   "presetViews": [
@@ -49,7 +69,7 @@
           11.199
         ],
         "target": [
-          1.252,
+          1.253,
           3.63,
           0.065
         ]
@@ -60,12 +80,12 @@
       "label": "Front",
       "view": {
         "pos": [
-          1.252,
+          1.253,
           4.635,
           13.458
         ],
         "target": [
-          1.252,
+          1.253,
           3.63,
           0.065
         ]
@@ -76,12 +96,12 @@
       "label": "Rear",
       "view": {
         "pos": [
-          1.252,
+          1.253,
           4.966,
           -13.299
         ],
         "target": [
-          1.252,
+          1.253,
           3.63,
           0.065
         ]
@@ -97,7 +117,7 @@
           0.065
         ],
         "target": [
-          1.252,
+          1.253,
           3.63,
           0.065
         ]
@@ -108,17 +128,35 @@
       "label": "Top",
       "view": {
         "pos": [
-          1.252,
+          1.253,
           17.061,
           0.072
         ],
         "target": [
-          1.252,
+          1.253,
           3.63,
           0.065
         ]
       }
     }
   ],
-  "stateVars": []
+  "stateVars": [
+    {
+      "name": "open",
+      "label": "SEM chamber open",
+      "kind": "toggle",
+      "userToggle": true,
+      "effects": [
+        {
+          "type": "translate",
+          "node": "SEM_access_door",
+          "offset": [
+            -1.95,
+            0,
+            0.25
+          ]
+        }
+      ]
+    }
+  ]
 }

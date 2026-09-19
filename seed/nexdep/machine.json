@@ -1,0 +1,157 @@
+{
+  "formatVersion": 1,
+  "rootNode": "Angstrom_Nexdep",
+  "parts": [
+    {
+      "name": "base",
+      "label": "Base",
+      "blurb": "White equipment cabinet, vented panels and leveling feet."
+    },
+    {
+      "name": "chamber",
+      "label": "Chamber",
+      "blurb": "Stainless-steel process chamber with access panel and handwheel."
+    },
+    {
+      "name": "vacuum",
+      "label": "Vacuum",
+      "blurb": "Simplified exterior vacuum flanges and feedthrough assemblies."
+    },
+    {
+      "name": "top",
+      "label": "Top",
+      "blurb": "Upper drive housings and status tower."
+    },
+    {
+      "name": "console",
+      "label": "Console",
+      "blurb": "Articulated operator monitor and keyboard tray; screen is illustrative."
+    },
+    {
+      "name": "cables",
+      "label": "Cables",
+      "blurb": "Simplified external service tubing and cable loops."
+    },
+    {
+      "name": "Sliding_chamber_door",
+      "label": "Sliding Chamber Door",
+      "blurb": "Sliding front chamber door with handwheel; approximate travel."
+    },
+    {
+      "name": "interior",
+      "label": "Interior",
+      "blurb": "Simplified stainless-steel chamber liner."
+    },
+    {
+      "name": "source",
+      "label": "Source",
+      "blurb": "Illustrative multi-pocket electron-beam evaporation source and shutter. Not exact internal hardware."
+    },
+    {
+      "name": "holder",
+      "label": "Holder",
+      "blurb": "Simplified upper substrate holder and drive shaft."
+    }
+  ],
+  "presetViews": [
+    {
+      "name": "perspective",
+      "label": "Perspective",
+      "view": {
+        "pos": [
+          5.947,
+          5.782,
+          8.536
+        ],
+        "target": [
+          1.065,
+          2.802,
+          0.058
+        ]
+      }
+    },
+    {
+      "name": "front",
+      "label": "Front",
+      "view": {
+        "pos": [
+          1.065,
+          3.567,
+          10.257
+        ],
+        "target": [
+          1.065,
+          2.802,
+          0.058
+        ]
+      }
+    },
+    {
+      "name": "rear",
+      "label": "Rear",
+      "view": {
+        "pos": [
+          1.065,
+          3.819,
+          -10.119
+        ],
+        "target": [
+          1.065,
+          2.802,
+          0.058
+        ]
+      }
+    },
+    {
+      "name": "side",
+      "label": "Side",
+      "view": {
+        "pos": [
+          11.242,
+          3.819,
+          0.058
+        ],
+        "target": [
+          1.065,
+          2.802,
+          0.058
+        ]
+      }
+    },
+    {
+      "name": "top",
+      "label": "Top",
+      "view": {
+        "pos": [
+          1.065,
+          13.029,
+          0.063
+        ],
+        "target": [
+          1.065,
+          2.802,
+          0.058
+        ]
+      }
+    }
+  ],
+  "stateVars": [
+    {
+      "name": "open",
+      "label": "Chamber door open",
+      "kind": "toggle",
+      "userToggle": true,
+      "effects": [
+        {
+          "type": "translate",
+          "node": "Sliding_chamber_door",
+          "offset": [
+            -1.17,
+            0,
+            0
+          ]
+        }
+      ]
+    }
+  ]
+}

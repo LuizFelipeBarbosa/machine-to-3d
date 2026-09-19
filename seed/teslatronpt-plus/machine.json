@@ -1,0 +1,162 @@
+{
+  "formatVersion": 1,
+  "rootNode": "TeslatronPT_Plus",
+  "parts": [
+    {
+      "name": "cryostat",
+      "label": "Cryostat",
+      "blurb": "Fixed rear cryostat shell, base and upper flange."
+    },
+    {
+      "name": "top",
+      "label": "Top",
+      "blurb": "Sample entry and cryogenic service fittings — simplified visible geometry."
+    },
+    {
+      "name": "rack",
+      "label": "Rack",
+      "blurb": "Measurement rack frame and upper breakout rack."
+    },
+    {
+      "name": "instruments",
+      "label": "Instruments",
+      "blurb": "Rack instruments and breakout connectors — displays are schematic."
+    },
+    {
+      "name": "services",
+      "label": "Services",
+      "blurb": "Service rack with controls, gas-handling panel and ventilation."
+    },
+    {
+      "name": "lines",
+      "label": "Lines",
+      "blurb": "External service lines — routing is schematic."
+    },
+    {
+      "name": "Removable_cryostat_cover",
+      "label": "Removable Cryostat Cover",
+      "blurb": "Front cryostat shell moves aside in an illustrative exploded view."
+    },
+    {
+      "name": "magnet",
+      "label": "Magnet",
+      "blurb": "Schematic superconducting magnet with front cutaway to expose the bore."
+    },
+    {
+      "name": "sample",
+      "label": "Sample",
+      "blurb": "Illustrative sample insert and sample platform; not an exact Teslatron insert."
+    },
+    {
+      "name": "cooling",
+      "label": "Cooling",
+      "blurb": "Simplified two-stage cooler; placement and connections are illustrative."
+    },
+    {
+      "name": "shield",
+      "label": "Shield",
+      "blurb": "Radiation shield with a permanent front cutaway for visibility."
+    }
+  ],
+  "presetViews": [
+    {
+      "name": "perspective",
+      "label": "Perspective",
+      "view": {
+        "pos": [
+          7.287,
+          7.744,
+          12.792
+        ],
+        "target": [
+          -0.038,
+          3.273,
+          0.07
+        ]
+      }
+    },
+    {
+      "name": "front",
+      "label": "Front",
+      "view": {
+        "pos": [
+          -0.038,
+          4.42,
+          15.373
+        ],
+        "target": [
+          -0.038,
+          3.273,
+          0.07
+        ]
+      }
+    },
+    {
+      "name": "rear",
+      "label": "Rear",
+      "view": {
+        "pos": [
+          -0.038,
+          4.799,
+          -15.2
+        ],
+        "target": [
+          -0.038,
+          3.273,
+          0.07
+        ]
+      }
+    },
+    {
+      "name": "side",
+      "label": "Side",
+      "view": {
+        "pos": [
+          15.232,
+          4.799,
+          0.07
+        ],
+        "target": [
+          -0.038,
+          3.273,
+          0.07
+        ]
+      }
+    },
+    {
+      "name": "top",
+      "label": "Top",
+      "view": {
+        "pos": [
+          -0.038,
+          18.618,
+          0.078
+        ],
+        "target": [
+          -0.038,
+          3.273,
+          0.07
+        ]
+      }
+    }
+  ],
+  "stateVars": [
+    {
+      "name": "open",
+      "label": "Cryostat cover removed",
+      "kind": "toggle",
+      "userToggle": true,
+      "effects": [
+        {
+          "type": "translate",
+          "node": "Removable_cryostat_cover",
+          "offset": [
+            -1.8,
+            0,
+            1.1
+          ]
+        }
+      ]
+    }
+  ]
+}
