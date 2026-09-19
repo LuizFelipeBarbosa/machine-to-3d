@@ -10,6 +10,8 @@
 
     /* Bundler mode */
     "moduleResolution": "bundler",
+    // Prefer packaged declarations to dependency sources that use non-erasable syntax.
+    "moduleSuffixes": [".d", ""],
     "resolveJsonModule": true,
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,

@@ -15,13 +15,14 @@ export type PlayerViewProps = {
   linkTargets: Record<string, string[]>;
   onOpenProcedure(procedureSlug: string, stepId?: string): void;
   initialStepId?: string;
+  onComplete?(checkpoints: { stepId: string; at: number }[]): void;
 };
 
 function isTextControl(target: EventTarget | null): boolean {
   return target instanceof Element && /^(INPUT|SELECT|TEXTAREA)$/.test(target.tagName);
 }
 
-export function PlayerView({ machine, procedure, linkTargets, onOpenProcedure, initialStepId }: PlayerViewProps): JSX.Element {
+export function PlayerView({ machine, procedure, linkTargets, onOpenProcedure, initialStepId, onComplete }: PlayerViewProps): JSX.Element {
   const { content } = procedure;
   const { steps } = content;
   const progressKey = `${machine.slug}/${procedure.slug}`;
@@ -48,6 +49,7 @@ export function PlayerView({ machine, procedure, linkTargets, onOpenProcedure, i
   const scene = useRef<MachineSceneHandle>(null);
   const currentRow = useRef<HTMLLIElement>(null);
   const synchronizedStep = useRef<{ index: number; content: typeof content } | null>(null);
+  const completionReported = useRef(false);
   const [initialView] = useState(sceneStep?.view);
   const nextDisabled = !currentStep || Boolean(currentStep.check && !progress.checked.includes(currentStep.id));
   const announcement = currentStep ? `Step ${index + 1} of ${steps.length}: ${currentStep.title}` : 'Procedure complete';
@@ -56,6 +58,13 @@ export function PlayerView({ machine, procedure, linkTargets, onOpenProcedure, i
     usePlayerStore.getState().go(progressKey, initialIndex, steps.length);
     setInitialized(true);
   }, [progressKey, initialIndex, steps.length]);
+
+  useEffect(() => {
+    if (index < steps.length || completionReported.current) return;
+    completionReported.current = true;
+    const at = Date.now();
+    onComplete?.((savedProgress?.checked ?? []).map((stepId) => ({ stepId, at })));
+  }, [index, steps.length, savedProgress?.checked, onComplete]);
 
   const syncStepView = useCallback((instant = false) => {
     if (sceneStep) scene.current?.goToView(sceneStep.view, { instant });
@@ -104,6 +113,7 @@ export function PlayerView({ machine, procedure, linkTargets, onOpenProcedure, i
   }, [back, index, next, nextDisabled]);
 
   function restart(): void {
+    completionReported.current = false;
     usePlayerStore.getState().restart(progressKey);
     go(0);
   }
