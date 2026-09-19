@@ -54,7 +54,7 @@ export const MachineScene = forwardRef<MachineSceneHandle, MachineSceneProps>(fu
           shadows
           dpr={[1, 2]}
           gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 0.9 }}
-          camera={{ fov: 36, near: 0.05 }}
+          camera={{ fov: 36 }}
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
           fallback={<SceneFailure />}
           onPointerMissed={() => props.onPickPart?.(null)}
@@ -92,7 +92,8 @@ function SceneContents({
     if (!index) return null;
     const dimensions = index.bounds.getSize(new THREE.Vector3());
     return {
-      size: Math.max(dimensions.x, dimensions.y, dimensions.z, 0.001),
+      // Only use a fallback for zero-size bounds; small models keep their actual size.
+      size: Math.max(dimensions.x, dimensions.y, dimensions.z) || 1,
       centre: index.bounds.getCenter(new THREE.Vector3()),
       floorY: index.bounds.min.y,
     };
@@ -132,6 +133,7 @@ function SceneContents({
 
   useLayoutEffect(() => {
     if (!index || !geometry || !controls.current) return;
+    camera.near = geometry.size / 200;
     camera.far = geometry.size * 40;
     camera.updateProjectionMatrix();
     lightTarget.position.copy(geometry.centre);
@@ -175,14 +177,14 @@ function SceneContents({
         shadow-camera-right={size}
         shadow-camera-top={size}
         shadow-camera-bottom={-size}
-        shadow-camera-near={0.05}
+        shadow-camera-near={size / 200}
         shadow-camera-far={size * 40}
       />
       <directionalLight color={0xc4d9ff} intensity={0.7} target={lightTarget} position={[centre.x - 5 * lightScale, centre.y + 4 * lightScale, centre.z + 2 * lightScale]} />
       <directionalLight color={0xffffff} intensity={1.5} target={lightTarget} position={[centre.x + 2 * lightScale, centre.y + 6 * lightScale, centre.z - 5 * lightScale]} />
       {geometry && (
         <mesh rotation-x={-Math.PI / 2} position={[centre.x, geometry.floorY, centre.z]} receiveShadow>
-          <planeGeometry args={[200, 200]} />
+          <planeGeometry args={[size * 50, size * 50]} />
           <shadowMaterial opacity={0.15} />
         </mesh>
       )}
