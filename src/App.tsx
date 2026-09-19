@@ -9,9 +9,8 @@ import { createConvexCatalog } from './data/convexCatalog';
 import { localCatalog } from './data/localCatalog';
 import { isConvexMode } from './data/mode';
 import { Editor } from './routes/Editor';
-import { Machine } from './routes/Machine';
+import { MachineWorkspace } from './machine/MachineWorkspace';
 import { MachineList } from './routes/MachineList';
-import { PlayerRoute } from './routes/Player';
 import { Records } from './routes/Records';
 import { Users } from './routes/Users';
 
@@ -20,8 +19,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={<MachineList />} />
       <Route path="/admin/machines" element={<MachineAdmin />} />
-      <Route path="/m/:machine" element={<Machine />} />
-      <Route path="/m/:machine/:procedure" element={<PlayerRoute />} />
+      <Route path="/m/:machine/:procedure?" element={<MachineWorkspace />} />
       <Route path="/m/:machine/:procedure/edit" element={<Editor />} />
       <Route path="/records" element={isConvexMode ? <Records /> : <Navigate to="/" replace />} />
       <Route path="/users" element={isConvexMode ? <Users /> : <Navigate to="/" replace />} />

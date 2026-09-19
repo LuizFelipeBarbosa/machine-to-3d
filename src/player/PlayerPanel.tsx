@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { JSX } from 'react';
+import { createPortal } from 'react-dom';
 import type { MachineRecord, ProcedureRecord } from '../data/catalog';
-import { MachineScene } from '../scene';
-import type { MachineSceneHandle } from '../scene';
+import type { SceneController } from '../machine/useSceneController';
 import { PartInspector } from './PartInspector';
 import { PlayerFooter } from './PlayerFooter';
 import { StepList } from './StepList';
@@ -10,8 +10,13 @@ import { usePlayerStore } from './playerStore';
 import type { Progress } from './playerStore';
 import { useEffectiveState } from './useEffectiveState';
 
-export type PlayerViewProps = {
+export type PlayerPanelProps = {
   machine: MachineRecord;
+  controller: SceneController;
+  /** Portal targets keep player controls beside the scene without moving player state into the workspace. */
+  viewport?: { tools: HTMLDivElement | null; inspector: HTMLDivElement | null };
+  inspected?: string | null;
+  onInspect?(part: string | null): void;
   procedure: ProcedureRecord;
   linkTargets: Record<string, string[]>;
   onOpenProcedure(procedureSlug: string, stepId?: string): void;
@@ -25,7 +30,10 @@ function isTextControl(target: EventTarget | null): boolean {
   return target instanceof Element && /^(INPUT|SELECT|TEXTAREA)$/.test(target.tagName);
 }
 
-export function PlayerView({ machine, procedure, linkTargets, onOpenProcedure, initialStepId, onComplete, mediaUrls, preview = false }: PlayerViewProps): JSX.Element {
+export function PlayerPanel({
+  machine, controller, viewport, inspected, onInspect, procedure, linkTargets,
+  onOpenProcedure, initialStepId, onComplete, mediaUrls, preview = false,
+}: PlayerPanelProps): JSX.Element {
   const { content } = procedure;
   const { steps } = content;
   const progressKey = `${machine.slug}/${procedure.slug}`;
@@ -44,20 +52,29 @@ export function PlayerView({ machine, procedure, linkTargets, onOpenProcedure, i
   const currentStep = steps[index];
   const sceneStep = steps[Math.min(index, steps.length - 1)];
   const { state, setToggle } = useEffectiveState(content, index);
-  const [inspected, setInspected] = useState<string | null>(null);
+  const setInspected = useCallback((part: string | null) => onInspect?.(part), [onInspect]);
   const inspectedPart = machine.definition.parts.find((part) => part.name === inspected);
-  const highlightedParts = [...(sceneStep?.parts ?? [])];
-  if (inspectedPart && !highlightedParts.includes(inspectedPart.name)) {
-    highlightedParts.push(inspectedPart.name);
-  }
-
-  const scene = useRef<MachineSceneHandle>(null);
+  const { handle: scene, setState, setHighlighted } = controller;
   const currentRow = useRef<HTMLLIElement>(null);
   const synchronizedStep = useRef<{ index: number; content: typeof content } | null>(null);
   const completionReported = useRef(false);
-  const [initialView] = useState(sceneStep?.view);
   const nextDisabled = !currentStep || Boolean(currentStep.check && !progress.checked.includes(currentStep.id));
   const announcement = currentStep ? `Step ${index + 1} of ${steps.length}: ${currentStep.title}` : 'Procedure complete';
+
+  useLayoutEffect(() => {
+    setState(state);
+  }, [state, setState]);
+
+  useLayoutEffect(() => {
+    const parts = [...(sceneStep?.parts ?? [])];
+    if (inspectedPart && !parts.includes(inspectedPart.name)) parts.push(inspectedPart.name);
+    setHighlighted(parts);
+  }, [sceneStep, inspectedPart, setHighlighted]);
+
+  useLayoutEffect(() => () => {
+    setHighlighted([]);
+    setInspected(null);
+  }, [setHighlighted, setInspected]);
 
   useEffect(() => {
     if (!preview) usePlayerStore.getState().go(progressKey, initialIndex, steps.length);
@@ -73,18 +90,29 @@ export function PlayerView({ machine, procedure, linkTargets, onOpenProcedure, i
 
   const syncStepView = useCallback((instant = false) => {
     if (sceneStep) scene.current?.goToView(sceneStep.view, { instant });
-  }, [sceneStep]);
+  }, [scene, sceneStep]);
 
   useEffect(function synchronizeCurrentStep() {
     const previous = synchronizedStep.current;
     if (previous?.index === index && previous.content === content) return;
-    syncStepView(previous === null);
-    synchronizedStep.current = { index, content };
+    let frame: number | undefined;
+    function synchronizeView() {
+      // Canvas mounts in a separate React root; its handle may arrive after this panel.
+      if (!scene.current) {
+        frame = requestAnimationFrame(synchronizeView);
+        return;
+      }
+      syncStepView(previous === null);
+      synchronizedStep.current = { index, content };
+    }
+    synchronizeView();
     setInspected(null);
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     currentRow.current?.scrollIntoView({ block: 'nearest', behavior: reducedMotion ? 'auto' : 'smooth' });
-    // Highlights and the live announcement are derived from this same index above.
-  }, [content, index, syncStepView]);
+    return () => {
+      if (frame !== undefined) cancelAnimationFrame(frame);
+    };
+  }, [content, index, scene, syncStepView, setInspected]);
 
   const go = useCallback((nextIndex: number) => {
     setInspected(null);
@@ -93,7 +121,15 @@ export function PlayerView({ machine, procedure, linkTargets, onOpenProcedure, i
     } else {
       usePlayerStore.getState().go(progressKey, nextIndex, steps.length);
     }
-  }, [preview, progressKey, steps.length]);
+  }, [preview, progressKey, steps.length, setInspected]);
+
+  const requestedStep = useRef(initialStepId);
+  useEffect(() => {
+    if (requestedStep.current === initialStepId) return;
+    requestedStep.current = initialStepId;
+    const requestedIndex = steps.findIndex((step) => step.id === initialStepId);
+    if (requestedIndex >= 0) go(requestedIndex);
+  }, [initialStepId, steps, go]);
 
   const back = useCallback(() => {
     if (index > 0) go(index - 1);
@@ -111,7 +147,7 @@ export function PlayerView({ machine, procedure, linkTargets, onOpenProcedure, i
     } else {
       usePlayerStore.getState().markDoneAndAdvance(progressKey, currentStep.id, steps.length);
     }
-  }, [preview, currentStep, nextDisabled, progressKey, steps.length]);
+  }, [preview, currentStep, nextDisabled, progressKey, steps.length, setInspected]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent): void {
@@ -147,64 +183,57 @@ export function PlayerView({ machine, procedure, linkTargets, onOpenProcedure, i
     }
   }
 
+  function openProcedure(slug: string, stepId?: string) {
+    if (slug === procedure.slug) {
+      const requestedIndex = steps.findIndex((step) => step.id === stepId);
+      if (requestedIndex >= 0) go(requestedIndex);
+    }
+    onOpenProcedure(slug, stepId);
+  }
+
   return (
-    <main className="app">
-      <section className="viewport" aria-label="3D view of the instrument">
-        <MachineScene
-          ref={scene}
-          modelUrl={machine.modelUrl}
-          definition={machine.definition}
-          state={state}
-          highlightedParts={highlightedParts}
-          initialView={initialView}
-          onPickPart={setInspected}
+    <>
+      {viewport?.tools && createPortal(<>
+        {machine.definition.stateVars.filter((variable) => variable.userToggle).map((variable) => (
+          <label key={variable.name}>
+            <input type="checkbox" checked={Boolean(state[variable.name])} onChange={(event) => setToggle(variable.name, event.target.checked)} />
+            {variable.label}
+          </label>
+        ))}
+        <button type="button" onClick={() => syncStepView()}>Back to step view</button>
+      </>, viewport.tools)}
+      {viewport?.inspector && inspectedPart && createPortal(
+        <PartInspector part={inspectedPart} steps={steps} onGo={go} onClose={() => setInspected(null)} />,
+        viewport.inspector,
+      )}
+      <div className="panel-head">
+        <h2>{content.title}</h2>
+        {preview && <p className="draft" role="status">Draft preview — not recorded</p>}
+        <p className="panel-summary">{`${content.summary} ${steps.length} steps, about ${content.minutes} minutes.`}</p>
+        {procedure.placeholder && <p className="draft">Example content for this prototype. Swap in your lab's approved SOP before training anyone with it.</p>}
+      </div>
+      {index >= steps.length ? (
+        <div className="steps">
+          <div className="complete">
+            <h2>Procedure complete</h2>
+            <p>{`All ${steps.length} steps of "${content.title}" are done.`}</p>
+            <button type="button" className="btn" onClick={restart}>Start again</button>
+          </div>
+        </div>
+      ) : (
+        <StepList
+          steps={steps}
+          progress={progress}
+          currentRowRef={currentRow}
+          linkTargets={linkTargets}
+          mediaUrls={mediaUrls}
+          onGo={go}
+          onChecked={setChecked}
+          onOpenProcedure={openProcedure}
         />
-        <div className="vp-top">
-          <div className="machine"><h1>{machine.name}</h1><p>{machine.kind}</p></div>
-          <div className="tools">
-            {machine.definition.stateVars.filter((variable) => variable.userToggle).map((variable) => (
-              <label key={variable.name}>
-                <input type="checkbox" checked={Boolean(state[variable.name])} onChange={(event) => setToggle(variable.name, event.target.checked)} />
-                {variable.label}
-              </label>
-            ))}
-            <button type="button" onClick={() => syncStepView()}>Back to step view</button>
-          </div>
-        </div>
-        {inspectedPart && <PartInspector part={inspectedPart} steps={steps} onGo={go} onClose={() => setInspected(null)} />}
-        <p className="hint">Drag to orbit, scroll to zoom, click a part to identify it</p>
-      </section>
-      <aside className="panel" aria-label="Procedure">
-        <div className="panel-head">
-          <label>Procedure</label>
-          <h2>{content.title}</h2>
-          {preview && <p className="draft" role="status">Draft preview — not recorded</p>}
-          <p className="panel-summary">{`${content.summary} ${steps.length} steps, about ${content.minutes} minutes.`}</p>
-          {procedure.placeholder && <p className="draft">Example content for this prototype. Swap in your lab's approved SOP before training anyone with it.</p>}
-        </div>
-        {index >= steps.length ? (
-          <div className="steps">
-            <div className="complete">
-              <h2>Procedure complete</h2>
-              <p>{`All ${steps.length} steps of "${content.title}" are done.`}</p>
-              <button type="button" className="btn" onClick={restart}>Start again</button>
-            </div>
-          </div>
-        ) : (
-          <StepList
-            steps={steps}
-            progress={progress}
-            currentRowRef={currentRow}
-            linkTargets={linkTargets}
-            mediaUrls={mediaUrls}
-            onGo={go}
-            onChecked={setChecked}
-            onOpenProcedure={onOpenProcedure}
-          />
-        )}
-        <PlayerFooter index={index} stepCount={steps.length} nextDisabled={nextDisabled} onBack={back} onNext={next} />
-        <p className="sr" aria-live="polite">{announcement}</p>
-      </aside>
-    </main>
+      )}
+      <PlayerFooter index={index} stepCount={steps.length} nextDisabled={nextDisabled} onBack={back} onNext={next} />
+      <p className="sr" aria-live="polite">{announcement}</p>
+    </>
   );
 }

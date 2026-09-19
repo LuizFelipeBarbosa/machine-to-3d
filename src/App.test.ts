@@ -33,8 +33,8 @@ it('browses local machines, the explorer, and a procedure without any auth provi
   const explorer = await screen.findByRole('complementary', { name: 'Explore' });
   expect(window.location.pathname).toBe('/m/park-nx10');
   expect(screen.getByRole('button', { name: 'Reset view' })).toBeTruthy();
-  const procedureLink = within(explorer).getAllByRole('link')[0];
-  fireEvent.click(procedureLink);
+  const procedureButton = within(explorer).getByRole('button', { name: /Non-contact topography scan/ });
+  fireEvent.click(procedureButton);
   expect(await screen.findByRole('complementary', { name: 'Procedure' })).toBeTruthy();
   expect(window.location.pathname).toMatch(/^\/m\/park-nx10\/[^/]+$/);
   expect(screen.queryByText('Recorded')).toBeNull();

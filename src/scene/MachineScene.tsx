@@ -12,6 +12,7 @@ import { prefersReducedMotion } from './reducedMotion';
 
 export type MachineSceneHandle = {
   goToView(view: View, options?: { instant?: boolean }): void;
+  resetView(): void;
   getCurrentView(): View;
 };
 
@@ -99,6 +100,14 @@ function SceneContents({
   const lightTarget = useMemo(() => new THREE.Object3D(), []);
 
   useImperativeHandle(sceneRef, () => ({
+    resetView() {
+      pendingView.current = null;
+      if (!index || !geometry || !controls.current) return;
+      const padding = geometry.size * 0.1;
+      void controls.current.fitToBox(index.root, !prefersReducedMotion(), {
+        paddingTop: padding, paddingBottom: padding, paddingLeft: padding, paddingRight: padding,
+      });
+    },
     goToView(view, options) {
       if (!index || !controls.current) {
         pendingView.current = { view, instant: options?.instant ?? false };
@@ -119,7 +128,7 @@ function SceneContents({
       }
       return { pos: [position.x, position.y, position.z], target: [target.x, target.y, target.z] };
     },
-  }), [camera, getThree, index]);
+  }), [camera, geometry, getThree, index]);
 
   useLayoutEffect(() => {
     if (!index || !geometry || !controls.current) return;

@@ -1112,3 +1112,16 @@ details.schema pre {
     grid-template-columns:minmax(0,1fr);
   }
 }
+
+.procedure-picker {
+  display:grid;
+  gap:.5rem;
+}
+
+.procedure-picker > label {
+  margin:0;
+}
+
+.procedure-picker > .btn {
+  justify-self:start;
+}

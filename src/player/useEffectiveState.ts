@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { foldState } from '../../shared/foldState';
 import type { MachineState } from '../../shared/machine';
 import type { ProcedureContent } from '../../shared/procedure';
@@ -29,8 +29,10 @@ export function useEffectiveState(content: ProcedureContent, index: number): {
     setOverrides(previousStep.content !== content ? {} : retainedOverrides(content, index, overrides));
   }
 
+  const state = useMemo(() => ({ ...foldState(content, index), ...overrides }), [content, index, overrides]);
+
   return {
-    state: { ...foldState(content, index), ...overrides },
+    state,
     setToggle(name, on) {
       setOverrides((current) => ({ ...current, [name]: on }));
     },
