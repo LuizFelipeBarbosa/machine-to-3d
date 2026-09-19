@@ -146,8 +146,12 @@ async function uploadModel(model: Buffer): Promise<string> {
 
 async function main() {
   const args = process.argv.slice(2);
-  if (args.some((arg) => arg !== '--dry-run')) {
-    throw new Error('Usage: npx tsx scripts/seed.ts [--dry-run]');
+  const force = args.includes('--force');
+  if (force) {
+    console.log('--force overrides human-authored procedures; use only on development deployments');
+  }
+  if (args.some((arg) => arg !== '--dry-run' && arg !== '--force')) {
+    throw new Error('Usage: npx tsx scripts/seed.ts [--dry-run] [--force]');
   }
   const validated = validateSeeds();
   console.table(validated.map(({ machine, nodeCount, procedures }) => ({
@@ -165,6 +169,7 @@ async function main() {
   let machinesUnchanged = 0;
   let proceduresCreated = 0;
   let proceduresUpdated = 0;
+  let proceduresForced = 0;
   let proceduresUnchanged = 0;
   let proceduresHumanAuthored = 0;
   for (const { machine, definition, model, procedures, linkTargets } of validated) {
@@ -197,19 +202,26 @@ async function main() {
       const result = runConvex<
         | { created: true; updated: false; versionId: string; version: number }
         | { created: false; updated: true; versionId: string; version: number }
+        | { created: false; updated: true; versionId: string; version: number; forced: true }
         | { created: false; updated: false; reason: 'unchanged' | 'human-authored' }
       >('seed:upsertProcedure', {
         machineSlug: slug,
         slug: procedure.slug,
         content: procedure.content,
         linkTargets,
+        force,
       });
       if (result.created) {
         proceduresCreated++;
         console.log(`${slug}/${procedure.slug}: created`);
       } else if (result.updated) {
-        proceduresUpdated++;
-        console.log(`${slug}/${procedure.slug}: updated to v${result.version}`);
+        if ('forced' in result && result.forced) {
+          proceduresForced++;
+          console.log(`${slug}/${procedure.slug}: updated to v${result.version} (forced)`);
+        } else {
+          proceduresUpdated++;
+          console.log(`${slug}/${procedure.slug}: updated to v${result.version}`);
+        }
       } else if (result.reason === 'unchanged') {
         proceduresUnchanged++;
         console.log(`${slug}/${procedure.slug}: unchanged`);
@@ -219,7 +231,7 @@ async function main() {
       }
     }
   }
-  console.log(`Seed complete: machines ${machinesCreated} created, ${machinesUpdated} updated, ${machinesUnchanged} unchanged; procedures ${proceduresCreated} created, ${proceduresUpdated} updated, ${proceduresUnchanged} unchanged, ${proceduresHumanAuthored} human-authored.`);
+  console.log(`Seed complete: machines ${machinesCreated} created, ${machinesUpdated} updated, ${machinesUnchanged} unchanged; procedures ${proceduresCreated} created, ${proceduresUpdated} updated, ${proceduresUnchanged} unchanged, ${proceduresHumanAuthored} human-authored, ${proceduresForced} forced.`);
 }
 
 main().catch((error: unknown) => {

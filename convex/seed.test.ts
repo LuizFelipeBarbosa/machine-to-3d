@@ -285,6 +285,147 @@ describe('seed procedures', () => {
     });
   });
 
+  test('force resets a human-approved version while preserving its history', async () => {
+    const { t, machineArgs, procedureArgs } = await setup();
+    await t.mutation(api.seed.upsertMachine, machineArgs);
+    const first = await t.mutation(api.seed.upsertProcedure, procedureArgs);
+    if (!first.created) throw new Error('Expected a new procedure');
+    const original = await t.run((ctx) => ctx.db.get(first.versionId));
+    const approverId = await createUser(t, { email: 'approver@example.com', role: 'approver' });
+    const approver = asUser(t, approverId);
+    const humanVersionId = await approver.mutation(api.procedures.createDraft, {
+      procedureId: original!.procedureId,
+    });
+    await approver.mutation(api.procedures.approve, {
+      versionId: humanVersionId, changeNote: 'Reviewed by a human',
+    });
+    const humanVersion = await t.run((ctx) => ctx.db.get(humanVersionId));
+    const content = structuredClone(procedureArgs.content);
+    content.steps[0].body = 'Corrected seed instructions';
+    const result = await t.mutation(api.seed.upsertProcedure, { ...procedureArgs, content, force: true });
+    expect(result).toEqual({
+      created: false, updated: true, versionId: expect.any(String), version: 3, forced: true,
+    });
+    if (!result.updated) throw new Error('Expected an updated procedure');
+    expect(await t.run((ctx) => ctx.db.get(result.versionId))).toMatchObject({
+      version: 3, status: 'approved', content, changeNote: 'Seeded (forced reset)',
+    });
+    expect(await t.run((ctx) => ctx.db.get(humanVersionId))).toEqual({ ...humanVersion, status: 'retired' });
+    expect(await t.run((ctx) => ctx.db.get(original!.procedureId))).toMatchObject({
+      approvedVersionId: result.versionId,
+    });
+  });
+
+  test('deletes an open human draft on forced reset', async () => {
+    const { t, machineArgs, procedureArgs } = await setup();
+    await t.mutation(api.seed.upsertMachine, machineArgs);
+    const first = await t.mutation(api.seed.upsertProcedure, procedureArgs);
+    if (!first.created) throw new Error('Expected a new procedure');
+    const original = await t.run((ctx) => ctx.db.get(first.versionId));
+    const authorId = await createUser(t, { email: 'author@example.com', role: 'author' });
+    const draftId = await asUser(t, authorId).mutation(api.procedures.createDraft, {
+      procedureId: original!.procedureId,
+    });
+    expect(await t.run((ctx) => ctx.db.get(draftId))).toMatchObject({ version: 2, status: 'draft' });
+    const content = structuredClone(procedureArgs.content);
+    content.steps[0].body = 'Corrected seed instructions';
+    const result = await t.mutation(api.seed.upsertProcedure, { ...procedureArgs, content, force: true });
+    expect(result).toEqual({
+      created: false, updated: true, versionId: expect.any(String), version: 3, forced: true,
+    });
+    if (!result.updated) throw new Error('Expected an updated procedure');
+    expect(await t.run((ctx) => ctx.db.get(draftId))).toBeNull();
+    expect(await t.run((ctx) => ctx.db.get(result.versionId))).toMatchObject({
+      status: 'approved', content, changeNote: 'Seeded (forced reset)',
+    });
+    expect(await t.run((ctx) => ctx.db.get(first.versionId))).toEqual({ ...original, status: 'retired' });
+    expect(await t.run((ctx) => ctx.db.get(original!.procedureId))).toMatchObject({
+      approvedVersionId: result.versionId,
+    });
+  });
+
+  test('keeps training records pinned to the original content after a forced reset', async () => {
+    const { t, trainee, machineArgs, procedureArgs } = await setup();
+    await t.mutation(api.seed.upsertMachine, machineArgs);
+    const first = await t.mutation(api.seed.upsertProcedure, procedureArgs);
+    if (!first.created) throw new Error('Expected a new procedure');
+    const original = await t.run((ctx) => ctx.db.get(first.versionId));
+    const recordId = await trainee.mutation(api.training.complete, {
+      procedureVersionId: first.versionId, checkpoints: [],
+    });
+    const record = await t.run((ctx) => ctx.db.get(recordId));
+    const approverId = await createUser(t, { email: 'approver@example.com', role: 'approver' });
+    const approver = asUser(t, approverId);
+    const humanVersionId = await approver.mutation(api.procedures.createDraft, {
+      procedureId: original!.procedureId,
+    });
+    await approver.mutation(api.procedures.approve, {
+      versionId: humanVersionId, changeNote: 'Reviewed by a human',
+    });
+    const content = structuredClone(procedureArgs.content);
+    content.steps[0].body = 'Corrected seed instructions';
+    expect(await t.mutation(api.seed.upsertProcedure, { ...procedureArgs, content, force: true }))
+      .toMatchObject({ created: false, updated: true, version: 3, forced: true });
+    expect(await t.run((ctx) => ctx.db.get(recordId))).toEqual(record);
+    expect(record).toMatchObject({ procedureVersionId: first.versionId });
+    expect(await t.run((ctx) => ctx.db.get(first.versionId))).toEqual({ ...original, status: 'retired' });
+  });
+
+  test.each(['approved', 'draft'] as const)(
+    'avoids a no-op publish when forcing identical content with a human %s',
+    async (status) => {
+      const { t, machineArgs, procedureArgs } = await setup();
+      await t.mutation(api.seed.upsertMachine, machineArgs);
+      const first = await t.mutation(api.seed.upsertProcedure, procedureArgs);
+      if (!first.created) throw new Error('Expected a new procedure');
+      const original = await t.run((ctx) => ctx.db.get(first.versionId));
+      const approverId = await createUser(t, { email: 'approver@example.com', role: 'approver' });
+      const approver = asUser(t, approverId);
+      const humanVersionId = await approver.mutation(api.procedures.createDraft, {
+        procedureId: original!.procedureId,
+      });
+      if (status === 'approved') {
+        await approver.mutation(api.procedures.approve, {
+          versionId: humanVersionId, changeNote: 'Reviewed by a human',
+        });
+      }
+      const versions = await t.run((ctx) => ctx.db.query('procedureVersions').collect());
+      const procedures = await t.run((ctx) => ctx.db.query('procedures').collect());
+      const content = structuredClone(procedureArgs.content);
+      const { pos, target } = content.steps[0].view;
+      content.steps[0].view = { target, pos };
+      expect(await t.mutation(api.seed.upsertProcedure, { ...procedureArgs, content, force: true })).toEqual({
+        created: false, updated: false, reason: 'unchanged',
+      });
+      expect(await t.run((ctx) => ctx.db.query('procedureVersions').collect()))
+        .toEqual(versions.filter((version) => version.status !== 'draft'));
+      expect(await t.run((ctx) => ctx.db.query('procedures').collect())).toEqual(procedures);
+    },
+  );
+
+  test('force publishes when there is no approved version', async () => {
+    const { t, machineArgs, procedureArgs } = await setup();
+    await t.mutation(api.seed.upsertMachine, machineArgs);
+    const first = await t.mutation(api.seed.upsertProcedure, procedureArgs);
+    if (!first.created) throw new Error('Expected a new procedure');
+    const original = await t.run((ctx) => ctx.db.get(first.versionId));
+    await t.run(async (ctx) => {
+      await ctx.db.patch(first.versionId, { status: 'retired' });
+      await ctx.db.patch(original!.procedureId, { approvedVersionId: undefined });
+    });
+    const result = await t.mutation(api.seed.upsertProcedure, { ...procedureArgs, force: true });
+    expect(result).toEqual({
+      created: false, updated: true, versionId: expect.any(String), version: 2, forced: true,
+    });
+    if (!result.updated) throw new Error('Expected an updated procedure');
+    expect(await t.run((ctx) => ctx.db.get(result.versionId))).toMatchObject({
+      status: 'approved', content: procedureArgs.content, changeNote: 'Seeded (forced reset)',
+    });
+    expect(await t.run((ctx) => ctx.db.get(original!.procedureId))).toMatchObject({
+      approvedVersionId: result.versionId,
+    });
+  });
+
   test.each(['human change note', 'human attribution', 'no approved version'] as const)(
     'protects procedures with %s even when other versions are seed-managed',
     async (scenario) => {

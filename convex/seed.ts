@@ -102,6 +102,7 @@ export const upsertProcedure = internalMutation({
     slug: v.string(),
     content: procedureContentValidator,
     linkTargets: v.record(v.string(), v.array(v.string())),
+    force: v.optional(v.boolean()),
   },
   returns: v.union(
     v.object({
@@ -113,11 +114,16 @@ export const upsertProcedure = internalMutation({
       versionId: v.id('procedureVersions'), version: v.number(),
     }),
     v.object({
+      created: v.literal(false), updated: v.literal(true),
+      versionId: v.id('procedureVersions'), version: v.number(),
+      forced: v.literal(true),
+    }),
+    v.object({
       created: v.literal(false), updated: v.literal(false),
       reason: v.union(v.literal('unchanged'), v.literal('human-authored')),
     }),
   ),
-  handler: async (ctx, { machineSlug, slug, content: rawContent, linkTargets }) => {
+  handler: async (ctx, { machineSlug, slug, content: rawContent, linkTargets, force }) => {
     const machine = await ctx.db
       .query('machines')
       .withIndex('by_slug', (q) => q.eq('slug', machineSlug))
@@ -134,14 +140,23 @@ export const upsertProcedure = internalMutation({
       .withIndex('by_procedure', (q) => q.eq('procedureId', existing._id))
       .collect();
     const approved = existing === null ? null : await getApprovedVersion(ctx, existing);
+    const seedManaged = approved !== null && versions.every((version) =>
+      version.changeNote === 'Seeded' && version.createdBy === undefined,
+    );
+    const forced = existing !== null && force === true && !seedManaged;
     if (existing !== null) {
-      const seedManaged = approved !== null && versions.every((version) =>
-        version.changeNote === 'Seeded' && version.createdBy === undefined,
-      );
-      if (!seedManaged) {
+      if (!seedManaged && !force) {
         return { created: false as const, updated: false as const, reason: 'human-authored' as const };
       }
-      if (deepEqualIgnoringKeyOrder(rawContent, approved.content)) {
+      if (force) {
+        // Drafts are unsaved work; discarding them is acceptable for a forced development reset.
+        for (const version of versions) {
+          if (version.status === 'draft') {
+            await ctx.db.delete(version._id);
+          }
+        }
+      }
+      if (approved !== null && deepEqualIgnoringKeyOrder(rawContent, approved.content)) {
         return { created: false as const, updated: false as const, reason: 'unchanged' as const };
       }
     }
@@ -163,12 +178,15 @@ export const upsertProcedure = internalMutation({
       machineVersionId: machineVersion._id,
       content,
       approvedAt: Date.now(),
-      changeNote: 'Seeded',
+      changeNote: forced ? 'Seeded (forced reset)' : 'Seeded',
     });
     if (approved !== null) {
       await ctx.db.patch(approved._id, { status: 'retired' });
     }
     await ctx.db.patch(procedureId, { approvedVersionId: versionId });
+    if (forced) {
+      return { created: false as const, updated: true as const, versionId, version, forced: true as const };
+    }
     return existing === null
       ? { created: true as const, updated: false as const, versionId, version }
       : { created: false as const, updated: true as const, versionId, version };
