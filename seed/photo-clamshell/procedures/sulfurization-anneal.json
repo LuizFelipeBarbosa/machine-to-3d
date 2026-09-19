@@ -1,173 +1,230 @@
 {
   "formatVersion": 1,
   "title": "Sulfurization run (lab draft)",
-  "summary": "Prepare cooling and argon, purge the tube, load sulfur and the chip, reassemble the furnace, and program and start the run. Edited draft organised from the lab's own notes; not yet validated as an operating procedure. Open points are marked 'To confirm'.",
-  "minutes": 90,
+  "summary": "Sulfurization–annealing of FIB-irradiated MoSe₂ combining the lab's furnace notes with the published sequence; the published program and the local recipe are listed separately because they are different experiments. Unspecified operating settings must come from the lab's furnace procedure.",
+  "minutes": 150,
   "start": {
     "open": false
   },
   "steps": [
     {
       "id": "sulfurization-anneal-01",
-      "title": "Prepare the cooling system",
-      "where": "instrument",
-      "parts": ["plumbing"],
-      "body": "Get ice and place the water cooler in the ice bath.",
-      "caution": "Keep water lines away from electrics.",
+      "title": "Identify the sample and intended experiment",
+      "where": "logbook",
+      "parts": [],
+      "body": "Record the sample ID, substrate, and whether the MoSe₂ has undergone focused-ion-beam irradiation. The paper's selective-conversion process uses irradiated MoSe₂ monolayers on SiO₂/Si.",
       "view": {
-        "pos": [6.388, 6.541, 11.317],
-        "target": [-0.127, 2.562, 0.0]
+        "pos": [5.372, 5.319, 9.598],
+        "target": [-0.12, 1.966, 0.059]
       }
     },
     {
       "id": "sulfurization-anneal-02",
-      "title": "Check the argon supply",
+      "title": "Complete irradiation for the paper's selective process",
       "where": "instrument",
-      "parts": ["plumbing"],
-      "body": "Check that the argon pressure gauge reads above 5 psi.",
-      "caution": "To confirm: which gauge the 5 psi limit refers to, and the maximum allowed pressure.",
-      "check": "Argon gauge reads above 5 psi (confirm gauge)",
+      "parts": [],
+      "body": "Complete the ion irradiation if reproducing the paper's selective process. The authors used Ga⁺ ions at 5 kV, with beam currents of 5, 20, or 80 pA. Select the dose and pattern corresponding to the result being reproduced; these currents are reported alternatives, not consecutive steps. Record the irradiation parameters and retain an unirradiated reference region.",
       "view": {
-        "pos": [6.388, 6.541, 11.317],
-        "target": [-0.127, 2.562, 0.0]
+        "pos": [5.372, 5.319, 9.598],
+        "target": [-0.12, 1.966, 0.059]
       }
     },
     {
       "id": "sulfurization-anneal-03",
-      "title": "Close the outlet to the fume hood for purging",
+      "title": "Prepare the cooling system",
       "where": "instrument",
       "parts": ["plumbing"],
-      "body": "Confirm that the outlet hose leading to the fume hood is closed during the purge sequence. The intention is to fill the tube with argon and then evacuate it, rather than maintain continuous flow.",
+      "body": "Following your local setup, prepare ice for the intended cooling-water reservoir and establish cooling according to the equipment procedure. Confirm that cooling operates before starting the furnace.",
       "view": {
         "pos": [6.388, 6.541, 11.317],
-        "target": [-0.127, 2.562, 0.0]
+        "target": [-0.127, 2.562, 0]
       }
     },
     {
       "id": "sulfurization-anneal-04",
-      "title": "Evacuate the tube",
+      "title": "Check the argon supply",
       "where": "instrument",
       "parts": ["plumbing"],
-      "body": "Evacuate the tube using the vacuum connection on the left.",
+      "body": "Your notes specify a reading above 5 psi. Confirm which gauge this refers to and use the approved supply setting. Do not interpret this value as a tube-pressure target. The paper does not specify this pressure threshold.",
+      "caution": "Do not interpret this value as a tube-pressure target. The paper does not specify this pressure threshold.",
       "view": {
         "pos": [6.388, 6.541, 11.317],
-        "target": [-0.127, 2.562, 0.0]
+        "target": [-0.127, 2.562, 0]
       }
     },
     {
       "id": "sulfurization-anneal-05",
-      "title": "Close the vacuum valve and admit argon",
+      "title": "Inspect the tube and connections",
       "where": "instrument",
-      "parts": ["plumbing"],
-      "body": "Close the vacuum valve, then admit argon to fill the tube.",
+      "parts": ["tube", "plumbing"],
+      "body": "Check the quartz tube, seals, sample support, thermocouple, vacuum connection, argon inlet, and exhaust connection to the fume hood. Confirm the valve identities before operating them.",
       "view": {
-        "pos": [6.388, 6.541, 11.317],
-        "target": [-0.127, 2.562, 0.0]
+        "pos": [5.471, 5.98, 9.502],
+        "target": [0, 2.64, 0]
       }
     },
     {
       "id": "sulfurization-anneal-06",
-      "title": "Close the argon valve and evacuate again",
+      "title": "Perform any required preliminary empty-tube purge",
       "where": "instrument",
       "parts": ["plumbing"],
-      "body": "Close the argon valve and evacuate the tube again. Repeat steps 4–6 until three full cycles are complete.",
-      "caution": "To confirm: whether purging must be repeated after loading the sample.",
+      "body": "Your notes describe three evacuation–argon exchange cycles using the vacuum connection on the left. This is a preliminary atmosphere exchange, not a substitute for removing physical residue or for purging after loading.",
+      "check": "Preliminary purge complete: three exchange cycles",
       "view": {
         "pos": [6.388, 6.541, 11.317],
-        "target": [-0.127, 2.562, 0.0]
+        "target": [-0.127, 2.562, 0]
       }
     },
     {
       "id": "sulfurization-anneal-07",
-      "title": "Release vacuum and remove the thermocouple",
-      "where": "instrument",
-      "parts": ["tube", "plumbing"],
-      "body": "Release the vacuum, then remove the thermocouple before withdrawing the tube assembly.",
-      "caution": "To confirm: the vacuum-release step before opening — never pull the assembly against vacuum.",
-      "view": {
-        "pos": [5.471, 5.98, 9.502],
-        "target": [0.0, 2.64, 0.0]
-      }
-    },
-    {
-      "id": "sulfurization-anneal-08",
-      "title": "Withdraw the tube assembly to the right",
+      "title": "Prepare to open the sample assembly",
       "where": "instrument",
       "parts": ["tube", "lid"],
-      "body": "Withdraw the tube assembly toward the right.",
+      "body": "With the furnace cool, isolate the connections and equalize pressure according to the equipment procedure. Remove the thermocouple if necessary to withdraw the sample-support assembly toward the right, as you described.",
       "state": {
         "open": true
       },
       "view": {
         "pos": [5.471, 5.98, 9.502],
-        "target": [0.0, 2.64, 0.0]
+        "target": [0, 2.64, 0]
+      }
+    },
+    {
+      "id": "sulfurization-anneal-08",
+      "title": "Load the sulfur and sample",
+      "where": "instrument",
+      "parts": ["tube"],
+      "body": "Place sulfur in a quartz boat or crucible and position the sample chip beside the sulfur container. Your proposed sulfur quantity is 1–2 g, but the paper does not report a mass. Its supporting methods place the sulfur crucible and sample next to each other on a silicon-carbide stage.",
+      "caution": "The sample chip goes beside the sulfur container, not on it; no other sample placement is reported. The paper does not report a sulfur mass.",
+      "view": {
+        "pos": [5.471, 5.98, 9.502],
+        "target": [0, 2.64, 0]
       }
     },
     {
       "id": "sulfurization-anneal-09",
-      "title": "Load sulfur and the chip in the boat",
+      "title": "Reassemble the furnace",
       "where": "instrument",
       "parts": ["tube"],
-      "body": "Load approximately 1–2 g of sulfur and the chip using the sample boat.",
-      "caution": "To confirm: chip placement — the notes describe it both on the boat and next to the boat.",
+      "body": "Return the sample assembly to its defined position, reinstall the thermocouple, and seal the tube. Record the positions of the sample, sulfur boat, and thermocouple.",
       "view": {
         "pos": [5.471, 5.98, 9.502],
-        "target": [0.0, 2.64, 0.0]
+        "target": [0, 2.64, 0]
       }
     },
     {
       "id": "sulfurization-anneal-10",
-      "title": "Reinsert the tube assembly and thermocouple",
+      "title": "Purge after loading and resealing",
       "where": "instrument",
-      "parts": ["tube"],
-      "body": "Reinsert and close the tube assembly, then reinstall the thermocouple.",
+      "parts": ["plumbing"],
+      "body": "Opening the tube introduces air, so the preliminary purge does not establish the final processing atmosphere. Your described exchange sequence is: evacuate the tube; isolate the vacuum line; admit argon to the approved backfill condition; isolate the argon supply; evacuate again and repeat the exchange until the required three cycles are completed. The vacuum endpoint, backfill pressure, final atmosphere, and exact cycle-counting convention require the local procedure. You described closing the fume-hood outlet during the exchanges; confirm that valve arrangement against the actual plumbing. This does not mean the tube should remain sealed during heating.",
+      "caution": "Closing the fume-hood outlet during the exchanges must be confirmed against the actual plumbing. This does not mean the tube should remain sealed during heating.",
+      "check": "Post-loading purge complete and the valve arrangement confirmed",
       "view": {
-        "pos": [5.471, 5.98, 9.502],
-        "target": [0.0, 2.64, 0.0]
+        "pos": [6.388, 6.541, 11.317],
+        "target": [-0.127, 2.562, 0]
       }
     },
     {
       "id": "sulfurization-anneal-11",
-      "title": "Close the furnace housing",
+      "title": "Close the furnace cover and select recipe",
       "where": "instrument",
-      "parts": ["lid"],
-      "body": "Close the furnace housing.",
+      "parts": ["lid", "controls"],
+      "body": "Close the furnace cover and select the temperature recipe. The paper used infrared heating of a silicon-carbide stage. Your clamshell furnace uses a different arrangement, so confirm how its thermocouple reading relates to the sample temperature.",
       "state": {
         "open": false
       },
-      "check": "Tube assembly seated, thermocouple installed, housing closed",
       "view": {
         "pos": [4.211, 5.772, 7.334],
-        "target": [0.0, 3.201, 0.02]
+        "target": [0, 3.201, 0.02]
       }
     },
     {
       "id": "sulfurization-anneal-12",
-      "title": "Enter the temperature program",
-      "where": "instrument",
+      "title": "Perform published sulfurization at 700 °C",
+      "where": "software",
       "parts": ["controls"],
-      "body": "Enter the intended temperature program on the controller (SOP: program __ ). The published MoSe2 sequence is 700 °C for 10 min, sulfur purge, then 900 °C for 5 min; use this sequence if that is the intended program.",
-      "caution": "To confirm: exhaust and valve configuration during heating.",
+      "body": "For the published process, heat the sample in the presence of sulfur to 700 °C and hold for approximately 10 minutes. The publication does not specify a numerical heating ramp rate.",
       "view": {
         "pos": [3.917, 3.019, 8.363],
-        "target": [0.0, 0.628, 1.56]
+        "target": [0, 0.628, 1.56]
       }
     },
     {
       "id": "sulfurization-anneal-13",
-      "title": "Start the run once the checks are complete",
-      "where": "instrument",
+      "title": "Remove sulfur vapor before the higher-temperature anneal",
+      "where": "software",
       "parts": ["controls"],
-      "body": "Start the procedure once the required checks are complete.",
-      "check": "Cooling bath in place, argon above the limit, outlet configured as required",
+      "body": "Flush the chamber with a steady argon flow to deplete sulfur vapor. The publication does not specify a flow rate, flushing duration, or endpoint; those must be established for your apparatus.",
+      "view": {
+        "pos": [3.917, 3.019, 8.363],
+        "target": [0, 0.628, 1.56]
+      }
+    },
+    {
+      "id": "sulfurization-anneal-14",
+      "title": "Perform the published annealing step",
+      "where": "software",
+      "parts": ["controls"],
+      "body": "After sulfur depletion, increase the temperature to approximately 900 °C and hold for approximately 5 minutes. This stage promotes structural recovery while limiting sulfur incorporation into unirradiated regions.",
+      "view": {
+        "pos": [3.917, 3.019, 8.363],
+        "target": [0, 0.628, 1.56]
+      }
+    },
+    {
+      "id": "sulfurization-anneal-15",
+      "title": "Alternative: run the local 900 °C recipe",
+      "where": "software",
+      "parts": ["controls"],
+      "body": "This step substitutes for Steps 12–14 if intentionally testing your local recipe. Your proposed program is: 20 °C/min ramp to 900 °C (≈44 min from 20 °C); 30 min hold at 900 °C; non-flowing argon for the first 20 min, using the confirmed pressure-management arrangement; argon flow to the fume hood for the final 10 min through the approved exhaust route. This is a modified recipe, not the paper's published sequence. Sulfur remains present during a much longer high-temperature treatment, which can affect unirradiated MoSe₂ as well as irradiated regions.",
+      "caution": "This is a modified recipe, not the paper's published sequence. Sulfur remains present during a much longer high-temperature treatment, which can affect unirradiated MoSe₂ as well as irradiated regions.",
+      "view": {
+        "pos": [3.917, 3.019, 8.363],
+        "target": [0, 0.628, 1.56]
+      }
+    },
+    {
+      "id": "sulfurization-anneal-16",
+      "title": "Cool the sample",
+      "where": "software",
+      "parts": ["controls"],
+      "body": "The paper states that samples were cooled to room temperature without specifying a rate. Your local recipe requests 20 °C/min to room temperature. Confirm that the furnace can achieve this rate, record the actual temperature trace, and use the lab-defined gas conditions throughout cooling.",
+      "caution": "The furnace's ability to achieve the 20 °C/min cooling rate must be confirmed.",
+      "view": {
+        "pos": [3.917, 3.019, 8.363],
+        "target": [0, 0.628, 1.56]
+      }
+    },
+    {
+      "id": "sulfurization-anneal-17",
+      "title": "Unload the sample",
+      "where": "instrument",
+      "parts": ["lid", "tube"],
+      "body": "Once the apparatus has reached the required unloading temperature, establish the appropriate pressure condition, open the assembly, and retrieve the chip according to the equipment procedure.",
+      "state": {
+        "open": true
+      },
+      "check": "Unloading temperature and pressure condition reached",
+      "view": {
+        "pos": [5.471, 5.98, 9.502],
+        "target": [0, 2.64, 0]
+      }
+    },
+    {
+      "id": "sulfurization-anneal-18",
+      "title": "Characterize and document the result",
+      "where": "logbook",
+      "parts": [],
+      "body": "Compare optical images, Raman spectra, and photoluminescence from processed and reference regions. The authors used 532 nm excitation, a 100× objective, an ≈1 µm spot, and laser power below 100 µW. Record the sulfur mass, sample positions, irradiation dose, actual temperature history, gas conditions, and every deviation from the published method. Details: Supporting Information pp. 2–3 and Figure S1 (acs.figshare.com, article 29318379).",
       "link": {
         "procedureSlug": "end-of-session",
         "stepId": "end-of-session-01",
         "label": "Continue with end of session"
       },
       "view": {
-        "pos": [3.917, 3.019, 8.363],
-        "target": [0.0, 0.628, 1.56]
+        "pos": [5.372, 5.319, 9.598],
+        "target": [-0.12, 1.966, 0.059]
       }
     }
   ]
