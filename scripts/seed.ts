@@ -25,6 +25,23 @@ type ValidatedMachine = {
   linkTargets: LinkTargets;
 };
 
+function sortObjectKeys(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(sortObjectKeys);
+  }
+  if (value !== null && typeof value === 'object') {
+    const object = value as Record<string, unknown>;
+    return Object.fromEntries(
+      Object.keys(object).sort().map((key) => [key, sortObjectKeys(object[key])]),
+    );
+  }
+  return value;
+}
+
+function definitionsEqual(left: unknown, right: unknown): boolean {
+  return JSON.stringify(sortObjectKeys(left)) === JSON.stringify(sortObjectKeys(right));
+}
+
 function readContent<T>(path: string, schema: ZodType<T>, issues: string[]): T | undefined {
   try {
     const raw: unknown = JSON.parse(readFileSync(resolve(projectRoot, path), 'utf8'));
@@ -144,21 +161,35 @@ async function main() {
   }
 
   let machinesCreated = 0;
+  let machinesUpdated = 0;
+  let machinesUnchanged = 0;
   let proceduresCreated = 0;
   let proceduresSkipped = 0;
   for (const { machine, definition, model, procedures, linkTargets } of validated) {
     const { slug, name, kind } = machine;
-    if (runConvex<boolean>('seed:machineExists', { slug })) {
-      console.log(`${slug}: skip machine (already exists)`);
+    const status = runConvex<{
+      exists: boolean;
+      definition?: MachineDefinition;
+      version?: number;
+    }>('seed:machineStatus', { slug });
+    if (status.exists && definitionsEqual(definition, status.definition)) {
+      machinesUnchanged++;
+      console.log(`${slug}: unchanged`);
     } else {
       const modelFileId = await uploadModel(model);
-      const result = runConvex<{ created: boolean }>('seed:upsertMachine', {
+      const result = runConvex<{ created: boolean; updated: boolean; version?: number }>('seed:upsertMachine', {
         slug, name, kind, modelFileId, definition,
       });
       if (result.created) {
         machinesCreated++;
+        console.log(`${slug}: created v1`);
+      } else if (result.updated) {
+        machinesUpdated++;
+        console.log(`${slug}: updated to v${result.version}`);
+      } else {
+        machinesUnchanged++;
+        console.log(`${slug}: unchanged`);
       }
-      console.log(`${slug}: ${result.created ? 'created' : 'skip'} machine`);
     }
     for (const procedure of procedures) {
       const result = runConvex<{ created: boolean }>('seed:upsertProcedure', {
@@ -175,7 +206,7 @@ async function main() {
       console.log(`${slug}/${procedure.slug}: ${result.created ? 'created' : 'skip'} procedure`);
     }
   }
-  console.log(`Seed complete: machines ${machinesCreated} created, ${validated.length - machinesCreated} skipped; procedures ${proceduresCreated} created, ${proceduresSkipped} skipped.`);
+  console.log(`Seed complete: machines ${machinesCreated} created, ${machinesUpdated} updated, ${machinesUnchanged} unchanged; procedures ${proceduresCreated} created, ${proceduresSkipped} skipped.`);
 }
 
 main().catch((error: unknown) => {

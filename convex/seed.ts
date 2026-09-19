@@ -9,21 +9,52 @@ import {
 } from './lib/content';
 import { machineDefinitionValidator, procedureContentValidator } from './lib/validators';
 
+function sortObjectKeys(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(sortObjectKeys);
+  }
+  if (value !== null && typeof value === 'object') {
+    const object = value as Record<string, unknown>;
+    return Object.fromEntries(
+      Object.keys(object).sort().map((key) => [key, sortObjectKeys(object[key])]),
+    );
+  }
+  return value;
+}
+
+function definitionsEqual(left: unknown, right: unknown): boolean {
+  return JSON.stringify(sortObjectKeys(left)) === JSON.stringify(sortObjectKeys(right));
+}
+
 export const uploadUrl = internalMutation({
   args: {},
   returns: v.string(),
   handler: async (ctx) => ctx.storage.generateUploadUrl(),
 });
 
-export const machineExists = internalQuery({
+export const machineStatus = internalQuery({
   args: { slug: v.string() },
-  returns: v.boolean(),
+  returns: v.object({
+    exists: v.boolean(),
+    definition: v.optional(machineDefinitionValidator),
+    version: v.optional(v.number()),
+  }),
   handler: async (ctx, { slug }) => {
     const machine = await ctx.db
       .query('machines')
       .withIndex('by_slug', (q) => q.eq('slug', slug))
       .unique();
-    return machine !== null;
+    if (machine === null) {
+      return { exists: false };
+    }
+    const currentVersion = machine.currentVersionId === undefined
+      ? null
+      : await ctx.db.get(machine.currentVersionId);
+    return {
+      exists: true,
+      definition: currentVersion?.definition,
+      version: currentVersion?.version,
+    };
   },
 });
 
@@ -38,22 +69,29 @@ export const upsertMachine = internalMutation({
   returns: v.object({
     machineId: v.id('machines'),
     machineVersionId: v.optional(v.id('machineVersions')),
+    version: v.optional(v.number()),
     created: v.boolean(),
+    updated: v.boolean(),
   }),
   handler: async (ctx, args) => {
     const machine = await ctx.db
       .query('machines')
       .withIndex('by_slug', (q) => q.eq('slug', args.slug))
       .unique();
-    if (machine !== null) {
+    const currentVersion = machine?.currentVersionId === undefined
+      ? null
+      : await ctx.db.get(machine.currentVersionId);
+    if (machine !== null && currentVersion !== null && definitionsEqual(args.definition, currentVersion.definition)) {
       return {
         machineId: machine._id,
-        machineVersionId: machine.currentVersionId,
+        machineVersionId: currentVersion._id,
+        version: currentVersion.version,
         created: false,
+        updated: false,
       };
     }
-    const { machineId, machineVersionId } = await publishMachineVersion(ctx, args);
-    return { machineId, machineVersionId, created: true };
+    const result = await publishMachineVersion(ctx, args);
+    return { ...result, created: machine === null, updated: machine !== null };
   },
 });
 
