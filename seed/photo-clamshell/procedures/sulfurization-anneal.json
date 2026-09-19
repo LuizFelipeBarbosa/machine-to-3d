@@ -1,0 +1,177 @@
+{
+  "formatVersion": 1,
+  "title": "Sulfurization and in-situ anneal of MoSe2",
+  "summary": "Convert FIB-irradiated MoSe2 to MoS2 by sulfurization, then purge the sulfur precursor and anneal in situ without sulfur gas. Written from the published sequence (Nano Lett. 2025, 25, 10123) and general tube-furnace practice; flows, pressures and ramp rates are blanks for the instrument owner to fill.",
+  "minutes": 120,
+  "start": {
+    "open": false
+  },
+  "steps": [
+    {
+      "id": "sulfurization-anneal-01",
+      "title": "Verify furnace, exhaust and gas supply",
+      "where": "instrument",
+      "parts": ["controls", "plumbing"],
+      "body": "Confirm that the furnace is idle and the connected carrier gas is the correct type (SOP: __ carrier gas). Verify that the exhaust/scrubber system is on and functioning before proceeding.",
+      "caution": "Sulfur vapour is toxic and flammable; confirm that the exhaust/scrubber is running before proceeding.",
+      "view": {
+        "pos": [3.917, 3.019, 8.363],
+        "target": [0.0, 0.628, 1.56]
+      }
+    },
+    {
+      "id": "sulfurization-anneal-02",
+      "title": "Open the access covers",
+      "where": "instrument",
+      "parts": ["lid"],
+      "body": "Confirm that the tube is at room temperature before opening the access covers. Only open the covers once this condition is met.",
+      "state": {
+        "open": true
+      },
+      "view": {
+        "pos": [4.211, 5.772, 7.334],
+        "target": [0.0, 3.201, 0.02]
+      }
+    },
+    {
+      "id": "sulfurization-anneal-03",
+      "title": "Position the sulfur precursor upstream",
+      "where": "instrument",
+      "parts": ["tube"],
+      "body": "Place the sulfur precursor in a boat (SOP: __ mg sulfur, __ cm upstream of the hot zone). Position the boat in the cooler inlet region of the tube, upstream of the sample.",
+      "view": {
+        "pos": [5.471, 5.98, 9.502],
+        "target": [0.0, 2.64, 0.0]
+      }
+    },
+    {
+      "id": "sulfurization-anneal-04",
+      "title": "Load the sample at the hot-zone centre",
+      "where": "instrument",
+      "parts": ["tube"],
+      "body": "Load the FIB-irradiated MoSe2 sample substrate face up in a clean boat at the centre of the furnace hot zone. Note its position for reproducibility.",
+      "view": {
+        "pos": [5.471, 5.98, 9.502],
+        "target": [0.0, 2.64, 0.0]
+      }
+    },
+    {
+      "id": "sulfurization-anneal-05",
+      "title": "Close the covers and seal the flanges",
+      "where": "instrument",
+      "parts": ["lid", "plumbing"],
+      "body": "Confirm that the boats are positioned correctly and that tools are clear of the covers. Close the access covers and seal the flanges using the site SOP.",
+      "state": {
+        "open": false
+      },
+      "caution": "Check the flange O-rings and the quartz tube for damage before sealing.",
+      "view": {
+        "pos": [4.211, 5.772, 7.334],
+        "target": [0.0, 3.201, 0.02]
+      }
+    },
+    {
+      "id": "sulfurization-anneal-06",
+      "title": "Purge with carrier gas",
+      "where": "instrument",
+      "parts": ["plumbing", "controls"],
+      "body": "Purge with carrier gas (SOP: __ sccm for __ min) until residual air is displaced. Check the pressure gauge against the approved operating pressure (SOP: __ [pressure units: __]) and confirm the carrier flow is at the set point before proceeding to heating.",
+      "check": "Flanges sealed, exhaust running, carrier flow at the set point",
+      "view": {
+        "pos": [6.388, 6.541, 11.317],
+        "target": [-0.127, 2.562, 0.0]
+      }
+    },
+    {
+      "id": "sulfurization-anneal-07",
+      "title": "Program the sulfurization segment",
+      "where": "instrument",
+      "parts": ["controls"],
+      "body": "Program a ramp (SOP: __ C/min) to 700 C and a hold of 10 min. Review the programmed segment before starting the run.",
+      "view": {
+        "pos": [3.917, 3.019, 8.363],
+        "target": [0.0, 0.628, 1.56]
+      }
+    },
+    {
+      "id": "sulfurization-anneal-08",
+      "title": "Run the sulfurization",
+      "where": "instrument",
+      "parts": ["controls"],
+      "body": "Start the program to sulfurize the sample in a sulfur-rich ambient. Monitor the meters throughout the 700 C / 10 min hold.",
+      "caution": "Do not open the shell while the furnace is running.",
+      "view": {
+        "pos": [3.917, 3.019, 8.363],
+        "target": [0.0, 0.628, 1.56]
+      }
+    },
+    {
+      "id": "sulfurization-anneal-09",
+      "title": "Purge the sulfur precursor",
+      "where": "instrument",
+      "parts": ["plumbing"],
+      "body": "After the 700 C hold ends, stop the sulfur supply or remove the precursor from the heated flow using the approved method (SOP: method __). Purge with carrier gas (SOP: __ sccm for __ min) until no sulfur gas remains before annealing. Annealing without sulfur gas prevents unintended doping of pristine (non-irradiated) regions of the sample.",
+      "view": {
+        "pos": [6.388, 6.541, 11.317],
+        "target": [-0.127, 2.562, 0.0]
+      }
+    },
+    {
+      "id": "sulfurization-anneal-10",
+      "title": "Anneal in situ at 900 C",
+      "where": "instrument",
+      "parts": ["controls"],
+      "body": "Program a ramp (SOP: __ C/min) to 900 C and hold for 5 min. Run this annealing segment in situ without sulfur gas present, then end the program.",
+      "view": {
+        "pos": [3.917, 3.019, 8.363],
+        "target": [0.0, 0.628, 1.56]
+      }
+    },
+    {
+      "id": "sulfurization-anneal-11",
+      "title": "Cool under carrier gas",
+      "where": "instrument",
+      "parts": ["controls", "plumbing"],
+      "body": "Keep carrier gas flowing until the tube is below the opening limit (SOP: __ C). Confirm that the sulfur line is closed before opening the covers.",
+      "caution": "The quartz tube and boats remain hot long after the display reading drops.",
+      "check": "Tube temperature is below the opening limit and the sulfur line is closed",
+      "view": {
+        "pos": [3.917, 3.019, 8.363],
+        "target": [0.0, 0.628, 1.56]
+      }
+    },
+    {
+      "id": "sulfurization-anneal-12",
+      "title": "Open the covers and unload",
+      "where": "instrument",
+      "parts": ["lid", "tube"],
+      "body": "After confirming the opening limit and sulfur-line closure, open the access covers. Remove the boat containing the sample with tongs and place it on the designated heat-resistant surface.",
+      "state": {
+        "open": true
+      },
+      "view": {
+        "pos": [4.211, 5.772, 7.334],
+        "target": [0.0, 3.201, 0.02]
+      }
+    },
+    {
+      "id": "sulfurization-anneal-13",
+      "title": "Close the covers",
+      "where": "instrument",
+      "parts": ["lid"],
+      "body": "Close the access covers with hands and tools clear, then continue to end of session.",
+      "state": {
+        "open": false
+      },
+      "link": {
+        "procedureSlug": "end-of-session",
+        "stepId": "end-of-session-01",
+        "label": "Continue with end of session"
+      },
+      "view": {
+        "pos": [4.211, 5.772, 7.334],
+        "target": [0.0, 3.201, 0.02]
+      }
+    }
+  ]
+}

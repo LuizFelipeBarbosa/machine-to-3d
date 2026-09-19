@@ -1,0 +1,30 @@
+{
+  "formatVersion": 1,
+  "rootNode": "photo-clamshell",
+  "parts": [
+    { "name": "base", "label": "Base", "blurb": "Lower cabinet and deck" },
+    { "name": "lid", "label": "Upper shell", "blurb": "Opening upper shell and heaters" },
+    { "name": "chamber", "label": "Chamber", "blurb": "Lower furnace and insulation" },
+    { "name": "tube", "label": "Quartz tube", "blurb": "Quartz tube, baffles and sample" },
+    { "name": "controls", "label": "Controls", "blurb": "Eurotherm 3504 and analog meters" },
+    { "name": "plumbing", "label": "Plumbing", "blurb": "Flanges, valves and pressure gauge" }
+  ],
+  "presetViews": [
+    { "name": "perspective", "label": "Perspective", "view": { "pos": [5.372, 5.319, 9.598], "target": [-0.12, 1.966, 0.059] } },
+    { "name": "front", "label": "Front", "view": { "pos": [-0.12, 2.827, 11.534], "target": [-0.12, 1.966, 0.059] } },
+    { "name": "rear", "label": "Rear", "view": { "pos": [-0.12, 3.111, -11.391], "target": [-0.12, 1.966, 0.059] } },
+    { "name": "side", "label": "Side", "view": { "pos": [11.33, 3.111, 0.059], "target": [-0.12, 1.966, 0.059] } },
+    { "name": "top", "label": "Top", "view": { "pos": [-0.12, 13.473, 0.065], "target": [-0.12, 1.966, 0.059] } }
+  ],
+  "stateVars": [
+    {
+      "name": "open",
+      "label": "Access covers open",
+      "kind": "toggle",
+      "userToggle": true,
+      "effects": [
+        { "type": "rotate", "node": "lid", "axis": "x", "angle": -1.759 }
+      ]
+    }
+  ]
+}

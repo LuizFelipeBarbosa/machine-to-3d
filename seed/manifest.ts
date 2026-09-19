@@ -77,4 +77,11 @@ export const SEED_MACHINES: SeedMachine[] = [
     dir: 'seed/teslatronpt-plus',
     procedureSlugs: ['cooldown-and-sweep', 'end-of-session'],
   },
+  {
+    slug: 'photo-clamshell',
+    name: 'Photo-clamshell split tube furnace',
+    kind: 'Split-tube furnace',
+    dir: 'seed/photo-clamshell',
+    procedureSlugs: ['sulfurization-anneal', 'end-of-session'],
+  },
 ];
