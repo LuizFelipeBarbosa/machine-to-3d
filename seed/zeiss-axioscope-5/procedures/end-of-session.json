@@ -1,0 +1,95 @@
+{
+  "formatVersion": 1,
+  "title": "End of session",
+  "summary": "Remove the slide, park the optics, and leave the microscope clean and documented. Placeholder content written from general laboratory practice, not from the manufacturer's manual.",
+  "minutes": 5,
+  "start": {},
+  "steps": [
+    {
+      "title": "Park the objective and lower the stage",
+      "where": "instrument",
+      "parts": [
+        "objectives",
+        "stage"
+      ],
+      "body": "Watch the clearance from the side and rotate the lowest-power objective into place, lowering the stage first if needed for clearance. Lower the stage to its loading position and stop any remaining image acquisition.",
+      "check": "The lowest-power objective is selected and there is clear space to remove the slide.",
+      "id": "end-of-session-01",
+      "view": {
+        "pos": [
+          1.029,
+          3.473,
+          2.187
+        ],
+        "target": [
+          0.0,
+          2.845,
+          0.4
+        ]
+      }
+    },
+    {
+      "title": "Remove the slide and clean the stage",
+      "where": "instrument",
+      "parts": [
+        "stage",
+        "base"
+      ],
+      "body": "Release the slide holder and lift the slide out by its edges before putting it in its labeled container. Remove debris from the stage and base using the laboratory-approved cleaning method, keeping liquid away from openings.",
+      "id": "end-of-session-02",
+      "view": {
+        "pos": [
+          2.268,
+          3.165,
+          4.312
+        ],
+        "target": [
+          0.01,
+          1.787,
+          0.39
+        ]
+      }
+    },
+    {
+      "title": "Clean the optics and extinguish illumination",
+      "where": "instrument",
+      "parts": [
+        "objectives",
+        "illumination"
+      ],
+      "body": "Inspect exposed optics and clean only where needed using approved lens tissue and the laboratory optical-cleaning method. Reduce brightness and switch off illumination, then leave the microscope in its designated parked configuration.",
+      "id": "end-of-session-03",
+      "view": {
+        "pos": [
+          1.029,
+          3.473,
+          2.187
+        ],
+        "target": [
+          0.0,
+          2.845,
+          0.4
+        ]
+      }
+    },
+    {
+      "title": "Record the session",
+      "where": "logbook",
+      "parts": [],
+      "body": "Record the sample identifier, objectives used, and saved image location in the logbook. Note any contamination, focus problems, or damaged parts so the next user knows what needs attention.",
+      "id": "end-of-session-04",
+      "view": {
+        "pos": [
+          4.756,
+          5.645,
+          8.192
+        ],
+        "target": [
+          0.01,
+          2.747,
+          -0.051
+        ]
+      }
+    }
+  ]
+}

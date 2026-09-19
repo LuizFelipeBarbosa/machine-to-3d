@@ -1,0 +1,223 @@
+{
+  "formatVersion": 1,
+  "title": "Run a thin-film evaporation",
+  "summary": "Load a substrate and approved source material, deposit a thin film, and cool and vent the chamber. Placeholder content written from general laboratory practice, not from the manufacturer's manual.",
+  "minutes": 150,
+  "start": {
+    "open": false
+  },
+  "steps": [
+    {
+      "id": "evaporation-run-01",
+      "title": "Check vacuum and system readiness",
+      "where": "instrument",
+      "parts": [
+        "vacuum",
+        "console"
+      ],
+      "body": "Review chamber pressure, pump status, cooling status, and outstanding faults at the console. Confirm that source power and substrate heating are off and that the previous run has cooled before starting the approved vent sequence.",
+      "caution": "A vacuum or cooling fault can make source operation unsafe; resolve alarms with the instrument owner before proceeding.",
+      "view": {
+        "pos": [
+          2.185,
+          4.507,
+          2.928
+        ],
+        "target": [
+          0.476,
+          3.464,
+          -0.04
+        ]
+      }
+    },
+    {
+      "id": "evaporation-run-02",
+      "title": "Vent and slide the door open",
+      "where": "instrument",
+      "parts": [
+        "Sliding_chamber_door",
+        "vacuum"
+      ],
+      "body": "Use the approved sequence to isolate the appropriate pumps and admit the designated vent gas slowly. Wait until the chamber indicates atmospheric pressure, then release the door mechanism and slide the door fully clear without forcing it.",
+      "state": {
+        "open": true
+      },
+      "caution": "Opening against a pressure difference can damage the door mechanism; a resisting door must not be forced.",
+      "view": {
+        "pos": [
+          1.127,
+          4.64,
+          3.767
+        ],
+        "target": [
+          -0.695,
+          3.527,
+          0.602
+        ]
+      }
+    },
+    {
+      "id": "evaporation-run-03",
+      "title": "Load the substrate holder",
+      "where": "instrument",
+      "parts": [
+        "holder",
+        "interior"
+      ],
+      "body": "Using clean gloves and tools, secure the dry substrate in the holder with the coating surface facing the source as specified by the recipe. Confirm that the clips are tight and the holder has clearance for any planned motion.",
+      "view": {
+        "pos": [
+          0.275,
+          4.492,
+          1.187
+        ],
+        "target": [
+          -0.46,
+          4.044,
+          -0.09
+        ]
+      }
+    },
+    {
+      "id": "evaporation-run-04",
+      "title": "Load the approved source material",
+      "where": "instrument",
+      "parts": [
+        "source"
+      ],
+      "body": "With source power isolated by the approved loading procedure and all source parts cool, load the specified material into its compatible pocket or liner. Stay within the approved fill limit, remove loose fragments, and confirm the shutter path is clear.",
+      "caution": "Overfilling a pocket or using an incompatible liner can cause spitting, contamination, or source damage during heating.",
+      "view": {
+        "pos": [
+          0.413,
+          3.529,
+          1.381
+        ],
+        "target": [
+          -0.469,
+          2.99,
+          -0.151
+        ]
+      }
+    },
+    {
+      "id": "evaporation-run-05",
+      "title": "Close and secure the chamber door",
+      "where": "instrument",
+      "parts": [
+        "Sliding_chamber_door"
+      ],
+      "body": "Inspect the door seal and mating surface for debris and confirm that all tools have been removed. Slide the door closed and secure it with the normal mechanism, keeping fingers and cables clear.",
+      "state": {
+        "open": false
+      },
+      "check": "Substrate and source are secure, all tools are removed, and the chamber door is fully closed with its seal clear.",
+      "view": {
+        "pos": [
+          1.127,
+          4.64,
+          3.767
+        ],
+        "target": [
+          -0.695,
+          3.527,
+          0.602
+        ]
+      }
+    },
+    {
+      "id": "evaporation-run-06",
+      "title": "Pump down to the base pressure",
+      "where": "software",
+      "parts": [
+        "vacuum",
+        "console"
+      ],
+      "body": "Start the approved pump-down sequence and monitor pressure and pump status at the console. Wait until pressure reaches and remains within the recipe base-pressure limit before enabling source power.",
+      "caution": "A pressure that stalls or rises can indicate a leak or outgassing; stop troubleshooting at the operator limit and do not heat the source to compensate.",
+      "view": {
+        "pos": [
+          2.185,
+          4.507,
+          2.928
+        ],
+        "target": [
+          0.476,
+          3.464,
+          -0.04
+        ]
+      }
+    },
+    {
+      "id": "evaporation-run-07",
+      "title": "Set the deposition parameters",
+      "where": "software",
+      "parts": [
+        "console"
+      ],
+      "body": "Enter the approved source selection, material calibration, target thickness, rate, and power ramp settings. Verify cooling, shutter control, and any substrate motion or heating settings against the recipe while keeping source power disabled.",
+      "view": {
+        "pos": [
+          5.011,
+          4.902,
+          5.308
+        ],
+        "target": [
+          2.375,
+          3.292,
+          0.73
+        ]
+      }
+    },
+    {
+      "id": "evaporation-run-08",
+      "title": "Run and monitor the deposition",
+      "where": "software",
+      "parts": [
+        "console"
+      ],
+      "body": "Confirm that vacuum, cooling, door interlocks, and recipe settings are ready, then start the approved source conditioning sequence with the shutter closed. Once the rate is stable, open the shutter through the normal controls and monitor thickness, rate, pressure, and cooling throughout deposition. At the target thickness, close the shutter and reduce source power to zero using the approved ramp; use the trained stop sequence for any fault.",
+      "check": "The door is secured, interlocks are healthy, base pressure and cooling meet the recipe, and the deposition parameters have been reviewed.",
+      "view": {
+        "pos": [
+          5.011,
+          4.902,
+          5.308
+        ],
+        "target": [
+          2.375,
+          3.292,
+          0.73
+        ]
+      }
+    },
+    {
+      "id": "evaporation-run-09",
+      "title": "Cool the system and vent",
+      "where": "software",
+      "parts": [
+        "console",
+        "vacuum"
+      ],
+      "body": "Confirm that the shutter is closed and source power and substrate heating are off, then maintain vacuum and required cooling until the local cooldown criteria are met. Use the approved pump isolation and controlled vent sequence to reach atmospheric pressure, leaving the door closed until end-of-session unloading.",
+      "caution": "Venting a hot source can oxidize material or create a burn hazard; elapsed time alone does not establish safe temperature.",
+      "link": {
+        "procedureSlug": "end-of-session",
+        "stepId": "end-of-session-01",
+        "label": "Continue with end of session"
+      },
+      "view": {
+        "pos": [
+          5.011,
+          4.902,
+          5.308
+        ],
+        "target": [
+          2.375,
+          3.292,
+          0.73
+        ]
+      }
+    }
+  ]
+}

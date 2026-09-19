@@ -1,0 +1,103 @@
+{
+  "formatVersion": 1,
+  "title": "End of session",
+  "summary": "Disable both excitation sources, unload the specimen, and restore the empty chamber to standby vacuum. Placeholder content written from general laboratory practice, not from the manufacturer's manual.",
+  "minutes": 20,
+  "start": {
+    "open": false
+  },
+  "steps": [
+    {
+      "title": "Disable the sources and vent",
+      "where": "software",
+      "parts": [
+        "column",
+        "chamber"
+      ],
+      "body": "Stop acquisitions, turn electron emission off, and disable the Raman laser. Park the stage and movable optics in their approved exchange positions, then vent through the controls and wait for safe access status.",
+      "check": "Electron emission and laser are off, exchange positions are clear, and venting is complete.",
+      "id": "end-of-session-01",
+      "view": {
+        "pos": [
+          -2.971,
+          7.664,
+          -5.875
+        ],
+        "target": [
+          0.037,
+          5.828,
+          -0.65
+        ]
+      }
+    },
+    {
+      "title": "Open and unload the chamber",
+      "where": "instrument",
+      "parts": [
+        "SEM_access_door",
+        "sample"
+      ],
+      "body": "Open the door gently after the chamber reports that access is permitted. Release the holder and remove the specimen without touching detectors or optical components, then store it in a labeled container.",
+      "state": {
+        "open": true
+      },
+      "id": "end-of-session-02",
+      "view": {
+        "pos": [
+          1.785,
+          5.155,
+          4.208
+        ],
+        "target": [
+          0.0,
+          4.065,
+          1.108
+        ]
+      }
+    },
+    {
+      "title": "Close and evacuate the empty chamber",
+      "where": "instrument",
+      "parts": [
+        "SEM_access_door",
+        "chamber"
+      ],
+      "body": "Check the seal and remove any tools, then close and secure the door. Start evacuation and wait for the approved empty-chamber standby vacuum, leaving electron emission and the laser off.",
+      "state": {
+        "open": false
+      },
+      "id": "end-of-session-03",
+      "view": {
+        "pos": [
+          1.785,
+          5.155,
+          4.208
+        ],
+        "target": [
+          0.0,
+          4.065,
+          1.108
+        ]
+      }
+    },
+    {
+      "title": "Record the final status",
+      "where": "logbook",
+      "parts": [],
+      "body": "Record the specimen identifier, data location, imaging and Raman settings, and final chamber status. Note any charging, contamination, alignment issues, or vacuum faults for the next user.",
+      "id": "end-of-session-04",
+      "view": {
+        "pos": [
+          7.663,
+          7.544,
+          11.199
+        ],
+        "target": [
+          1.253,
+          3.63,
+          0.065
+        ]
+      }
+    }
+  ]
+}

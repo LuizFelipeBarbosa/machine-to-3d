@@ -1,0 +1,222 @@
+{
+  "formatVersion": 1,
+  "title": "Load a sample and pattern a surface",
+  "summary": "Load a compatible sample, verify the probe, and image and pattern the surface under the fitted cover. Placeholder content written from general laboratory practice, not from the manufacturer's manual.",
+  "minutes": 40,
+  "start": {
+    "coverOn": true
+  },
+  "steps": [
+    {
+      "title": "Check the instrument surroundings",
+      "where": "instrument",
+      "parts": [
+        "body",
+        "handles"
+      ],
+      "body": "Check that the instrument body is stable and that cables and loose tools cannot interfere with the work area. Keep the carrying handles clear and leave the instrument in place throughout the session.",
+      "id": "load-and-pattern-01",
+      "view": {
+        "pos": [
+          3.927,
+          4.118,
+          6.826
+        ],
+        "target": [
+          0.0,
+          1.72,
+          0.005
+        ]
+      }
+    },
+    {
+      "title": "Remove the amber cover",
+      "where": "instrument",
+      "parts": [
+        "enclosure"
+      ],
+      "body": "Confirm in the software that scanning and patterning are stopped and the probe is retracted before opening the instrument. Remove the amber cover using the approved handling method and place it on a clean, stable surface.",
+      "state": {
+        "coverOn": false
+      },
+      "caution": "Moving the cover while the probe is engaged can transmit vibration that damages the tip or sample.",
+      "id": "load-and-pattern-02",
+      "view": {
+        "pos": [
+          3.652,
+          4.803,
+          6.339
+        ],
+        "target": [
+          0.0,
+          2.574,
+          -0.004
+        ]
+      }
+    },
+    {
+      "title": "Load the sample on the stage",
+      "where": "instrument",
+      "parts": [
+        "stage"
+      ],
+      "body": "Hold the compatible, prepared sample by its edges and secure it flat on the stage using the laboratory-approved holder. Keep the sample within the permitted height and travel envelope and remove loose tools before proceeding.",
+      "caution": "A tilted or oversized sample can strike the probe head during approach.",
+      "id": "load-and-pattern-03",
+      "view": {
+        "pos": [
+          1.821,
+          2.937,
+          3.176
+        ],
+        "target": [
+          0.13,
+          1.904,
+          0.24
+        ]
+      }
+    },
+    {
+      "title": "Check the installed probe",
+      "where": "instrument",
+      "parts": [
+        "head"
+      ],
+      "body": "With the cover removed and the head retracted, inspect the probe carrier without touching the tip and confirm that it is securely seated. Check the probe identity and condition against the approved patterning recipe, and stop for a trained operator if replacement is needed.",
+      "id": "load-and-pattern-04",
+      "view": {
+        "pos": [
+          -2.716,
+          4.032,
+          -4.988
+        ],
+        "target": [
+          -0.079,
+          2.422,
+          -0.408
+        ]
+      }
+    },
+    {
+      "title": "Refit the cover and check isolation",
+      "where": "instrument",
+      "parts": [
+        "enclosure",
+        "controls"
+      ],
+      "body": "Refit the amber cover without catching cables or touching the head, and check that it is seated securely. Confirm the isolation status using the laboratory-defined indicators before approaching, leaving the isolation controls at their approved settings.",
+      "state": {
+        "coverOn": true
+      },
+      "check": "The sample and probe are secure, tools are removed, and the cover is fully fitted.",
+      "id": "load-and-pattern-05",
+      "view": {
+        "pos": [
+          3.652,
+          4.803,
+          6.339
+        ],
+        "target": [
+          0.0,
+          2.574,
+          -0.004
+        ]
+      }
+    },
+    {
+      "title": "Approach the sample surface",
+      "where": "software",
+      "parts": [
+        "head",
+        "stage"
+      ],
+      "body": "Select the approved approach settings for the installed probe and sample, then start the controlled approach. Watch the feedback and motion indicators until a stable surface interaction is reported, stopping if the signals leave the approved range.",
+      "caution": "Unstable feedback during approach can drive the probe into the surface; stop and retract before troubleshooting.",
+      "id": "load-and-pattern-06",
+      "view": {
+        "pos": [
+          -2.716,
+          4.032,
+          -4.988
+        ],
+        "target": [
+          -0.079,
+          2.422,
+          -0.408
+        ]
+      }
+    },
+    {
+      "title": "Image and locate the pattern area",
+      "where": "software",
+      "parts": [
+        "stage",
+        "head"
+      ],
+      "body": "Acquire a small surface image using the approved imaging settings and confirm that the surface is stable and free of obstructing particles. Use that image to register the pattern location and keep the planned pattern inside the verified clear area.",
+      "id": "load-and-pattern-07",
+      "view": {
+        "pos": [
+          1.821,
+          2.937,
+          3.176
+        ],
+        "target": [
+          0.13,
+          1.904,
+          0.24
+        ]
+      }
+    },
+    {
+      "title": "Run the approved pattern",
+      "where": "software",
+      "parts": [
+        "head",
+        "stage"
+      ],
+      "body": "Load the intended pattern and verify its size, position, depth target, and heating settings against the approved sample recipe. Start patterning and monitor progress without touching the instrument, stopping and retracting if the feedback becomes unstable.",
+      "caution": "An incorrect pattern scale or heating setting can remove material outside the intended area.",
+      "check": "Pattern size and position match the saved image, the approved recipe is selected, and the cover remains fitted.",
+      "id": "load-and-pattern-08",
+      "view": {
+        "pos": [
+          -2.716,
+          4.032,
+          -4.988
+        ],
+        "target": [
+          -0.079,
+          2.422,
+          -0.408
+        ]
+      }
+    },
+    {
+      "title": "Retract the probe and save results",
+      "where": "software",
+      "parts": [
+        "head"
+      ],
+      "body": "Stop patterning and command the probe to retract to the approved clearance position, confirming retraction in the software. Save the surface image, pattern settings, and run results, then continue with the end-of-session procedure.",
+      "link": {
+        "procedureSlug": "end-of-session",
+        "stepId": "end-of-session-01",
+        "label": "Continue with end of session"
+      },
+      "id": "load-and-pattern-09",
+      "view": {
+        "pos": [
+          -2.716,
+          4.032,
+          -4.988
+        ],
+        "target": [
+          -0.079,
+          2.422,
+          -0.408
+        ]
+      }
+    }
+  ]
+}

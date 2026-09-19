@@ -1,0 +1,104 @@
+{
+  "formatVersion": 1,
+  "title": "End of session",
+  "summary": "Confirm zero field, warm and unload the probe, and leave the cryostat in its approved standby state. Placeholder content written from general laboratory practice, not from the manufacturer's manual.",
+  "minutes": 180,
+  "start": {
+    "open": false
+  },
+  "steps": [
+    {
+      "title": "Confirm zero field and warm safely",
+      "where": "software",
+      "parts": [
+        "instruments",
+        "rack"
+      ],
+      "body": "Confirm that the field is at zero and that the magnet controller has completed its approved zero-field sequence. Disable sample excitation and warm the sample probe through the approved controls until it reaches the permitted handling temperature. Complete the sample-space pressure-equalization sequence and wait for safe access status.",
+      "check": "Field is zero, excitation is off, the probe is safe to handle, and sample-space pressure permits opening.",
+      "id": "end-of-session-01",
+      "view": {
+        "pos": [
+          -9.457,
+          7.232,
+          11.714
+        ],
+        "target": [
+          -3.12,
+          3.362,
+          0.707
+        ]
+      }
+    },
+    {
+      "title": "Open access and remove the probe",
+      "where": "instrument",
+      "parts": [
+        "Removable_cryostat_cover",
+        "sample"
+      ],
+      "body": "Remove the designated sample-access cover using the local loading procedure. Disconnect only the approved sample connections, then support and withdraw the probe without forcing it and place it in its designated holder.",
+      "state": {
+        "open": true
+      },
+      "caution": "Cold or snagged probes must not be pulled free; stop if there is frost, unexpected resistance, or uncertain temperature.",
+      "id": "end-of-session-02",
+      "view": {
+        "pos": [
+          4.494,
+          4.994,
+          8.229
+        ],
+        "target": [
+          0.0,
+          2.25,
+          0.423
+        ]
+      }
+    },
+    {
+      "title": "Refit the cover for standby",
+      "where": "instrument",
+      "parts": [
+        "Removable_cryostat_cover",
+        "top"
+      ],
+      "body": "Fit the approved empty-port closure and refit the designated cover, checking that no tools remain in the access area. Restore the required sample-space standby condition and leave the compressor and cooling services in the locally prescribed standby state.",
+      "state": {
+        "open": false
+      },
+      "id": "end-of-session-03",
+      "view": {
+        "pos": [
+          4.494,
+          4.994,
+          8.229
+        ],
+        "target": [
+          0.0,
+          2.25,
+          0.423
+        ]
+      }
+    },
+    {
+      "title": "Document the final conditions",
+      "where": "logbook",
+      "parts": [],
+      "body": "Record the sample identifier, data location, completed field range, final temperature, and confirmed zero field. Note the probe storage location, standby service status, and any alarms or unexpected behavior.",
+      "id": "end-of-session-04",
+      "view": {
+        "pos": [
+          7.287,
+          7.744,
+          12.792
+        ],
+        "target": [
+          -0.038,
+          3.273,
+          0.07
+        ]
+      }
+    }
+  ]
+}

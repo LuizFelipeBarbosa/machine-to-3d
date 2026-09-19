@@ -1,0 +1,102 @@
+{
+  "formatVersion": 1,
+  "title": "End of session",
+  "summary": "Retract the probe, unload the sample, and leave the covered instrument ready for the next session. Placeholder content written from general laboratory practice, not from the manufacturer's manual.",
+  "minutes": 10,
+  "start": {
+    "coverOn": true
+  },
+  "steps": [
+    {
+      "title": "Retract and remove the cover",
+      "where": "instrument",
+      "parts": [
+        "head",
+        "enclosure"
+      ],
+      "body": "Use the software to confirm patterning has stopped, probe heating is disabled, and the head is lifted to the approved clearance position before handling the cover. Remove the amber cover using the approved handling method and set it on a stable surface.",
+      "state": {
+        "coverOn": false
+      },
+      "check": "The head is retracted clear of the sample and the probe heater is disabled before the cover is removed.",
+      "id": "end-of-session-01",
+      "view": {
+        "pos": [
+          -2.716,
+          4.032,
+          -4.988
+        ],
+        "target": [
+          -0.079,
+          2.422,
+          -0.408
+        ]
+      }
+    },
+    {
+      "title": "Remove the sample",
+      "where": "instrument",
+      "parts": [
+        "stage"
+      ],
+      "body": "Wait until the sample and holder meet the laboratory-approved handling conditions, then release the sample restraint. Lift the sample by its edges with suitable tweezers and put it in a labeled container without reaching beneath the probe tip.",
+      "id": "end-of-session-02",
+      "view": {
+        "pos": [
+          1.821,
+          2.937,
+          3.176
+        ],
+        "target": [
+          0.13,
+          1.904,
+          0.24
+        ]
+      }
+    },
+    {
+      "title": "Refit the amber cover",
+      "where": "instrument",
+      "parts": [
+        "enclosure",
+        "body"
+      ],
+      "body": "Remove loose tools and debris using the approved cleaning method, keeping clear of the probe head. Refit the amber cover securely without trapping cables, and leave the instrument idle in its approved standby state.",
+      "state": {
+        "coverOn": true
+      },
+      "id": "end-of-session-03",
+      "view": {
+        "pos": [
+          3.652,
+          4.803,
+          6.339
+        ],
+        "target": [
+          0.0,
+          2.574,
+          -0.004
+        ]
+      }
+    },
+    {
+      "title": "Record the patterning session",
+      "where": "logbook",
+      "parts": [],
+      "body": "Record the sample and probe identifiers, pattern recipe, saved data location, and observed result. Note any approach failures, probe wear, or interrupted runs for the next user.",
+      "id": "end-of-session-04",
+      "view": {
+        "pos": [
+          3.77,
+          4.164,
+          6.566
+        ],
+        "target": [
+          0,
+          1.862,
+          0.018
+        ]
+      }
+    }
+  ]
+}

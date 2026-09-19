@@ -1,0 +1,226 @@
+{
+  "formatVersion": 1,
+  "title": "Cool down a sample and sweep field",
+  "summary": "Load a sample probe, stabilize at the target temperature, and collect a controlled magnetic-field sweep. Placeholder content written from general laboratory practice, not from the manufacturer's manual.",
+  "minutes": 360,
+  "start": {
+    "open": false
+  },
+  "steps": [
+    {
+      "title": "Check compressor and services",
+      "where": "instrument",
+      "parts": [
+        "services",
+        "lines"
+      ],
+      "body": "Review the service indicators and session notes to confirm that the compressor, cooling supply, ventilation, and gas handling are ready with no active alarms. Inspect accessible service lines for damage without disconnecting them. Confirm from the rack controls that the field is zero and the sample space is warm and ready for the approved loading sequence.",
+      "caution": "A damaged line or unresolved compressor alarm can interrupt cooling during a magnet run.",
+      "id": "cooldown-and-sweep-01",
+      "view": {
+        "pos": [
+          7.688,
+          5.044,
+          8.108
+        ],
+        "target": [
+          3.06,
+          2.219,
+          0.07
+        ]
+      }
+    },
+    {
+      "title": "Remove the sample-access cover",
+      "where": "instrument",
+      "parts": [
+        "Removable_cryostat_cover",
+        "top"
+      ],
+      "body": "Complete the approved sample-space pressure-equalization sequence and wait for the access-ready indication. Remove the designated sample-access cover and place it on a clean surface using the local loading procedure.",
+      "state": {
+        "open": true
+      },
+      "caution": "The moving cryostat shell is illustrative; do not dismantle vacuum or service enclosures to reproduce the animation.",
+      "check": "Field is zero, the probe is at a safe handling temperature, and sample-space pressure permits opening.",
+      "id": "cooldown-and-sweep-02",
+      "view": {
+        "pos": [
+          4.494,
+          4.994,
+          8.229
+        ],
+        "target": [
+          0.0,
+          2.25,
+          0.423
+        ]
+      }
+    },
+    {
+      "title": "Load the sample probe",
+      "where": "instrument",
+      "parts": [
+        "sample",
+        "top"
+      ],
+      "body": "Secure the specimen and its leads to the compatible probe, checking that no wire projects beyond the permitted envelope. Lower and seat the probe with the designated support, keeping it aligned and stopping if resistance develops.",
+      "caution": "Forcing a misaligned probe can damage wiring or jam the insert inside the sample space.",
+      "id": "cooldown-and-sweep-03",
+      "view": {
+        "pos": [
+          3.105,
+          4.558,
+          5.413
+        ],
+        "target": [
+          0.0,
+          2.662,
+          0.02
+        ]
+      }
+    },
+    {
+      "title": "Refit the cover and seal",
+      "where": "instrument",
+      "parts": [
+        "Removable_cryostat_cover",
+        "top"
+      ],
+      "body": "Secure the probe and check that its leads do not cross sealing surfaces. Refit the designated cover and complete the approved sealing and sample-space preparation cycle before cooling.",
+      "state": {
+        "open": false
+      },
+      "id": "cooldown-and-sweep-04",
+      "view": {
+        "pos": [
+          4.494,
+          4.994,
+          8.229
+        ],
+        "target": [
+          0.0,
+          2.25,
+          0.423
+        ]
+      }
+    },
+    {
+      "title": "Start and monitor cooldown",
+      "where": "software",
+      "parts": [
+        "instruments",
+        "rack"
+      ],
+      "body": "Start the approved cooldown sequence and monitor temperature, pressure, and service status on the rack instruments. Keep the field at zero and pause the sequence through the controls if cooling or pressure readings depart from the permitted range.",
+      "id": "cooldown-and-sweep-05",
+      "view": {
+        "pos": [
+          -9.457,
+          7.232,
+          11.714
+        ],
+        "target": [
+          -3.12,
+          3.362,
+          0.707
+        ]
+      }
+    },
+    {
+      "title": "Wait for stable base temperature",
+      "where": "software",
+      "parts": [
+        "instruments",
+        "rack"
+      ],
+      "body": "Wait until the sample thermometer reaches the planned base temperature and remains within the approved stability band for the required settling period. Confirm that cooling and magnet status are ready before enabling a field ramp.",
+      "check": "Sample temperature is stable, cooling is healthy, and the magnet controller permits ramping.",
+      "id": "cooldown-and-sweep-06",
+      "view": {
+        "pos": [
+          -9.457,
+          7.232,
+          11.714
+        ],
+        "target": [
+          -3.12,
+          3.362,
+          0.707
+        ]
+      }
+    },
+    {
+      "title": "Ramp the magnetic field slowly",
+      "where": "software",
+      "parts": [
+        "magnet",
+        "instruments"
+      ],
+      "body": "Enter the first approved field target and ramp rate at the magnet controls, checking polarity and units before starting. Watch field, temperature, and controller status throughout the ramp and wait for stable readings before acquisition.",
+      "caution": "An excessive ramp rate or loss of cooling can trigger a magnet fault; keep magnetic objects outside the marked exclusion area.",
+      "id": "cooldown-and-sweep-07",
+      "view": {
+        "pos": [
+          1.815,
+          2.874,
+          3.039
+        ],
+        "target": [
+          0.0,
+          1.766,
+          -0.112
+        ]
+      }
+    },
+    {
+      "title": "Measure across the planned sweep",
+      "where": "software",
+      "parts": [
+        "instruments",
+        "rack"
+      ],
+      "body": "Run the planned field points using the approved ramp and settling limits, keeping excitation within the sample limits. Monitor temperature and signal quality, and save each measurement with its actual field and temperature. Stop the sequence through the controls if a fault or unexpected heating occurs.",
+      "id": "cooldown-and-sweep-08",
+      "view": {
+        "pos": [
+          -9.457,
+          7.232,
+          11.714
+        ],
+        "target": [
+          -3.12,
+          3.362,
+          0.707
+        ]
+      }
+    },
+    {
+      "title": "Return the field to zero",
+      "where": "software",
+      "parts": [
+        "magnet",
+        "instruments"
+      ],
+      "body": "End acquisition and save the sweep data and settings. Ramp the field to zero at the approved rate and wait for the reported field and controller status to settle. Leave the cover secured and continue to end of session before unloading.",
+      "id": "cooldown-and-sweep-09",
+      "view": {
+        "pos": [
+          1.815,
+          2.874,
+          3.039
+        ],
+        "target": [
+          0.0,
+          1.766,
+          -0.112
+        ]
+      },
+      "link": {
+        "procedureSlug": "end-of-session",
+        "stepId": "end-of-session-01",
+        "label": "Continue with end of session"
+      }
+    }
+  ]
+}

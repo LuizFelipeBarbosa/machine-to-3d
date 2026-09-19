@@ -1,0 +1,97 @@
+{
+  "formatVersion": 1,
+  "title": "End of session",
+  "summary": "Disable laser emission, remove the sample, and leave the covered spectrometer documented and idle. Placeholder content written from general laboratory practice, not from the manufacturer's manual.",
+  "minutes": 5,
+  "start": {
+    "open": false
+  },
+  "steps": [
+    {
+      "id": "end-of-session-01",
+      "title": "Confirm laser emission is off",
+      "where": "software",
+      "parts": [
+        "microscope",
+        "housing"
+      ],
+      "body": "Stop any acquisition and verify that the shutter is closed and laser emission is disabled using the status indicators. Complete the local laser standby or shutdown sequence before reaching toward the sample.",
+      "check": "Acquisition has stopped, the shutter is closed, and laser emission is disabled.",
+      "view": {
+        "pos": [
+          -3.881,
+          3.887,
+          4.784
+        ],
+        "target": [
+          -1.531,
+          2.452,
+          0.702
+        ]
+      }
+    },
+    {
+      "id": "end-of-session-02",
+      "title": "Remove the sample from the stage",
+      "where": "instrument",
+      "parts": [
+        "stage",
+        "objectives"
+      ],
+      "body": "Lower the stage until the objective has clear space above the sample, then release the holder. Remove the sample by its edges and clear loose material using the locally approved cleaning method.",
+      "view": {
+        "pos": [
+          -3.98,
+          2.338,
+          5.053
+        ],
+        "target": [
+          -1.68,
+          0.934,
+          1.059
+        ]
+      }
+    },
+    {
+      "id": "end-of-session-03",
+      "title": "Confirm the cover is installed",
+      "where": "instrument",
+      "parts": [
+        "Removable_spectrometer_cover",
+        "detector"
+      ],
+      "body": "Confirm that the spectrometer cover remains fully installed and leave the acquisition software idle. Follow the local detector standby instructions so any required cooling remains active.",
+      "view": {
+        "pos": [
+          5.283,
+          3.849,
+          6.19
+        ],
+        "target": [
+          1.65,
+          1.631,
+          -0.121
+        ]
+      }
+    },
+    {
+      "id": "end-of-session-04",
+      "title": "Log the measurement session",
+      "where": "logbook",
+      "parts": [],
+      "body": "Record the sample identifiers, data location, laser wavelength, power, objective, grating, and acquisition settings. Note any saturation, sample damage, or instrument faults and report unresolved problems to the instrument owner.",
+      "view": {
+        "pos": [
+          7.853,
+          6.369,
+          13.493
+        ],
+        "target": [
+          0.353,
+          1.79,
+          0.467
+        ]
+      }
+    }
+  ]
+}

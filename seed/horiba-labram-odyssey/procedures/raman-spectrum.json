@@ -1,0 +1,202 @@
+{
+  "formatVersion": 1,
+  "title": "Acquire a Raman spectrum",
+  "summary": "Prepare a sample, inspect the illustrated spectrometer safely, and acquire and save a Raman spectrum. Placeholder content written from general laboratory practice, not from the manufacturer's manual.",
+  "minutes": 35,
+  "start": {
+    "open": false
+  },
+  "steps": [
+    {
+      "id": "raman-spectrum-01",
+      "title": "Check laser safety controls",
+      "where": "instrument",
+      "parts": [
+        "housing",
+        "microscope"
+      ],
+      "body": "Confirm that laser emission is disabled and the shutter is closed before handling the sample. Check the local laser safety controls, required protective equipment, and enclosure condition with your trainer.",
+      "caution": "A reflected laser beam can injure eyes; never defeat an interlock or look into an objective during emission.",
+      "check": "Laser emission is disabled, the shutter is closed, and the required local laser safety controls are in place.",
+      "view": {
+        "pos": [
+          7.332,
+          6.262,
+          12.539
+        ],
+        "target": [
+          0.008,
+          1.79,
+          -0.183
+        ]
+      }
+    },
+    {
+      "id": "raman-spectrum-02",
+      "title": "Secure the sample on the stage",
+      "where": "instrument",
+      "parts": [
+        "stage"
+      ],
+      "body": "With laser emission still disabled, lower the stage enough to clear the objective and secure the sample in its holder. Keep the region of interest accessible and check that the sample cannot shift during stage motion.",
+      "view": {
+        "pos": [
+          -3.98,
+          2.338,
+          5.053
+        ],
+        "target": [
+          -1.68,
+          0.934,
+          1.059
+        ]
+      }
+    },
+    {
+      "id": "raman-spectrum-03",
+      "title": "Focus using microscope illumination",
+      "where": "instrument",
+      "parts": [
+        "microscope",
+        "objectives"
+      ],
+      "body": "Choose an objective suited to the sample height and focus with ordinary microscope illumination while the laser remains disabled. Watch the objective clearance from the side during coarse motion, then use fine focus to bring the surface into view.",
+      "caution": "Raising a tall sample too quickly can drive it into the objective and damage both surfaces.",
+      "view": {
+        "pos": [
+          -3.881,
+          3.887,
+          4.784
+        ],
+        "target": [
+          -1.531,
+          2.452,
+          0.702
+        ]
+      }
+    },
+    {
+      "id": "raman-spectrum-04",
+      "title": "Inspect the illustrated grating",
+      "where": "instrument",
+      "parts": [
+        "Removable_spectrometer_cover",
+        "grating"
+      ],
+      "body": "Open the cover in this training model and identify the grating that separates the collected light. On the physical instrument, cover removal is reserved for authorized personnel following the local isolation procedure with laser emission disabled. Inspect without touching optical surfaces or adjusting mounts.",
+      "state": {
+        "open": true
+      },
+      "caution": "Removing a physical cover without proper isolation can expose a laser beam; this model view is not authorization to open the instrument.",
+      "view": {
+        "pos": [
+          5.283,
+          3.849,
+          6.19
+        ],
+        "target": [
+          1.65,
+          1.631,
+          -0.121
+        ]
+      }
+    },
+    {
+      "id": "raman-spectrum-05",
+      "title": "Replace the cover and select grating",
+      "where": "software",
+      "parts": [
+        "Removable_spectrometer_cover",
+        "housing"
+      ],
+      "body": "Close the model cover and confirm that the physical spectrometer cover is installed and its safety controls are restored. Select the approved grating and spectral range through the normal software controls with laser emission still disabled.",
+      "state": {
+        "open": false
+      },
+      "view": {
+        "pos": [
+          5.283,
+          3.849,
+          6.19
+        ],
+        "target": [
+          1.65,
+          1.631,
+          -0.121
+        ]
+      }
+    },
+    {
+      "id": "raman-spectrum-06",
+      "title": "Select laser and filter settings",
+      "where": "software",
+      "parts": [
+        "microscope",
+        "detector"
+      ],
+      "body": "Select the approved excitation wavelength and matching filters for the sample and spectral range. Begin with the locally approved low sample power and short exposure, keeping emission disabled until acquisition is ready.",
+      "caution": "Excessive laser power can burn the sample or saturate the detector before a useful spectrum is collected.",
+      "view": {
+        "pos": [
+          -3.881,
+          3.887,
+          4.784
+        ],
+        "target": [
+          -1.531,
+          2.452,
+          0.702
+        ]
+      }
+    },
+    {
+      "id": "raman-spectrum-07",
+      "title": "Acquire and inspect a spectrum",
+      "where": "software",
+      "parts": [
+        "detector",
+        "microscope"
+      ],
+      "body": "Confirm that the enclosure and cover are secure, the beam is contained, and hands are clear before enabling emission through the normal controls. Acquire a short trial spectrum and inspect it for saturation, fluorescence, or sample damage before using the approved acquisition settings. Stop acquisition and disable emission if the sample changes or a safety fault appears.",
+      "check": "The spectrometer cover and required enclosure are closed, the beam is contained, and the selected laser, filters, and power are approved.",
+      "view": {
+        "pos": [
+          4.614,
+          2.418,
+          1.321
+        ],
+        "target": [
+          3.847,
+          1.95,
+          -0.01
+        ]
+      }
+    },
+    {
+      "id": "raman-spectrum-08",
+      "title": "Save the spectrum and acquisition settings",
+      "where": "software",
+      "parts": [
+        "detector"
+      ],
+      "body": "Stop acquisition, close the shutter, and disable laser emission. Save the raw spectrum with the sample identifier, wavelength, power, objective, grating, and exposure settings, then reopen the saved file to confirm it is readable. Continue to end of session to remove the sample and leave the instrument ready.",
+      "link": {
+        "procedureSlug": "end-of-session",
+        "stepId": "end-of-session-01",
+        "label": "Continue with end of session"
+      },
+      "view": {
+        "pos": [
+          4.614,
+          2.418,
+          1.321
+        ],
+        "target": [
+          3.847,
+          1.95,
+          -0.01
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,227 @@
+{
+  "formatVersion": 1,
+  "title": "Correlate SEM images and Raman spectra",
+  "summary": "Load a specimen, locate a feature by SEM, and acquire a Raman spectrum at the corresponding position. Placeholder content written from general laboratory practice, not from the manufacturer's manual.",
+  "minutes": 75,
+  "start": {
+    "open": false
+  },
+  "steps": [
+    {
+      "title": "Vent the chamber safely",
+      "where": "software",
+      "parts": [
+        "chamber",
+        "column"
+      ],
+      "body": "Confirm that electron emission is off, the Raman laser is disabled, and the stage and movable optics are in their approved exchange positions. Start the controlled vent cycle and wait until the chamber status permits opening.",
+      "caution": "Opening against a pressure difference can damage the door seal and move an unsecured specimen.",
+      "check": "Electron emission and laser are off, exchange positions are clear, and the chamber is ready to open.",
+      "id": "sem-raman-correlation-01",
+      "view": {
+        "pos": [
+          2.478,
+          5.653,
+          4.328
+        ],
+        "target": [
+          0.0,
+          4.14,
+          0.023
+        ]
+      }
+    },
+    {
+      "title": "Open the access door",
+      "where": "instrument",
+      "parts": [
+        "SEM_access_door",
+        "chamber"
+      ],
+      "body": "Release the access door only after the vent cycle is complete. Open it gently and keep your hands clear of the sealing surface.",
+      "state": {
+        "open": true
+      },
+      "id": "sem-raman-correlation-02",
+      "view": {
+        "pos": [
+          1.785,
+          5.155,
+          4.208
+        ],
+        "target": [
+          0.0,
+          4.065,
+          1.108
+        ]
+      }
+    },
+    {
+      "title": "Mount the specimen securely",
+      "where": "instrument",
+      "parts": [
+        "sample",
+        "interior"
+      ],
+      "body": "Fasten a clean, dry, vacuum-compatible specimen to the holder with the grounding method approved for the sample. Seat and lock the holder, then verify that its height and any protrusions remain within the documented stage-clearance limits.",
+      "caution": "A tall specimen or loose fragment can strike the objective or contaminate the chamber.",
+      "id": "sem-raman-correlation-03",
+      "view": {
+        "pos": [
+          0.851,
+          4.267,
+          1.427
+        ],
+        "target": [
+          0.0,
+          3.747,
+          -0.05
+        ]
+      }
+    },
+    {
+      "title": "Close the chamber door",
+      "where": "instrument",
+      "parts": [
+        "SEM_access_door",
+        "chamber"
+      ],
+      "body": "Remove tools and inspect the door seal for particles or trapped material. Close and secure the door gently without using force to overcome resistance.",
+      "state": {
+        "open": false
+      },
+      "id": "sem-raman-correlation-04",
+      "view": {
+        "pos": [
+          1.785,
+          5.155,
+          4.208
+        ],
+        "target": [
+          0.0,
+          4.065,
+          1.108
+        ]
+      }
+    },
+    {
+      "title": "Pump down the chamber",
+      "where": "software",
+      "parts": [
+        "chamber"
+      ],
+      "body": "Start the normal evacuation cycle and monitor the pressure indication. Wait for the approved operating vacuum and interlock-ready status before enabling either measurement mode.",
+      "caution": "Repeatedly restarting evacuation can hide a leak or an unsuitable specimen; stop and report a pressure that fails to recover.",
+      "check": "Door is secured, operating vacuum is reached, and measurement interlocks report ready.",
+      "id": "sem-raman-correlation-05",
+      "view": {
+        "pos": [
+          2.478,
+          5.653,
+          4.328
+        ],
+        "target": [
+          0.0,
+          4.14,
+          0.023
+        ]
+      }
+    },
+    {
+      "title": "Image and locate a feature",
+      "where": "software",
+      "parts": [
+        "column",
+        "detectors"
+      ],
+      "body": "Enable SEM imaging with the approved low-dose starting settings and acquire an overview image. Choose a recognizable feature, refine the focus and image settings, and save its image with stage coordinates and nearby landmarks. Respect the recorded specimen height when moving the stage.",
+      "caution": "Excessive electron exposure can alter the material before its Raman spectrum is measured.",
+      "id": "sem-raman-correlation-06",
+      "view": {
+        "pos": [
+          -2.971,
+          7.664,
+          -5.875
+        ],
+        "target": [
+          0.037,
+          5.828,
+          -0.65
+        ]
+      }
+    },
+    {
+      "title": "Select the corresponding Raman position",
+      "where": "software",
+      "parts": [
+        "raman",
+        "spectrometer"
+      ],
+      "body": "Blank the electron beam and use the approved mode-transfer sequence to position the Raman optics. Use the calibrated coordinate relation and saved landmarks to locate the same feature in the optical view. Keep the laser disabled until positioning is complete.",
+      "caution": "Uncalibrated coordinate transfer can place the laser on a different feature even when stage coordinates appear similar.",
+      "id": "sem-raman-correlation-07",
+      "view": {
+        "pos": [
+          2.247,
+          7.144,
+          4.094
+        ],
+        "target": [
+          0.01,
+          5.778,
+          0.209
+        ]
+      }
+    },
+    {
+      "title": "Acquire the Raman spectrum",
+      "where": "software",
+      "parts": [
+        "raman",
+        "spectrometer"
+      ],
+      "body": "Confirm that the laser enclosure and interlocks are ready, then select the approved wavelength, low starting power, spectral range, and integration time for this specimen. Acquire a short spectrum at the matched feature and check for saturation or sample changes before collecting the final spectrum. Disable the laser when acquisition finishes.",
+      "caution": "High laser power can heat or burn a small feature before a visible change appears.",
+      "id": "sem-raman-correlation-08",
+      "view": {
+        "pos": [
+          2.247,
+          7.144,
+          4.094
+        ],
+        "target": [
+          0.01,
+          5.778,
+          0.209
+        ]
+      }
+    },
+    {
+      "title": "Save the correlated dataset",
+      "where": "software",
+      "parts": [
+        "spectrometer",
+        "raman"
+      ],
+      "body": "Save the SEM images, Raman spectra, coordinates, and acquisition settings under the same sample identifier. Record how you matched the feature and any visible changes, then continue to end of session before opening the chamber.",
+      "id": "sem-raman-correlation-09",
+      "view": {
+        "pos": [
+          5.491,
+          5.129,
+          4.266
+        ],
+        "target": [
+          3.285,
+          3.783,
+          0.435
+        ]
+      },
+      "link": {
+        "procedureSlug": "end-of-session",
+        "stepId": "end-of-session-01",
+        "label": "Continue with end of session"
+      }
+    }
+  ]
+}

@@ -1,0 +1,95 @@
+{
+  "formatVersion": 1,
+  "title": "End of session",
+  "summary": "Separate the stamp, cool and unload the chuck, and record the transfer outcome. Placeholder content written from general laboratory practice, not from the manufacturer's manual.",
+  "minutes": 20,
+  "start": {},
+  "steps": [
+    {
+      "title": "Park the stamp above the chuck",
+      "where": "instrument",
+      "parts": [
+        "stamp",
+        "stage"
+      ],
+      "body": "Confirm that contact has ended and raise the stamp to a clear parking position before moving either positioning stage. Secure the manipulator so the stamp cannot drift back toward the substrate.",
+      "id": "end-of-session-01",
+      "view": {
+        "pos": [
+          -2.071,
+          2.685,
+          3.607
+        ],
+        "target": [
+          -0.322,
+          1.618,
+          0.57
+        ]
+      }
+    },
+    {
+      "title": "Disable heating and cool the chuck",
+      "where": "instrument",
+      "parts": [
+        "controller",
+        "sample"
+      ],
+      "body": "Disable heating and release chuck vacuum after confirming the stamp is fully clear, leaving the substrate undisturbed on the chuck. Keep the controller on to monitor cooling until the measured temperature reaches the laboratory-approved handling range.",
+      "check": "The stamp is clear, vacuum is off, and the measured chuck temperature is within the approved handling range.",
+      "id": "end-of-session-02",
+      "view": {
+        "pos": [
+          5.217,
+          2.264,
+          4.936
+        ],
+        "target": [
+          2.431,
+          0.563,
+          0.096
+        ]
+      }
+    },
+    {
+      "title": "Unload and switch off the controller",
+      "where": "instrument",
+      "parts": [
+        "sample",
+        "controller"
+      ],
+      "body": "Use tweezers to lift the cooled substrate by its edges and place it in a labeled container, then remove the stamp slide from its secured holder. Clear debris using the approved cleaning method and switch off the temperature controller after confirming heating is disabled.",
+      "id": "end-of-session-03",
+      "view": {
+        "pos": [
+          2.718,
+          2.278,
+          3.626
+        ],
+        "target": [
+          0.762,
+          1.084,
+          0.229
+        ]
+      }
+    },
+    {
+      "title": "Log the transfer outcome",
+      "where": "logbook",
+      "parts": [],
+      "body": "Record the substrate and stamp identifiers, temperature recipe, transfer outcome, and saved image location. Note any vacuum loss, abnormal contact, or residue that the next user should know about.",
+      "id": "end-of-session-04",
+      "view": {
+        "pos": [
+          5.855,
+          5.732,
+          8.548
+        ],
+        "target": [
+          1.019,
+          2.779,
+          0.147
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,203 @@
+{
+  "formatVersion": 1,
+  "title": "Mount a puck and measure properties",
+  "summary": "Load a sample puck, collect a temperature and field sequence, and return the sample to room temperature. Placeholder content written from general laboratory practice, not from the manufacturer's manual.",
+  "minutes": 180,
+  "start": {
+    "open": false
+  },
+  "steps": [
+    {
+      "title": "Check the system status",
+      "where": "software",
+      "parts": [
+        "computer",
+        "console"
+      ],
+      "body": "Review the status display and the previous session notes for active faults or unfinished sequences. Confirm that cooling and gas services are ready, the field is at zero, and the sample chamber is at room temperature before starting sample access.",
+      "caution": "An idle sequence does not prove that the magnet field is zero or that the sample is warm.",
+      "id": "mount-and-measure-01",
+      "view": {
+        "pos": [
+          -3.064,
+          4.112,
+          2.366
+        ],
+        "target": [
+          -1.72,
+          3.292,
+          0.033
+        ]
+      }
+    },
+    {
+      "title": "Open the sample access",
+      "where": "instrument",
+      "parts": [
+        "access",
+        "Removable_front_cover"
+      ],
+      "body": "Use the approved sample-exchange controls to bring the sample chamber to its permitted access pressure and wait for completion. Open the designated sample access and lift the access deck as directed by the local loading procedure.",
+      "state": {
+        "open": true
+      },
+      "caution": "The animated front shell is schematic; remove only covers explicitly identified for routine sample access in the local procedure.",
+      "check": "Field is zero, sample chamber is at room temperature, and pressure is safe for sample access.",
+      "id": "mount-and-measure-02",
+      "view": {
+        "pos": [
+          2.839,
+          4.433,
+          2.999
+        ],
+        "target": [
+          1.12,
+          3.383,
+          0.013
+        ]
+      }
+    },
+    {
+      "title": "Mount the sample puck",
+      "where": "instrument",
+      "parts": [
+        "sample"
+      ],
+      "body": "Secure the specimen to a compatible puck and check that its contacts and dimensions meet the local loading limits. Use the designated insertion tool to seat the puck without forcing it, keeping wires clear of the access path.",
+      "caution": "Loose wires or an incompletely seated puck can snag during insertion and give intermittent measurements.",
+      "id": "mount-and-measure-03",
+      "view": {
+        "pos": [
+          3.546,
+          3.561,
+          4.233
+        ],
+        "target": [
+          1.12,
+          2.08,
+          0.02
+        ]
+      }
+    },
+    {
+      "title": "Close the access",
+      "where": "instrument",
+      "parts": [
+        "access",
+        "Removable_front_cover"
+      ],
+      "body": "Withdraw the insertion tool and inspect the accessible seal for debris. Lower and secure the access deck, then refit the designated cover without trapping wires.",
+      "state": {
+        "open": false
+      },
+      "id": "mount-and-measure-04",
+      "view": {
+        "pos": [
+          2.839,
+          4.433,
+          2.999
+        ],
+        "target": [
+          1.12,
+          3.383,
+          0.013
+        ]
+      }
+    },
+    {
+      "title": "Purge and seal the chamber",
+      "where": "software",
+      "parts": [
+        "computer",
+        "access"
+      ],
+      "body": "Start the approved sample-chamber purge and sealing cycle using the configured gas supply. Wait for the chamber status to indicate that the cycle has completed and the pressure is suitable for measurement.",
+      "caution": "Cooling before the purge is complete can trap moisture and contaminate the sample chamber.",
+      "check": "Access is secured, the purge is complete, and chamber pressure is within the approved measurement range.",
+      "id": "mount-and-measure-05",
+      "view": {
+        "pos": [
+          -3.064,
+          4.112,
+          2.366
+        ],
+        "target": [
+          -1.72,
+          3.292,
+          0.033
+        ]
+      }
+    },
+    {
+      "title": "Set the measurement sequence",
+      "where": "software",
+      "parts": [
+        "computer",
+        "console"
+      ],
+      "body": "Enter the sample identifier, measurement mode, and data location. Set temperature points, field points, ramp rates, settling criteria, and excitation within the limits approved for this sample and instrument. Review the complete sequence before enabling it.",
+      "id": "mount-and-measure-06",
+      "view": {
+        "pos": [
+          -3.064,
+          4.112,
+          2.366
+        ],
+        "target": [
+          -1.72,
+          3.292,
+          0.033
+        ]
+      }
+    },
+    {
+      "title": "Run and monitor the measurement",
+      "where": "software",
+      "parts": [
+        "computer",
+        "console"
+      ],
+      "body": "Start the sequence and watch the first temperature and field transitions until the readings settle. Check the first data points for plausible values, and stop the sequence through the controls if faults or unexpected heating appear.",
+      "id": "mount-and-measure-07",
+      "view": {
+        "pos": [
+          -3.064,
+          4.112,
+          2.366
+        ],
+        "target": [
+          -1.72,
+          3.292,
+          0.033
+        ]
+      }
+    },
+    {
+      "title": "Warm the sample to room temperature",
+      "where": "software",
+      "parts": [
+        "computer",
+        "access"
+      ],
+      "body": "Finish the acquisition and save the data with the sequence settings. Return the sample to room temperature using the approved controlled warming sequence and wait for a stable reading. Keep the access closed and continue to end of session to zero the field before unloading.",
+      "id": "mount-and-measure-08",
+      "view": {
+        "pos": [
+          -3.064,
+          4.112,
+          2.366
+        ],
+        "target": [
+          -1.72,
+          3.292,
+          0.033
+        ]
+      },
+      "link": {
+        "procedureSlug": "end-of-session",
+        "stepId": "end-of-session-01",
+        "label": "Continue with end of session"
+      }
+    }
+  ]
+}

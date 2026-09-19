@@ -1,0 +1,224 @@
+{
+  "formatVersion": 1,
+  "title": "Clean samples with plasma",
+  "summary": "Prepare compatible samples, complete a plasma cleaning cycle, and recover the samples safely. Placeholder content written from general laboratory practice, not from the manufacturer's manual.",
+  "minutes": 30,
+  "start": {
+    "doorOpen": false
+  },
+  "steps": [
+    {
+      "id": "plasma-clean-01",
+      "title": "Check the gas supply",
+      "where": "instrument",
+      "parts": [
+        "gas"
+      ],
+      "body": "Confirm that the connected gas and supply pressure match the locally approved cleaning recipe. Check the visible tubing and flowmeter for damage, and keep the process gas valve closed until the pumping sequence calls for flow.",
+      "caution": "An incorrect gas or damaged gas line can create an unsafe discharge; stop and notify the instrument owner if either is uncertain.",
+      "view": {
+        "pos": [
+          2.647,
+          4.042,
+          4.842
+        ],
+        "target": [
+          1.219,
+          3.17,
+          2.362
+        ]
+      }
+    },
+    {
+      "id": "plasma-clean-02",
+      "title": "Open the chamber door",
+      "where": "instrument",
+      "parts": [
+        "door"
+      ],
+      "body": "Confirm that plasma power is off and the chamber has reached atmospheric pressure through the approved vent sequence. Release the latch and swing the door clear without forcing it.",
+      "state": {
+        "doorOpen": true
+      },
+      "caution": "A door that resists opening may still be held by vacuum; forcing the latch can damage the seal.",
+      "view": {
+        "pos": [
+          2.254,
+          2.702,
+          6.34
+        ],
+        "target": [
+          0.023,
+          1.34,
+          2.464
+        ]
+      }
+    },
+    {
+      "id": "plasma-clean-03",
+      "title": "Place samples on the electrode tray",
+      "where": "instrument",
+      "parts": [
+        "chamber"
+      ],
+      "body": "Use clean tweezers to place dry, approved samples flat on the electrode tray with space between them. Keep samples away from the chamber wall and door seal, and remove loose debris using the local cleaning method.",
+      "caution": "Wet samples, loose powders, or incompatible materials can contaminate the chamber or react during plasma exposure.",
+      "view": {
+        "pos": [
+          2.234,
+          2.704,
+          5.185
+        ],
+        "target": [
+          0,
+          1.34,
+          1.305
+        ]
+      }
+    },
+    {
+      "id": "plasma-clean-04",
+      "title": "Close and latch the door",
+      "where": "instrument",
+      "parts": [
+        "door"
+      ],
+      "body": "Inspect the sealing surface for debris and confirm that no sample projects into the door opening. Close the door gently and secure its latch as trained.",
+      "state": {
+        "doorOpen": false
+      },
+      "check": "Samples are clear of the seal, the door is fully latched, and hands and tools are outside the chamber.",
+      "view": {
+        "pos": [
+          2.254,
+          2.702,
+          6.34
+        ],
+        "target": [
+          0.023,
+          1.34,
+          2.464
+        ]
+      }
+    },
+    {
+      "id": "plasma-clean-05",
+      "title": "Set cleaning time and power",
+      "where": "instrument",
+      "parts": [
+        "controls"
+      ],
+      "body": "Enter the exposure time and set the power level from the approved recipe for your sample material. Review both values before proceeding, and keep plasma power disabled while preparing the vacuum.",
+      "view": {
+        "pos": [
+          2.066,
+          4.521,
+          6.569
+        ],
+        "target": [
+          -0.36,
+          3.04,
+          2.355
+        ]
+      }
+    },
+    {
+      "id": "plasma-clean-06",
+      "title": "Pump down and check pressure",
+      "where": "instrument",
+      "parts": [
+        "controls",
+        "gas"
+      ],
+      "body": "Start the approved pump-down sequence and watch the pressure decrease to the recipe limit. Admit process gas only at the prescribed point, then adjust the flow and wait for pressure to stabilize within the operating range.",
+      "caution": "Failure to reach a stable operating pressure can indicate a leak or incorrect flow; do not ignite the plasma to compensate.",
+      "view": {
+        "pos": [
+          2.066,
+          4.521,
+          6.569
+        ],
+        "target": [
+          -0.36,
+          3.04,
+          2.355
+        ]
+      }
+    },
+    {
+      "id": "plasma-clean-07",
+      "title": "Run the plasma cycle",
+      "where": "instrument",
+      "parts": [
+        "controls",
+        "door"
+      ],
+      "body": "Start the timed plasma cycle with the door latched and the operating pressure stable. Monitor the pressure and instrument status throughout the run, and use the trained stop sequence if there is arcing, an alarm, or unstable operation.",
+      "check": "The door is latched, pressure and gas flow match the recipe, and the exposure time and power have been reviewed.",
+      "view": {
+        "pos": [
+          2.066,
+          4.521,
+          6.569
+        ],
+        "target": [
+          -0.36,
+          3.04,
+          2.355
+        ]
+      }
+    },
+    {
+      "id": "plasma-clean-08",
+      "title": "Stop gas flow and vent",
+      "where": "instrument",
+      "parts": [
+        "controls",
+        "gas"
+      ],
+      "body": "Confirm that the timed cycle has ended and plasma power is off, then close the process gas valve. Follow the local pump isolation and controlled vent sequence, waiting until the pressure indicates atmosphere and the samples have cooled.",
+      "view": {
+        "pos": [
+          2.066,
+          4.521,
+          6.569
+        ],
+        "target": [
+          -0.36,
+          3.04,
+          2.355
+        ]
+      }
+    },
+    {
+      "id": "plasma-clean-09",
+      "title": "Open the door and recover samples",
+      "where": "instrument",
+      "parts": [
+        "door",
+        "chamber"
+      ],
+      "body": "After confirming atmospheric pressure and safe handling temperature, release the latch and open the door fully. Remove samples with clean tweezers, place them in a labeled container, and continue to end of session.",
+      "state": {
+        "doorOpen": true
+      },
+      "link": {
+        "procedureSlug": "end-of-session",
+        "stepId": "end-of-session-01",
+        "label": "Continue with end of session"
+      },
+      "view": {
+        "pos": [
+          2.254,
+          2.702,
+          6.34
+        ],
+        "target": [
+          0.023,
+          1.34,
+          2.464
+        ]
+      }
+    }
+  ]
+}

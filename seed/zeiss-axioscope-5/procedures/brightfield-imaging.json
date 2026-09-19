@@ -1,0 +1,217 @@
+{
+  "formatVersion": 1,
+  "title": "Brightfield imaging of a slide",
+  "summary": "Load a prepared slide, establish transmitted brightfield illumination, and capture images of the selected region. Placeholder content written from general laboratory practice, not from the manufacturer's manual.",
+  "minutes": 20,
+  "start": {},
+  "steps": [
+    {
+      "title": "Switch on transmitted illumination",
+      "where": "instrument",
+      "parts": [
+        "illumination",
+        "base"
+      ],
+      "body": "Check that the microscope base is stable and the viewing area is clear. Switch on transmitted illumination at low brightness and increase it only enough to see the specimen.",
+      "caution": "Selecting a different illumination mode can expose the specimen to unwanted light; confirm transmitted brightfield before viewing.",
+      "id": "brightfield-imaging-01",
+      "view": {
+        "pos": [
+          -3.778,
+          4.711,
+          -6.879
+        ],
+        "target": [
+          0.003,
+          2.402,
+          -0.312
+        ]
+      }
+    },
+    {
+      "title": "Place the slide on the stage",
+      "where": "instrument",
+      "parts": [
+        "stage",
+        "objectives"
+      ],
+      "body": "Lower the stage enough to leave clear space beneath the objectives. Hold the prepared slide by its edges, secure it in the holder with the coverslip upward, and position the specimen over the light opening.",
+      "caution": "A raised stage can drive the slide into an objective while you load it.",
+      "id": "brightfield-imaging-02",
+      "view": {
+        "pos": [
+          2.268,
+          3.165,
+          4.312
+        ],
+        "target": [
+          0.01,
+          1.787,
+          0.39
+        ]
+      }
+    },
+    {
+      "title": "Select the low-power objective",
+      "where": "instrument",
+      "parts": [
+        "objectives",
+        "head"
+      ],
+      "body": "Rotate the nosepiece until the lowest-power dry objective clicks into place, watching the clearance from the side. Adjust the eyepiece spacing until the two viewing circles merge into one.",
+      "check": "The slide is secure and the selected objective has clear space above it.",
+      "id": "brightfield-imaging-03",
+      "view": {
+        "pos": [
+          1.029,
+          3.473,
+          2.187
+        ],
+        "target": [
+          0.0,
+          2.845,
+          0.4
+        ]
+      }
+    },
+    {
+      "title": "Focus with coarse then fine adjustment",
+      "where": "instrument",
+      "parts": [
+        "focus",
+        "stage"
+      ],
+      "body": "At low power, watch from the side while bringing the stage near the expected focus position without touching the objective. Look through the eyepieces and use coarse focus to move the stage away from the objective until detail appears, then sharpen with fine focus.",
+      "caution": "Continuing to raise the stage while looking through the eyepieces can crush the coverslip against the objective.",
+      "id": "brightfield-imaging-04",
+      "view": {
+        "pos": [
+          -1.974,
+          2.281,
+          -3.884
+        ],
+        "target": [
+          0.0,
+          1.075,
+          -0.455
+        ]
+      }
+    },
+    {
+      "title": "Set Köhler illumination",
+      "where": "instrument",
+      "parts": [
+        "condenser",
+        "illumination"
+      ],
+      "body": "With the specimen focused, close the field diaphragm until its edge appears and adjust condenser height until that edge is sharp. Center the illuminated opening with the condenser centering controls, then open the field diaphragm just beyond the image boundary. Adjust the condenser aperture for useful contrast without closing it so far that fine detail disappears.",
+      "id": "brightfield-imaging-05",
+      "view": {
+        "pos": [
+          1.423,
+          2.651,
+          2.898
+        ],
+        "target": [
+          0.043,
+          1.808,
+          0.5
+        ]
+      }
+    },
+    {
+      "title": "Center the region of interest",
+      "where": "instrument",
+      "parts": [
+        "stage",
+        "head"
+      ],
+      "body": "Use the stage movement controls to bring the desired feature into the center of the field. Check that the holder remains secure and note a recognizable nearby feature so you can find the region again.",
+      "id": "brightfield-imaging-06",
+      "view": {
+        "pos": [
+          2.268,
+          3.165,
+          4.312
+        ],
+        "target": [
+          0.01,
+          1.787,
+          0.39
+        ]
+      }
+    },
+    {
+      "title": "Select a higher dry objective",
+      "where": "instrument",
+      "parts": [
+        "objectives",
+        "focus"
+      ],
+      "body": "Watch the clearance from the side while rotating a suitable higher-power dry objective into place. Use fine focus only to sharpen the selected region, then adjust brightness and condenser aperture as needed.",
+      "caution": "Coarse focus at higher magnification can force the objective into the slide; stop if clearance is uncertain.",
+      "check": "The higher-power objective clears the coverslip and the image is sharp with fine focus.",
+      "id": "brightfield-imaging-07",
+      "view": {
+        "pos": [
+          1.029,
+          3.473,
+          2.187
+        ],
+        "target": [
+          0.0,
+          2.845,
+          0.4
+        ]
+      }
+    },
+    {
+      "title": "Capture and save the image",
+      "where": "software",
+      "parts": [
+        "camera",
+        "head"
+      ],
+      "body": "Display the live camera image and adjust exposure so useful detail is visible without bright regions saturating. Capture the selected field and save it with the sample identifier, objective magnification, and any available calibration information.",
+      "id": "brightfield-imaging-08",
+      "view": {
+        "pos": [
+          1.386,
+          5.745,
+          2.366
+        ],
+        "target": [
+          0.007,
+          4.902,
+          -0.029
+        ]
+      }
+    },
+    {
+      "title": "Verify saved images before finishing",
+      "where": "software",
+      "parts": [
+        "camera"
+      ],
+      "body": "Open a saved image to confirm that it is sharp, correctly named, and stored in the intended session folder. Stop live acquisition and continue with the end-of-session procedure before leaving.",
+      "link": {
+        "procedureSlug": "end-of-session",
+        "stepId": "end-of-session-01",
+        "label": "Continue with end of session"
+      },
+      "id": "brightfield-imaging-09",
+      "view": {
+        "pos": [
+          1.386,
+          5.745,
+          2.366
+        ],
+        "target": [
+          0.007,
+          4.902,
+          -0.029
+        ]
+      }
+    }
+  ]
+}

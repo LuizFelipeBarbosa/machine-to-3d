@@ -1,0 +1,102 @@
+{
+  "formatVersion": 1,
+  "title": "End of session",
+  "summary": "Unload the cooled substrate, restore the closed chamber to vacuum, and record the deposition session. Placeholder content written from general laboratory practice, not from the manufacturer's manual.",
+  "minutes": 30,
+  "start": {
+    "open": false
+  },
+  "steps": [
+    {
+      "id": "end-of-session-01",
+      "title": "Open the door and unload",
+      "where": "instrument",
+      "parts": [
+        "Sliding_chamber_door",
+        "holder"
+      ],
+      "body": "Confirm atmospheric pressure, safe handling temperature, and disabled source power and heating before releasing and sliding the chamber door open. Remove the substrate with clean tools and place it in a labeled container without touching its coated surface.",
+      "state": {
+        "open": true
+      },
+      "check": "The chamber is at atmospheric pressure, the source and substrate are cool, and source power and heating are disabled.",
+      "view": {
+        "pos": [
+          1.127,
+          4.64,
+          3.767
+        ],
+        "target": [
+          -0.695,
+          3.527,
+          0.602
+        ]
+      }
+    },
+    {
+      "id": "end-of-session-02",
+      "title": "Close the chamber and restore vacuum",
+      "where": "instrument",
+      "parts": [
+        "Sliding_chamber_door",
+        "vacuum"
+      ],
+      "body": "Remove loose tools, inspect the sealing surface, and slide the door closed and secure it. Start the approved standby pump-down sequence and confirm that the closed chamber reaches the local standby vacuum criterion.",
+      "state": {
+        "open": false
+      },
+      "view": {
+        "pos": [
+          1.127,
+          4.64,
+          3.767
+        ],
+        "target": [
+          -0.695,
+          3.527,
+          0.602
+        ]
+      }
+    },
+    {
+      "id": "end-of-session-03",
+      "title": "Leave the console idle",
+      "where": "software",
+      "parts": [
+        "console"
+      ],
+      "body": "End the deposition program and confirm that source power and substrate heating remain off with the shutter closed. Leave the console idle while the required vacuum equipment and cooling remain in their approved standby states.",
+      "view": {
+        "pos": [
+          5.011,
+          4.902,
+          5.308
+        ],
+        "target": [
+          2.375,
+          3.292,
+          0.73
+        ]
+      }
+    },
+    {
+      "id": "end-of-session-04",
+      "title": "Record the deposition session",
+      "where": "logbook",
+      "parts": [],
+      "body": "Record the substrate and source identifiers, material, base pressure, deposition rate, final thickness, and saved run location. Note the final vacuum and cooling status, any remaining source material, and any faults requiring attention.",
+      "view": {
+        "pos": [
+          5.947,
+          5.782,
+          8.536
+        ],
+        "target": [
+          1.065,
+          2.802,
+          0.058
+        ]
+      }
+    }
+  ]
+}

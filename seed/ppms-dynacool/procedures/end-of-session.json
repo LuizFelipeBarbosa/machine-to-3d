@@ -1,0 +1,103 @@
+{
+  "formatVersion": 1,
+  "title": "End of session",
+  "summary": "Return the field to zero, unload the warm sample, and document the final instrument state. Placeholder content written from general laboratory practice, not from the manufacturer's manual.",
+  "minutes": 30,
+  "start": {
+    "open": false
+  },
+  "steps": [
+    {
+      "title": "Confirm zero field and safe access",
+      "where": "software",
+      "parts": [
+        "computer",
+        "console"
+      ],
+      "body": "Ramp the field to zero at the approved rate and wait for the controller to report completion. Confirm that the sample remains at room temperature, then run the approved sample-exchange pressure cycle and wait for safe access status.",
+      "check": "Reported field is zero, sample temperature is stable at room temperature, and chamber pressure permits access.",
+      "id": "end-of-session-01",
+      "view": {
+        "pos": [
+          -3.064,
+          4.112,
+          2.366
+        ],
+        "target": [
+          -1.72,
+          3.292,
+          0.033
+        ]
+      }
+    },
+    {
+      "title": "Open access and remove the puck",
+      "where": "instrument",
+      "parts": [
+        "access",
+        "sample"
+      ],
+      "body": "Open the designated sample access and lift the access deck using the local loading procedure. Retrieve the puck with the insertion tool and place it in a labeled container.",
+      "state": {
+        "open": true
+      },
+      "id": "end-of-session-02",
+      "view": {
+        "pos": [
+          2.839,
+          4.433,
+          2.999
+        ],
+        "target": [
+          1.12,
+          3.383,
+          0.013
+        ]
+      }
+    },
+    {
+      "title": "Close and restore the chamber",
+      "where": "instrument",
+      "parts": [
+        "access",
+        "Removable_front_cover"
+      ],
+      "body": "Check that no tools or loose wires remain, then lower and secure the access deck and refit the designated cover. Run the approved empty-chamber purge and sealing cycle and confirm the required standby status while leaving cooling services running.",
+      "state": {
+        "open": false
+      },
+      "id": "end-of-session-03",
+      "view": {
+        "pos": [
+          2.839,
+          4.433,
+          2.999
+        ],
+        "target": [
+          1.12,
+          3.383,
+          0.013
+        ]
+      }
+    },
+    {
+      "title": "Record the session",
+      "where": "logbook",
+      "parts": [],
+      "body": "Record the sample identifier, data location, final temperature and field, and chamber standby status. Note any faults or unusual signals and leave the bench clear for the next user.",
+      "id": "end-of-session-04",
+      "view": {
+        "pos": [
+          4.785,
+          4.827,
+          8.235
+        ],
+        "target": [
+          0.019,
+          1.918,
+          -0.043
+        ]
+      }
+    }
+  ]
+}

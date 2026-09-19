@@ -1,0 +1,194 @@
+{
+  "formatVersion": 1,
+  "title": "Dry transfer of a 2D material",
+  "summary": "Align a stamp with a substrate, make controlled contact, and release the selected material using an approved thermal recipe. Placeholder content written from general laboratory practice, not from the manufacturer's manual.",
+  "minutes": 45,
+  "start": {},
+  "steps": [
+    {
+      "title": "Set the initial chuck temperature",
+      "where": "instrument",
+      "parts": [
+        "controller",
+        "base"
+      ],
+      "body": "Check that the station base is stable and the chuck area is clear, then switch on the temperature controller. Select the laboratory-approved loading temperature for your substrate and stamp, and wait for the measured temperature to settle.",
+      "caution": "A set temperature does not show the current chuck temperature; read the measured value before bringing tools near the chuck.",
+      "id": "dry-transfer-01",
+      "view": {
+        "pos": [
+          5.217,
+          2.264,
+          4.936
+        ],
+        "target": [
+          2.431,
+          0.563,
+          0.096
+        ]
+      }
+    },
+    {
+      "title": "Secure the substrate on the chuck",
+      "where": "instrument",
+      "parts": [
+        "sample"
+      ],
+      "body": "With the stamp raised clear, use suitable tweezers to place the substrate flat over the chuck vacuum opening. Enable chuck vacuum and confirm that the substrate stays fixed without pressing on its active surface.",
+      "caution": "A substrate that does not seal the vacuum opening can slide during contact and ruin alignment.",
+      "check": "The substrate is flat, held securely by vacuum, and at the approved loading temperature.",
+      "id": "dry-transfer-02",
+      "view": {
+        "pos": [
+          2.718,
+          2.278,
+          3.626
+        ],
+        "target": [
+          0.762,
+          1.084,
+          0.229
+        ]
+      }
+    },
+    {
+      "title": "Load the stamp slide",
+      "where": "instrument",
+      "parts": [
+        "stamp"
+      ],
+      "body": "Keep the manipulator raised and fit the prepared stamp slide into its holder with the transfer surface facing the substrate. Secure the slide and check that its edges and the holder clear the microscope and chuck throughout the planned movement.",
+      "id": "dry-transfer-03",
+      "view": {
+        "pos": [
+          -2.071,
+          2.685,
+          3.607
+        ],
+        "target": [
+          -0.322,
+          1.618,
+          0.57
+        ]
+      }
+    },
+    {
+      "title": "Focus on the flake",
+      "where": "instrument",
+      "parts": [
+        "microscope",
+        "camera"
+      ],
+      "body": "Bring the flake into view through the microscope or live camera image using the focus adjustment. Identify the flake and substrate target at a useful magnification while keeping the stamp separated from the substrate.",
+      "id": "dry-transfer-04",
+      "view": {
+        "pos": [
+          3.889,
+          4.982,
+          4.835
+        ],
+        "target": [
+          1.075,
+          3.264,
+          -0.053
+        ]
+      }
+    },
+    {
+      "title": "Align the stamp over the target",
+      "where": "instrument",
+      "parts": [
+        "stage",
+        "stamp"
+      ],
+      "body": "Use the positioning stages to center the flake over the chosen substrate feature while maintaining a visible gap. Make small adjustments and check alignment again after changing focus between the stamp and substrate.",
+      "caution": "Lateral stage motion while the stamp touches the substrate can smear the polymer or tear the flake.",
+      "id": "dry-transfer-05",
+      "view": {
+        "pos": [
+          2.597,
+          2.32,
+          4.883
+        ],
+        "target": [
+          0.082,
+          0.785,
+          0.515
+        ]
+      }
+    },
+    {
+      "title": "Lower the stamp into contact",
+      "where": "instrument",
+      "parts": [
+        "stamp",
+        "sample"
+      ],
+      "body": "Lower the stamp in small increments while watching the live contact region. Stop downward motion as soon as the intended contact area forms, without compressing the stamp further.",
+      "caution": "Continuing to lower after contact can crack the slide or substrate and spread the stamp beyond the target.",
+      "check": "Alignment is correct, the contact area is controlled, and downward movement has stopped.",
+      "id": "dry-transfer-06",
+      "view": {
+        "pos": [
+          -2.071,
+          2.685,
+          3.607
+        ],
+        "target": [
+          -0.322,
+          1.618,
+          0.57
+        ]
+      }
+    },
+    {
+      "title": "Heat and release the material",
+      "where": "instrument",
+      "parts": [
+        "controller",
+        "sample"
+      ],
+      "body": "Apply the laboratory-approved release temperature and hold time for this stamp and material system. Watch the measured temperature and contact region throughout the hold, and stop the process if spreading or unexpected movement occurs.",
+      "id": "dry-transfer-07",
+      "view": {
+        "pos": [
+          5.217,
+          2.264,
+          4.936
+        ],
+        "target": [
+          2.431,
+          0.563,
+          0.096
+        ]
+      }
+    },
+    {
+      "title": "Lift the stamp slowly",
+      "where": "instrument",
+      "parts": [
+        "stamp",
+        "camera"
+      ],
+      "body": "At the release condition specified by the approved recipe, raise the stamp slowly while observing separation and stop if the substrate lifts with it. Once the stamp is clear, inspect and save an image of the transferred region, then continue with the end-of-session procedure.",
+      "link": {
+        "procedureSlug": "end-of-session",
+        "stepId": "end-of-session-01",
+        "label": "Continue with end of session"
+      },
+      "id": "dry-transfer-08",
+      "view": {
+        "pos": [
+          -2.071,
+          2.685,
+          3.607
+        ],
+        "target": [
+          -0.322,
+          1.618,
+          0.57
+        ]
+      }
+    }
+  ]
+}
