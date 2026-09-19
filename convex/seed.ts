@@ -2,6 +2,7 @@ import { ConvexError, v } from 'convex/values';
 import { validateProcedure } from '../shared/validateProcedure';
 import { internalMutation, internalQuery } from './_generated/server';
 import {
+  getApprovedVersion,
   parseContent,
   parseDefinition,
   publishMachineVersion,
@@ -22,7 +23,7 @@ function sortObjectKeys(value: unknown): unknown {
   return value;
 }
 
-function definitionsEqual(left: unknown, right: unknown): boolean {
+function deepEqualIgnoringKeyOrder(left: unknown, right: unknown): boolean {
   return JSON.stringify(sortObjectKeys(left)) === JSON.stringify(sortObjectKeys(right));
 }
 
@@ -81,7 +82,7 @@ export const upsertMachine = internalMutation({
     const currentVersion = machine?.currentVersionId === undefined
       ? null
       : await ctx.db.get(machine.currentVersionId);
-    if (machine !== null && currentVersion !== null && definitionsEqual(args.definition, currentVersion.definition)) {
+    if (machine !== null && currentVersion !== null && deepEqualIgnoringKeyOrder(args.definition, currentVersion.definition)) {
       return {
         machineId: machine._id,
         machineVersionId: currentVersion._id,
@@ -103,8 +104,18 @@ export const upsertProcedure = internalMutation({
     linkTargets: v.record(v.string(), v.array(v.string())),
   },
   returns: v.union(
-    v.object({ created: v.literal(false) }),
-    v.object({ created: v.literal(true), versionId: v.id('procedureVersions') }),
+    v.object({
+      created: v.literal(true), updated: v.literal(false),
+      versionId: v.id('procedureVersions'), version: v.number(),
+    }),
+    v.object({
+      created: v.literal(false), updated: v.literal(true),
+      versionId: v.id('procedureVersions'), version: v.number(),
+    }),
+    v.object({
+      created: v.literal(false), updated: v.literal(false),
+      reason: v.union(v.literal('unchanged'), v.literal('human-authored')),
+    }),
   ),
   handler: async (ctx, { machineSlug, slug, content: rawContent, linkTargets }) => {
     const machine = await ctx.db
@@ -118,8 +129,21 @@ export const upsertProcedure = internalMutation({
       .query('procedures')
       .withIndex('by_machine_slug', (q) => q.eq('machineId', machine._id).eq('slug', slug))
       .unique();
+    const versions = existing === null ? [] : await ctx.db
+      .query('procedureVersions')
+      .withIndex('by_procedure', (q) => q.eq('procedureId', existing._id))
+      .collect();
+    const approved = existing === null ? null : await getApprovedVersion(ctx, existing);
     if (existing !== null) {
-      return { created: false as const };
+      const seedManaged = approved !== null && versions.every((version) =>
+        version.changeNote === 'Seeded' && version.createdBy === undefined,
+      );
+      if (!seedManaged) {
+        return { created: false as const, updated: false as const, reason: 'human-authored' as const };
+      }
+      if (deepEqualIgnoringKeyOrder(rawContent, approved.content)) {
+        return { created: false as const, updated: false as const, reason: 'unchanged' as const };
+      }
     }
     const machineVersion = await requireMachineVersion(ctx, machine.currentVersionId);
     const content = parseContent(rawContent);
@@ -129,17 +153,24 @@ export const upsertProcedure = internalMutation({
       const details = issues.map((issue) => `${issue.path}: ${issue.message}`).join('\n');
       throw new ConvexError(`Invalid procedure references:\n${details}`);
     }
-    const procedureId = await ctx.db.insert('procedures', { machineId: machine._id, slug });
+    const procedureId = existing?._id
+      ?? await ctx.db.insert('procedures', { machineId: machine._id, slug });
+    const version = versions.reduce((max, entry) => Math.max(max, entry.version), 0) + 1;
     const versionId = await ctx.db.insert('procedureVersions', {
       procedureId,
-      version: 1,
+      version,
       status: 'approved',
       machineVersionId: machineVersion._id,
       content,
       approvedAt: Date.now(),
       changeNote: 'Seeded',
     });
+    if (approved !== null) {
+      await ctx.db.patch(approved._id, { status: 'retired' });
+    }
     await ctx.db.patch(procedureId, { approvedVersionId: versionId });
-    return { created: true as const, versionId };
+    return existing === null
+      ? { created: true as const, updated: false as const, versionId, version }
+      : { created: false as const, updated: true as const, versionId, version };
   },
 });

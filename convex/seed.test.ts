@@ -7,6 +7,7 @@ import { emptyProcedureContent } from './lib/content';
 import type * as machines from './machines';
 import type * as procedures from './procedures';
 import type * as seed from './seed';
+import type * as training from './training';
 import schema from './schema';
 import { asUser, createUser, modules } from './test.setup';
 
@@ -14,6 +15,7 @@ const api = anyApi as unknown as ApiFromModules<{
   machines: typeof machines;
   procedures: typeof procedures;
   seed: typeof seed;
+  training: typeof training;
 }>;
 
 const definition: MachineDefinition = {
@@ -113,7 +115,9 @@ describe('seed machines', () => {
     expect(await t.mutation(api.seed.upsertMachine, {
       ...machineArgs, modelFileId, definition: updatedDefinition,
     })).toEqual({ ...second, updated: false });
-    expect(await t.mutation(api.seed.upsertProcedure, procedureArgs)).toEqual({ created: false });
+    expect(await t.mutation(api.seed.upsertProcedure, procedureArgs)).toEqual({
+      created: false, updated: false, reason: 'unchanged',
+    });
     expect(await t.run((ctx) => ctx.db.query('procedureVersions').collect())).toEqual([originalProcedure]);
     expect(originalProcedure).toMatchObject({ machineVersionId: first.machineVersionId });
 
@@ -154,12 +158,13 @@ describe('seed machines', () => {
 });
 
 describe('seed procedures', () => {
-  test('creates approved v1 for playback without attribution, then skips without changes', async () => {
+  test('creates approved v1 for playback without attribution, then leaves identical content unchanged', async () => {
     const { t, trainee, machineArgs, procedureArgs } = await setup();
     const machine = await t.mutation(api.seed.upsertMachine, machineArgs);
     const before = Date.now();
     const first = await t.mutation(api.seed.upsertProcedure, procedureArgs);
     expect(first.created).toBe(true);
+    expect(first).toEqual({ created: true, updated: false, versionId: expect.any(String), version: 1 });
     if (!first.created) throw new Error('Expected a new procedure');
     const version = await t.run((ctx) => ctx.db.get(first.versionId));
     expect(version).toMatchObject({
@@ -175,11 +180,158 @@ describe('seed procedures', () => {
     })).toMatchObject({ versionId: first.versionId, version: 1, content: procedureArgs.content });
     const storedProcedures = await t.run((ctx) => ctx.db.query('procedures').collect());
     expect(storedProcedures).toEqual([expect.objectContaining({ approvedVersionId: first.versionId })]);
-    expect(await t.mutation(api.seed.upsertProcedure, {
-      ...procedureArgs, content: { ...procedureArgs.content, title: 'Do not overwrite' },
-    })).toEqual({ created: false });
+    expect(await t.mutation(api.seed.upsertProcedure, procedureArgs)).toEqual({
+      created: false, updated: false, reason: 'unchanged',
+    });
     expect(await t.run((ctx) => ctx.db.query('procedureVersions').collect())).toEqual([version]);
     expect(await t.run((ctx) => ctx.db.query('procedures').collect())).toEqual(storedProcedures);
+  });
+
+  test('leaves content with reordered object keys unchanged', async () => {
+    const { t, machineArgs, procedureArgs } = await setup();
+    await t.mutation(api.seed.upsertMachine, machineArgs);
+    await t.mutation(api.seed.upsertProcedure, procedureArgs);
+    const versions = await t.run((ctx) => ctx.db.query('procedureVersions').collect());
+    const content = structuredClone(procedureArgs.content);
+    const { pos, target } = content.steps[0].view;
+    content.steps[0].view = { target, pos };
+    expect(await t.mutation(api.seed.upsertProcedure, { ...procedureArgs, content })).toEqual({
+      created: false, updated: false, reason: 'unchanged',
+    });
+    expect(await t.run((ctx) => ctx.db.query('procedureVersions').collect())).toEqual(versions);
+  });
+
+  test('republishes changed content as v2 against the current machine version', async () => {
+    const { t, trainee, machineArgs, procedureArgs } = await setup();
+    await t.mutation(api.seed.upsertMachine, machineArgs);
+    const first = await t.mutation(api.seed.upsertProcedure, procedureArgs);
+    if (!first.created) throw new Error('Expected a new procedure');
+    const original = await t.run((ctx) => ctx.db.get(first.versionId));
+    const current = await t.mutation(api.seed.upsertMachine, {
+      ...machineArgs, definition: { ...definition, parts: [{ name: 'new-part', label: 'New', blurb: '' }] },
+    });
+    const content = structuredClone(procedureArgs.content);
+    content.steps[0].body = 'Corrected instructions';
+    content.steps[0].parts = ['new-part'];
+    const before = Date.now();
+    const second = await t.mutation(api.seed.upsertProcedure, { ...procedureArgs, content });
+    expect(second).toEqual({ created: false, updated: true, versionId: expect.any(String), version: 2 });
+    if (!second.updated) throw new Error('Expected an updated procedure');
+    const version = await t.run((ctx) => ctx.db.get(second.versionId));
+    expect(version).toMatchObject({
+      version: 2, status: 'approved', content, changeNote: 'Seeded',
+      machineVersionId: current.machineVersionId,
+    });
+    expect(version!.approvedAt).toBeGreaterThanOrEqual(before);
+    expect(version!.approvedAt).toBeLessThanOrEqual(Date.now());
+    expect(version).not.toHaveProperty('createdBy');
+    expect(version).not.toHaveProperty('approvedBy');
+    expect(await t.run((ctx) => ctx.db.get(first.versionId))).toEqual({ ...original, status: 'retired' });
+    expect(await trainee.query(api.procedures.getForPlay, {
+      machineSlug: 'machine', procedureSlug: 'procedure',
+    })).toMatchObject({ versionId: second.versionId, version: 2, content });
+    expect(await t.run((ctx) => ctx.db.query('procedures').collect())).toEqual([
+      expect.objectContaining({ approvedVersionId: second.versionId }),
+    ]);
+    expect(await t.run((ctx) => ctx.db.query('procedureVersions').collect())).toHaveLength(2);
+  });
+
+  test('keeps training records pinned to the original content after republishing', async () => {
+    const { t, trainee, machineArgs, procedureArgs } = await setup();
+    await t.mutation(api.seed.upsertMachine, machineArgs);
+    const first = await t.mutation(api.seed.upsertProcedure, procedureArgs);
+    if (!first.created) throw new Error('Expected a new procedure');
+    const recordId = await trainee.mutation(api.training.complete, {
+      procedureVersionId: first.versionId, checkpoints: [],
+    });
+    const record = await t.run((ctx) => ctx.db.get(recordId));
+    const content = structuredClone(procedureArgs.content);
+    content.steps[0].body = 'Corrected instructions';
+    expect(await t.mutation(api.seed.upsertProcedure, { ...procedureArgs, content }))
+      .toMatchObject({ created: false, updated: true, version: 2 });
+    expect(await t.run((ctx) => ctx.db.get(recordId))).toEqual(record);
+    expect(record).toMatchObject({ procedureVersionId: first.versionId });
+    expect(await t.run((ctx) => ctx.db.get(first.versionId))).toMatchObject({
+      status: 'retired', content: procedureArgs.content,
+    });
+  });
+
+  test('leaves a human-approved version and its history untouched', async () => {
+    const { t, machineArgs, procedureArgs } = await setup();
+    await t.mutation(api.seed.upsertMachine, machineArgs);
+    const first = await t.mutation(api.seed.upsertProcedure, procedureArgs);
+    if (!first.created) throw new Error('Expected a new procedure');
+    const original = await t.run((ctx) => ctx.db.get(first.versionId));
+    const approverId = await createUser(t, { email: 'approver@example.com', role: 'approver' });
+    const approver = asUser(t, approverId);
+    const humanVersionId = await approver.mutation(api.procedures.createDraft, {
+      procedureId: original!.procedureId,
+    });
+    await approver.mutation(api.procedures.approve, {
+      versionId: humanVersionId, changeNote: 'Reviewed by a human',
+    });
+    const versions = await t.run((ctx) => ctx.db.query('procedureVersions').collect());
+    expect(versions).toContainEqual(expect.objectContaining({
+      _id: humanVersionId, version: 2, status: 'approved', createdBy: approverId,
+    }));
+    const content = structuredClone(procedureArgs.content);
+    content.steps[0].body = 'Corrected seed instructions';
+    expect(await t.mutation(api.seed.upsertProcedure, { ...procedureArgs, content })).toEqual({
+      created: false, updated: false, reason: 'human-authored',
+    });
+    expect(await t.run((ctx) => ctx.db.query('procedureVersions').collect())).toEqual(versions);
+    expect(await t.run((ctx) => ctx.db.get(original!.procedureId))).toMatchObject({
+      approvedVersionId: humanVersionId,
+    });
+  });
+
+  test.each(['human change note', 'human attribution', 'no approved version'] as const)(
+    'protects procedures with %s even when other versions are seed-managed',
+    async (scenario) => {
+      const { t, machineArgs, procedureArgs } = await setup();
+      await t.mutation(api.seed.upsertMachine, machineArgs);
+      const first = await t.mutation(api.seed.upsertProcedure, procedureArgs);
+      if (!first.created) throw new Error('Expected a new procedure');
+      const content = structuredClone(procedureArgs.content);
+      content.steps[0].body = 'Corrected instructions';
+      const second = await t.mutation(api.seed.upsertProcedure, { ...procedureArgs, content });
+      if (!second.updated) throw new Error('Expected an updated procedure');
+      const authorId = await createUser(t, { email: 'author@example.com', role: 'author' });
+      await t.run(async (ctx) => {
+        if (scenario === 'human change note') {
+          await ctx.db.patch(first.versionId, { changeNote: 'Human revision' });
+        } else if (scenario === 'human attribution') {
+          await ctx.db.patch(first.versionId, { createdBy: authorId });
+        } else {
+          const version = await ctx.db.get(second.versionId);
+          await ctx.db.patch(second.versionId, { status: 'retired' });
+          await ctx.db.patch(version!.procedureId, { approvedVersionId: undefined });
+        }
+      });
+      const versions = await t.run((ctx) => ctx.db.query('procedureVersions').collect());
+      const procedures = await t.run((ctx) => ctx.db.query('procedures').collect());
+      expect(await t.mutation(api.seed.upsertProcedure, procedureArgs)).toEqual({
+        created: false, updated: false, reason: 'human-authored',
+      });
+      expect(await t.run((ctx) => ctx.db.query('procedureVersions').collect())).toEqual(versions);
+      expect(await t.run((ctx) => ctx.db.query('procedures').collect())).toEqual(procedures);
+    },
+  );
+
+  test('rejects invalid changed content without retiring the approved version', async () => {
+    const { t, machineArgs, procedureArgs } = await setup();
+    await t.mutation(api.seed.upsertMachine, machineArgs);
+    await t.mutation(api.seed.upsertProcedure, procedureArgs);
+    const versions = await t.run((ctx) => ctx.db.query('procedureVersions').collect());
+    const procedures = await t.run((ctx) => ctx.db.query('procedures').collect());
+    const content = structuredClone(procedureArgs.content);
+    content.steps[0].parts = ['unknown'];
+    await expect(t.mutation(api.seed.upsertProcedure, { ...procedureArgs, content }))
+      .rejects.toMatchObject({
+        data: 'Invalid procedure references:\nsteps[0].parts[0]: Unknown part "unknown".',
+      });
+    expect(await t.run((ctx) => ctx.db.query('procedureVersions').collect())).toEqual(versions);
+    expect(await t.run((ctx) => ctx.db.query('procedures').collect())).toEqual(procedures);
   });
 
   test('reports every invalid reference and inserts nothing', async () => {

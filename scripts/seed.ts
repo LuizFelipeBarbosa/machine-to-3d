@@ -164,7 +164,9 @@ async function main() {
   let machinesUpdated = 0;
   let machinesUnchanged = 0;
   let proceduresCreated = 0;
-  let proceduresSkipped = 0;
+  let proceduresUpdated = 0;
+  let proceduresUnchanged = 0;
+  let proceduresHumanAuthored = 0;
   for (const { machine, definition, model, procedures, linkTargets } of validated) {
     const { slug, name, kind } = machine;
     const status = runConvex<{
@@ -192,7 +194,11 @@ async function main() {
       }
     }
     for (const procedure of procedures) {
-      const result = runConvex<{ created: boolean }>('seed:upsertProcedure', {
+      const result = runConvex<
+        | { created: true; updated: false; versionId: string; version: number }
+        | { created: false; updated: true; versionId: string; version: number }
+        | { created: false; updated: false; reason: 'unchanged' | 'human-authored' }
+      >('seed:upsertProcedure', {
         machineSlug: slug,
         slug: procedure.slug,
         content: procedure.content,
@@ -200,13 +206,20 @@ async function main() {
       });
       if (result.created) {
         proceduresCreated++;
+        console.log(`${slug}/${procedure.slug}: created`);
+      } else if (result.updated) {
+        proceduresUpdated++;
+        console.log(`${slug}/${procedure.slug}: updated to v${result.version}`);
+      } else if (result.reason === 'unchanged') {
+        proceduresUnchanged++;
+        console.log(`${slug}/${procedure.slug}: unchanged`);
       } else {
-        proceduresSkipped++;
+        proceduresHumanAuthored++;
+        console.log(`${slug}/${procedure.slug}: left alone (human-authored)`);
       }
-      console.log(`${slug}/${procedure.slug}: ${result.created ? 'created' : 'skip'} procedure`);
     }
   }
-  console.log(`Seed complete: machines ${machinesCreated} created, ${machinesUpdated} updated, ${machinesUnchanged} unchanged; procedures ${proceduresCreated} created, ${proceduresSkipped} skipped.`);
+  console.log(`Seed complete: machines ${machinesCreated} created, ${machinesUpdated} updated, ${machinesUnchanged} unchanged; procedures ${proceduresCreated} created, ${proceduresUpdated} updated, ${proceduresUnchanged} unchanged, ${proceduresHumanAuthored} human-authored.`);
 }
 
 main().catch((error: unknown) => {
