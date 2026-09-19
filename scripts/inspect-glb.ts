@@ -7,6 +7,9 @@ async function main(): Promise<void> {
   const summary = summarizeGlb(await readFile(file));
   console.log(json ? JSON.stringify(summary, null, 2) : formatSummary(summary));
 
+  if (summary.duplicateNames.length > 0) {
+    throw new Error(`Duplicate node names: ${summary.duplicateNames.join(', ')}.`);
+  }
   if (summary.rootNodes.length !== 1) {
     throw new Error(`Expected exactly one scene root node; found ${summary.rootNodes.length}.`);
   }

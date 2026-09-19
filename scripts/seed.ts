@@ -51,6 +51,9 @@ function validateSeeds(): ValidatedMachine[] {
     try {
       model = readFileSync(resolve(projectRoot, machine.dir, 'model.glb'));
       const summary = summarizeGlb(model);
+      if (summary.duplicateNames.length > 0) {
+        issues.push(`${machine.dir}/model.glb: Duplicate node names: ${summary.duplicateNames.join(', ')}`);
+      }
       nodeCount = summary.nodeCount;
       if (definition !== undefined) {
         if (summary.rootNodes.length !== 1 || summary.rootNodes[0] !== definition.rootNode) {

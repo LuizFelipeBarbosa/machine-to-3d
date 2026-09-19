@@ -1,6 +1,7 @@
 export type GlbSummary = {
   generator: string | undefined;
   namedNodes: string[];
+  duplicateNames: string[];
   rootNodes: string[];
   nodeCount: number;
   meshCount: number;
@@ -82,9 +83,17 @@ export function summarizeGlb(bytes: Uint8Array): GlbSummary {
   const document = json as GltfDocument;
   const nodes = document.nodes ?? [];
   const roots = document.scenes?.[document.scene ?? 0]?.nodes ?? [];
+  const namedNodes = nodes.flatMap(node => node.name ? [node.name] : []);
+  const seenNames = new Set<string>();
+  const duplicateNames = new Set<string>();
+  for (const name of namedNodes) {
+    if (seenNames.has(name)) duplicateNames.add(name);
+    seenNames.add(name);
+  }
   return {
     generator: document.asset?.generator,
-    namedNodes: nodes.flatMap(node => node.name ? [node.name] : []),
+    namedNodes,
+    duplicateNames: [...duplicateNames].sort(),
     rootNodes: roots.map(index => getNode(nodes, index).name ?? ''),
     nodeCount: nodes.length,
     meshCount: document.meshes?.length ?? 0,

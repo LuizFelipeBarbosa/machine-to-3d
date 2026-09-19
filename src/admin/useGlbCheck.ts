@@ -44,6 +44,9 @@ export function useGlbCheck(
   if (!summary || !definition) return { summary, issues: check.issues };
 
   const issues: string[] = [];
+  if (summary.duplicateNames.length > 0) {
+    issues.push(`Duplicate node names: ${summary.duplicateNames.join(', ')}`);
+  }
   if (summary.rootNodes.length !== 1) {
     issues.push(`GLB must have exactly one root node; found ${summary.rootNodes.length}.`);
   } else if (summary.rootNodes[0] !== definition.rootNode) {

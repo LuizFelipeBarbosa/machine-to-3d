@@ -53,13 +53,31 @@ async function setupApproved() {
 }
 
 describe('training.complete', () => {
-  test.each(['draft', 'retired'] as const)('rejects a %s version', async (status) => {
+  test('rejects a draft version', async () => {
     const { t, trainee, versionId } = await setup();
-    await t.run((ctx) => ctx.db.patch(versionId, { status }));
-    await expect(trainee.mutation(api.training.complete, {
+    const completion = trainee.mutation(api.training.complete, {
       procedureVersionId: versionId, checkpoints: [],
-    })).rejects.toMatchObject({ data: 'Only approved procedures are recorded' });
+    });
+    await expect(completion).rejects.toBeInstanceOf(ConvexError);
+    await expect(completion).rejects.toMatchObject({ data: 'Only approved procedures are recorded' });
     expect(await t.run((ctx) => ctx.db.query('trainingRecords').collect())).toEqual([]);
+  });
+
+  test('records completion of a version retired by a newer approval', async () => {
+    const { t, admin, approver, trainee, traineeId, procedureId, versionId } = await setupApproved();
+    const nextId = await admin.mutation(api.procedures.createDraft, { procedureId });
+    await approver.mutation(api.procedures.approve, { versionId: nextId, changeNote: 'Next' });
+    expect(await t.run((ctx) => ctx.db.get(versionId))).toMatchObject({ status: 'retired' });
+
+    const checkpoints = [{ stepId: 'step-1', at: 123 }];
+    const before = Date.now();
+    const recordId = await trainee.mutation(api.training.complete, {
+      procedureVersionId: versionId, checkpoints,
+    });
+    const record = await t.run((ctx) => ctx.db.get(recordId));
+    expect(record).toMatchObject({ userId: traineeId, procedureVersionId: versionId, selfAttestedCheckpoints: checkpoints });
+    expect(record!.completedAt).toBeGreaterThanOrEqual(before);
+    expect(record!.completedAt).toBeLessThanOrEqual(Date.now());
   });
 
   test('records self-declared checkpoints and stays pinned after a newer approval', async () => {

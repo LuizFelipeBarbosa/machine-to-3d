@@ -43,6 +43,13 @@ it('checks roots, parts, and effect nodes against a real GLB summary', async () 
   expect(result.current.issues.join(' ')).toContain('Referenced node "Missing" is missing');
 });
 
+it('reports sorted duplicate node names from the GLB summary', async () => {
+  const file = glbFile([0], ['Root', 'Door', 'b', 'a', 'b', 'a']);
+  const { result } = renderHook(() => useGlbCheck(file, definition));
+  await waitFor(() => expect(result.current.summary?.duplicateNames).toEqual(['a', 'b']));
+  expect(result.current.issues).toEqual(['Duplicate node names: a, b']);
+});
+
 it.each([{ roots: [] }, { roots: [0, 1] }])('rejects a GLB with roots $roots', async ({ roots }) => {
   const file = glbFile(roots, ['Root', 'Door']);
   const { result } = renderHook(() => useGlbCheck(file, definition));

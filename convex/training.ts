@@ -59,7 +59,7 @@ export const complete = mutation({
   handler: async (ctx, { procedureVersionId, checkpoints }) => {
     const user = await requireUser(ctx);
     const version = await requireVersion(ctx, procedureVersionId);
-    if (version.status !== 'approved') {
+    if (version.status !== 'approved' && version.status !== 'retired') {
       throw new ConvexError('Only approved procedures are recorded');
     }
     const completedAt = Date.now();

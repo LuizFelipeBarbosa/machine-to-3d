@@ -1,4 +1,8 @@
-import { readFile } from 'node:fs/promises';
+import { spawnSync } from 'node:child_process';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { parseGlbJson, summarizeGlb } from './glb.js';
 
@@ -45,6 +49,7 @@ describe('reference instrument GLBs', () => {
     expect(summary.animationCount).toBe(animationCount);
     expect(summary.extensionsUsed).toContain('KHR_materials_unlit');
     expect(summary.namedNodes).toEqual(expect.arrayContaining(namedNodes));
+    expect(summary.duplicateNames).toEqual([]);
     expect(summary.boundingBox).not.toBeNull();
     const bounds = summary.boundingBox!;
     expect(Math.abs(bounds.max[1] - bounds.min[1] - height)).toBeLessThanOrEqual(0.05);
@@ -52,6 +57,45 @@ describe('reference instrument GLBs', () => {
 });
 
 describe('GLB parsing and bounds', () => {
+  it('reports a duplicate name for meshless nodes', () => {
+    const summary = summarizeGlb(makeGlb({
+      asset: { version: '2.0' },
+      scenes: [{ nodes: [0, 1] }],
+      nodes: [{ name: 'x' }, { name: 'x' }],
+    }));
+    expect(summary.duplicateNames).toEqual(['x']);
+  });
+
+  it('reports every duplicate name once in alphabetical order', () => {
+    const summary = summarizeGlb(makeGlb({
+      nodes: ['z', 'a', 'z', 'unique', 'a', 'z', '', ''].map(name => ({ name })),
+    }));
+    expect(summary.duplicateNames).toEqual(['a', 'z']);
+  });
+
+  it('makes inspect-glb list duplicate names and exit with status 1', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'inspect-glb-'));
+    try {
+      const file = join(directory, 'duplicates.glb');
+      await writeFile(file, makeGlb({
+        asset: { version: '2.0' },
+        scenes: [{ nodes: [0] }],
+        nodes: [
+          { name: 'root', children: [1, 2, 3, 4] },
+          { name: 'b' }, { name: 'a' }, { name: 'b' }, { name: 'a' },
+        ],
+      }));
+      const result = spawnSync(process.execPath, [
+        '--import', 'tsx', fileURLToPath(new URL('../inspect-glb.ts', import.meta.url)), file,
+      ], { encoding: 'utf8' });
+      expect(result.error).toBeUndefined();
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain('inspect-glb: Duplicate node names: a, b.');
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
   it('rejects wrong magic', () => {
     const bytes = makeGlb({});
     bytes[0] = 0;
@@ -99,6 +143,7 @@ describe('GLB parsing and bounds', () => {
     const summary = summarizeGlb(makeGlb({ scenes: [{ nodes: [0] }], nodes: [{}] }));
     expect(summary.rootNodes).toEqual(['']);
     expect(summary.namedNodes).toEqual([]);
+    expect(summary.duplicateNames).toEqual([]);
     expect(summary.boundingBox).toBeNull();
   });
 });
