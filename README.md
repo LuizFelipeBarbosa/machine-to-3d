@@ -62,7 +62,9 @@ Roles inherit the permissions of every lower role; these permissions are enforce
 | `approver` | Approve drafts via `procedures.approve`, view all records via `training.listAll`, and sign off another person's record via `training.signOff`. |
 | `admin` | Publish machine versions via `machines.publishVersion`, upload models via `files.generateUploadUrl` with kind `model`, and manage roles via `users.list`/`users.setRole`. |
 
-The UI exposes records at `/records` and admin role management at `/users`. The editor route `/m/:machine/:procedure/edit` exists, but its save callback is currently unset; backend draft operations are available separately.
+The UI exposes records at `/records`, admin-only role management at `/users`, and admin-only machine publishing at `/admin/machines` (shown as "Machines admin" in the nav). The player route `/m/:machine/:procedure` plays the approved procedure; in backend mode, authors and higher roles can add `?version=<versionId>` to preview a specific procedure version, including a draft, without recording training.
+
+Authors open `/m/:machine/:procedure/edit` to create a draft from any existing version, or start a first draft if no versions exist. In backend mode, edits autosave with a 1.5 second debounce. "Preview" saves pending edits and opens `/m/:machine/:procedure?version=<draftVersionId>` in the player, which shows a "Draft preview — not recorded" banner and does not save a training record. Approvers approve a draft with a required, non-empty change note; approval retires the previously approved version and promotes the draft. Steps located "In the control software" (`StepLocation` `software`) can carry an uploaded screenshot in the step's `media` field.
 
 ## Content model
 
@@ -84,7 +86,7 @@ A step's optional `state` is an **absolute set**: `{ "lift": true }` means lift 
 
 **Lifecycle:** procedure versions pin a machine version and move from **draft → approved → retired**. Authors create and save drafts; approval validates references, records the approver/time/change note, and retires the previously approved version. Subsequent edits use a new draft.
 
-**Training records:** completion stores the user, exact procedure version, completion time, and self-declared checkpoints as `{ stepId, at }`. These are trainee attestations. A second person with approver or admin permissions can add a sign-off identity, time, and optional note; users cannot sign off their own records.
+**Training records:** completion is self-declared and stores the user, exact procedure version, completion time, and checkpoints as `{ stepId, at }`. These are trainee attestations. Checkpoints are deduplicated by step ID; completion is rejected if the resulting count exceeds the procedure's step count, so a record cannot contain more checkpoints than the procedure has steps. A second person with approver or admin permissions can add a sign-off identity, time, and optional note; users cannot sign off their own records.
 
 ## Adding a machine
 
@@ -102,7 +104,9 @@ npx tsx scripts/export-nx10.ts [--out seed/park-nx10/model.glb]
 
 Capture/export require Playwright's Chromium browser to be installed. Put the resulting `model.glb` and `machine.json` in `seed/<slug>/`, add any procedure JSON under `procedures/`, and add a `SEED_MACHINES` entry in `seed/manifest.ts` with `slug`, `name`, `kind`, `dir`, and `procedureSlugs`. Run `npx tsx scripts/seed.ts --dry-run`, then seed the backend if needed. The local demo consumes the same manifest directly.
 
-Uploading through an admin machine-upload page is **planned**; no such route exists yet. The admin backend APIs `files.generateUploadUrl` and `machines.publishVersion` already exist. The manifest currently lists ten machines; only `park-nx10` has procedures (`nc-scan`, `probe-exchange`, `shutdown`), and the other entries have empty `procedureSlugs`.
+In backend mode, `/admin/machines` lets an admin upload a GLB and paste its `machine.json` definition. It validates referenced node names against the GLB in the browser via `useGlbCheck`, shows a live 3D preview with state-variable toggles via `DefinitionPreview`, and publishes a new machine version via `machines.publishVersion` after uploading the model through `files.generateUploadUrl`.
+
+The manifest currently lists ten machines; only `park-nx10` has procedures (`nc-scan`, `probe-exchange`, `shutdown`), and the other entries have empty `procedureSlugs`.
 
 ## Testing
 
