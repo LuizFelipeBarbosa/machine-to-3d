@@ -4,7 +4,7 @@
 
 This training app shows a 3D instrument beside a step-by-step procedure.
 Machine definitions and procedure content are separate data.
-The player is generic: it reads those definitions to display parts, camera views, state changes, and instructions.
+The workspace reads those definitions to display parts, camera views, state changes, and instructions.
 
 ## Quick start (local demo, no backend)
 
@@ -44,14 +44,26 @@ Run it after configuring the deployment; it generates and sets `JWT_PRIVATE_KEY`
 
 Set `ADMIN_EMAIL` in the deployment's environment settings **before registration**. The first account registered with that email becomes admin; other new accounts start as trainees. Password sign-up does not verify email ownership, so the real admin must sign up immediately after deploying and setting `ADMIN_EMAIL`. `.env.example` only documents this server setting in a comment; it does not assign it.
 
-Start or restart `npm run dev` in another terminal, open its URL, and register the admin account. Load the seed content into the configured deployment:
+Start or restart `npm run dev` in another terminal, open its URL, and register the admin account.
+
+## Seeding
+
+Usage: `npx tsx scripts/seed.ts [--dry-run] [--force]`. Load the seed content into the configured deployment:
 
 ```sh
 npx tsx scripts/seed.ts --dry-run
 npx tsx scripts/seed.ts
 ```
 
-The dry run validates offline without deployment calls. Before any writes, the script validates all manifest entries: machine and procedure JSON against shared Zod schemas, GLB roots and referenced node names, and procedure references. Seeding is idempotent: it creates missing machines and procedures by slug, with initial versions, and skips existing entries rather than overwriting edits. Seed procedures are inserted as approved version 1.
+`--dry-run` validates offline without deployment calls. Before any writes, the script validates all manifest entries: machine and procedure JSON against shared Zod schemas, GLB roots and referenced node names, and procedure references (including links to procedures and step IDs).
+
+Seeding is idempotent: missing machines and procedures are created by slug, with initial versions; new procedures start at approved version 1. An existing machine receives a new published version only when its definition content differs from the current version, using key-order-insensitive deep equality. Otherwise it remains unchanged; changing only the GLB does not trigger an update.
+
+An existing procedure is **seed-managed** only when it has an approved version and every existing version has `changeNote: "Seeded"` and no `createdBy` (no human-authored version). If its content differs from the currently approved version, again ignoring object key order, seeding inserts approved version N+1 (after the highest existing version number) and retires the previous approved version. Equal content remains unchanged. Any procedure with a human-authored version is left untouched unless `--force` is passed.
+
+`--force` is a development-only escape hatch, not restricted to development deployments by the code. It overrides that protection and deletes open (`draft`-status) versions of existing procedures it processes. When content differs, it publishes a new approved version and retires the old approved version; an update overriding human-authored protection has change note `Seeded (forced reset)`. If approved content already matches, it creates no new version, but still deletes drafts.
+
+## Roles and workspace
 
 Roles inherit the permissions of every lower role; these permissions are enforced by the backend:
 
@@ -62,19 +74,22 @@ Roles inherit the permissions of every lower role; these permissions are enforce
 | `approver` | Approve drafts via `procedures.approve`, view all records via `training.listAll`, and sign off another person's record via `training.signOff`. |
 | `admin` | Publish machine versions via `machines.publishVersion`, upload models via `files.generateUploadUrl` with kind `model`, and manage roles via `users.list`/`users.setRole`. |
 
-The UI exposes records at `/records`, admin-only role management at `/users`, and admin-only machine publishing at `/admin/machines` (shown as "Machines admin" in the nav). The player route `/m/:machine/:procedure` plays the approved procedure; in backend mode, authors and higher roles can add `?version=<versionId>` to preview a specific procedure version, including a draft, without recording training.
+`/` lists machines. A single workspace route, `/m/:machine/:procedure?`, mounts `MachineWorkspace`: `/m/:machine` opens “Explore the machine” with nothing selected, and `/m/:machine/:procedure` plays the selected procedure in place (the approved version in backend mode). The side panel's procedure `<select>` (`ProcedurePicker`) switches between exploration and procedures, or between procedures. `MachineScene` stays mounted throughout those switches; the 3D scene does not remount.
 
-Authors open `/m/:machine/:procedure/edit` to create a draft from any existing version, or start a first draft if no versions exist. In backend mode, edits autosave with a 1.5 second debounce. "Preview" saves pending edits and opens `/m/:machine/:procedure?version=<draftVersionId>` in the player, which shows a "Draft preview — not recorded" banner and does not save a training record. Approvers approve a draft with a required, non-empty change note; approval retires the previously approved version and promotes the draft. Steps located "In the control software" (`StepLocation` `software`) can carry an uploaded screenshot in the step's `media` field.
+In backend mode, authors and higher roles can add `?version=<versionId>` to preview a specific procedure version, including a draft, without recording training. The UI also exposes `/records`, admin-only role management at `/users`, and admin-only machine publishing at `/admin/machines` (shown as “Machines admin” in the nav). In demo mode, `/records` and `/users` redirect to `/`. `/sign-in` redirects to `/`; unauthenticated backend sessions show the sign-in form before the app routes.
+
+Authors open `/m/:machine/:procedure/edit` to create a draft from any existing version, or start a first draft if no versions exist. In backend mode, edits autosave with a 1.5 second debounce. "Preview" saves pending edits and opens `/m/:machine/:procedure?version=<draftVersionId>` in the workspace, which shows a "Draft preview — not recorded" banner and does not save a training record. Approvers approve a draft with a required, non-empty change note; approval retires the previously approved version and promotes the draft. Steps located "In the control software" (`StepLocation` `software`) can carry an uploaded screenshot in the step's `media` field.
 
 ## Content model
 
 **Machine definition:** `seed/<slug>/machine.json` follows `shared/machine.ts`, with `formatVersion: 1`, a GLB `rootNode`, ordered `parts` (`name`, `label`, `blurb`), named `presetViews` with camera `pos` and `target`, and boolean `stateVars` of kind `toggle`.
 
-Each state variable has effects referencing named GLB nodes:
+Each state variable has effects referencing named GLB nodes or animation clips:
 
 - `visible`: show the node only while the variable is on.
 - `translate`: apply an additive `offset: [x, y, z]` scaled by the eased state value.
 - `rotate`: apply `angle` in radians around the node's origin on axis `x`, `y`, or `z`, scaled by the eased state value.
+- `clip`: scrub a named GLB animation clip to the eased state value multiplied by its duration.
 
 `userToggle: true` lets the trainee flip the variable directly in the player UI; otherwise it changes through procedure state. A backend machine version pins one GLB plus one machine definition.
 
@@ -94,19 +109,47 @@ A step's optional `state` is an **absolute set**: `{ "lift": true }` means lift 
 2. For procedural three.js HTML pages under `machines/`, use `scripts/capture-glb.ts`. It captures the named root in headless Chromium with three.js r128 and its `GLTFExporter`/`OrbitControls` from `three-r128`.
 3. Inspect the GLB to confirm the root and required node names. The hand-ported NX10 has a separate exporter that starts Vite and opens `seed/park-nx10/export.html` in headless Chromium.
 
+### Tools
+
 Tool usage (replace angle-bracket placeholders; square brackets denote optional arguments):
 
 ```text
 npx tsx scripts/capture-glb.ts <input.html> --root <RootNodeName> --out <output.glb>
-npx tsx scripts/inspect-glb.ts <file.glb> [--root <name>] [--require <name,name,...>] [--json]
+npx tsx scripts/inspect-glb.ts <file.glb> [--root <name>] [--require <name,name,...>] [--require-clip <name,name,...>] [--nodes] [--json]
 npx tsx scripts/export-nx10.ts [--out seed/park-nx10/model.glb]
 ```
+
+`inspect-glb.ts` checks for exactly one scene root; `--root` checks its name, and `--require` checks comma-separated node names. `--nodes` adds world-space bounds for named nodes; `--json` emits the structured summary. `--require-clip` checks comma-separated animation clip names. Duplicate node names are errors in both this tool and seed validation; both use `summarizeGlb` from `scripts/lib/glb.ts`.
 
 Capture/export require Playwright's Chromium browser to be installed. Put the resulting `model.glb` and `machine.json` in `seed/<slug>/`, add any procedure JSON under `procedures/`, and add a `SEED_MACHINES` entry in `seed/manifest.ts` with `slug`, `name`, `kind`, `dir`, and `procedureSlugs`. Run `npx tsx scripts/seed.ts --dry-run`, then seed the backend if needed. The local demo consumes the same manifest directly.
 
 In backend mode, `/admin/machines` lets an admin upload a GLB and paste its `machine.json` definition. It validates referenced node names against the GLB in the browser via `useGlbCheck`, shows a live 3D preview with state-variable toggles via `DefinitionPreview`, and publishes a new machine version via `machines.publishVersion` after uploading the model through `files.generateUploadUrl`.
 
-The manifest currently lists ten machines; only `park-nx10` has procedures (`nc-scan`, `probe-exchange`, `shutdown`), and the other entries have empty `procedureSlugs`.
+## Seed content inventory
+
+All 11 machines in `seed/manifest.ts` have procedures. Titles below come from their procedure JSON files.
+
+| Machine slug | Name | Kind | Procedures: slug — title |
+| --- | --- | --- | --- |
+| `park-nx10` | Park NX10 | Atomic force microscope | `nc-scan` — “Non-contact topography scan”; `probe-exchange` — “Probe exchange”; `shutdown` — “End of session” |
+| `zeiss-axioscope-5` | ZEISS Axioscope 5 | Upright light microscope | `brightfield-imaging` — “Brightfield imaging of a slide”; `end-of-session` — “End of session” |
+| `hq-graphene-transfer` | HQ Graphene manual transfer system | 2D-material transfer station | `dry-transfer` — “Dry transfer of a 2D material”; `end-of-session` — “End of session” |
+| `nanofrazor` | NanoFrazor benchtop | Thermal scanning-probe lithography | `load-and-pattern` — “Load a sample and pattern a surface”; `end-of-session` — “End of session” |
+| `plasma-etch-pe25` | Plasma Etch PE-25 | Benchtop plasma cleaner | `plasma-clean` — “Clean samples with plasma”; `end-of-session` — “End of session” |
+| `horiba-labram-odyssey` | HORIBA LabRAM Odyssey | Raman microscope | `raman-spectrum` — “Acquire a Raman spectrum”; `end-of-session` — “End of session”; `spectrometer-interior` — “Inside the spectrometer (model only)” |
+| `nexdep` | Angstrom Nexdep | Thin-film deposition system | `evaporation-run` — “Run a thin-film evaporation”; `end-of-session` — “End of session” |
+| `ppms-dynacool` | Quantum Design PPMS DynaCool | Physical property measurement system | `mount-and-measure` — “Mount a puck and measure properties”; `end-of-session` — “End of session” |
+| `rise-raman-sem` | RISE Raman-SEM | Correlative Raman + scanning electron microscope | `sem-raman-correlation` — “Correlate SEM images and Raman spectra”; `end-of-session` — “End of session” |
+| `teslatronpt-plus` | TeslatronPT Plus | Cryogen-free superconducting magnet system | `cooldown-and-sweep` — “Cool down a sample and sweep field”; `end-of-session` — “End of session” |
+| `photo-clamshell` | Photo-clamshell split tube furnace | Split-tube furnace | `sulfurization-anneal` — “Sulfurization and in-situ anneal of MoSe₂”; `end-of-session` — “End of session” |
+
+### Placeholder content
+
+**All seeded procedures across all 11 machines are illustrative placeholder content written from general laboratory practice, not manufacturer or lab-specific official SOPs.** Each has been technically reviewed once for plausibility and consistency; this does not make them validated SOPs. Many steps contain literal SOP blanks beginning `(SOP: __` (with units or ranges). Instrument owners or lab staff must fill these in with site-specific parameters before use.
+
+The Plasma Etch PE-25 cleaning procedure assumes manual PLC sequencing of pumping, gas, RF, and venting. Owners must confirm the installed unit's mode; units configured for an automatic PLC cycle require their owner-approved automatic-cycle SOP instead.
+
+The photo-clamshell furnace’s sulfurization-anneal procedure follows the published sequence reported in Nano Lett. 2025, 25, 10123: a 700 °C / 10 min sulfurization step, a precursor purge, and a 900 °C / 5 min in-situ anneal, with flows and ramp rates left as blanks for the instrument owner to fill in.
 
 ## Testing
 
@@ -118,7 +161,7 @@ npm run e2e:update
 
 Vitest has two projects: `node` covers tests under `shared/`, `scripts/`, `seed/`, and `src/`; `convex` uses `convex-test` in `edge-runtime`. Convex tests require `convex/_generated`, produced by running `npx convex dev` or `npx convex codegen` at least once. There is no separate npm codegen script.
 
-Playwright requires Chromium and runs screenshot tests from `tests/e2e/`, with baselines in `tests/e2e/__screenshots__/`; `npm run e2e:update` updates those baselines. Its web server uses port 5175 with `VITE_CONVEX_URL=''`, so tests exercise the local seed-backed demo. If reusing an existing server on that port, ensure it is also in demo mode. Chromium uses ANGLE/SwiftShader software rendering (`--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader`) for reproducible screenshots without a GPU.
+Playwright captures every step of every seeded procedure, plus each machine's explorer (“Explore the machine”) view. It requires Chromium and runs screenshot tests from `tests/e2e/`, with baselines in `tests/e2e/__screenshots__/`; `npm run e2e:update` updates those baselines. Its web server uses port 5175 with `VITE_CONVEX_URL=''`, so tests exercise the local seed-backed demo. If reusing an existing server on that port, ensure it is also in demo mode. Chromium uses ANGLE/SwiftShader software rendering (`--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader`) for reproducible screenshots without a GPU.
 
 ## Repository layout
 
@@ -128,13 +171,9 @@ Playwright requires Chromium and runs screenshot tests from `tests/e2e/`, with b
 - `scripts/` — Seed, capture, inspect, and NX10 export CLI tools, plus GLB helpers/tests.
 - `seed/` — Per-machine JSON/GLB content, procedures, manifest, and validation tests; read by the demo and loaded into Convex by the seed script.
 - `shared/` — Zod schemas and validation/state helpers shared across the app, scripts, and Convex.
-- `src/` — Vite/React app: routes, player, editor, explorer/3D scene, auth, data access, and styles.
+- `src/` — Vite/React app: routes, machine workspace, player panel, editor, 3D scene, auth, data access, and styles.
 - `tests/` — Playwright screenshot suite under `tests/e2e/`.
 - `dist/` — Generated frontend build output, when present.
 - `node_modules/` — Installed dependencies, when present.
 - `.convex/` — Local Convex deployment state, when configured.
 - `.git/` — Git repository metadata.
-
-## Placeholder content notice
-
-The NX10 procedures in `seed/park-nx10/procedures/` (`nc-scan`, `probe-exchange`, and `shutdown`) are illustrative example content written for this project, **not the manufacturer's official standard operating procedures**. Do not use them for instrument training as if they were validated SOPs.

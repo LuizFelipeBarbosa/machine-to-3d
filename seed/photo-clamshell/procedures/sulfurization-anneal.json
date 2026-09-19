@@ -1,7 +1,7 @@
 {
   "formatVersion": 1,
-  "title": "Sulfurization and in-situ anneal of MoSe2",
-  "summary": "Convert FIB-irradiated MoSe2 to MoS2 by sulfurization, then purge the sulfur precursor and anneal in situ without sulfur gas. Written from the published sequence (Nano Lett. 2025, 25, 10123) and general tube-furnace practice; flows, pressures and ramp rates are blanks for the instrument owner to fill.",
+  "title": "Sulfurization and in-situ anneal of MoSe₂",
+  "summary": "Convert FIB-irradiated MoSe₂ to MoS₂ by sulfurization, then purge the sulfur precursor and anneal in situ without sulfur gas. Written from the published sequence (Nano Lett. 2025, 25, 10123) and general tube-furnace practice; flows, pressures and ramp rates are blanks for the instrument owner to fill.",
   "minutes": 120,
   "start": {
     "open": false
@@ -49,7 +49,7 @@
       "title": "Load the sample at the hot-zone centre",
       "where": "instrument",
       "parts": ["tube"],
-      "body": "Load the FIB-irradiated MoSe2 sample substrate face up in a clean boat at the centre of the furnace hot zone. Note its position for reproducibility.",
+      "body": "Load the FIB-irradiated MoSe₂ sample substrate face up in a clean boat at the centre of the furnace hot zone. Note its position for reproducibility.",
       "view": {
         "pos": [5.471, 5.98, 9.502],
         "target": [0.0, 2.64, 0.0]
@@ -87,7 +87,7 @@
       "title": "Program the sulfurization segment",
       "where": "instrument",
       "parts": ["controls"],
-      "body": "Program a ramp (SOP: __ C/min) to 700 C and a hold of 10 min. Review the programmed segment before starting the run.",
+      "body": "Program a ramp (SOP: __ °C/min) to 700 °C and a hold of 10 min. Review the programmed segment before starting the run.",
       "view": {
         "pos": [3.917, 3.019, 8.363],
         "target": [0.0, 0.628, 1.56]
@@ -98,7 +98,7 @@
       "title": "Run the sulfurization",
       "where": "instrument",
       "parts": ["controls"],
-      "body": "Start the program to sulfurize the sample in a sulfur-rich ambient. Monitor the meters throughout the 700 C / 10 min hold.",
+      "body": "Start the program to sulfurize the sample in a sulfur-rich ambient. Monitor the meters throughout the 700 °C / 10 min hold.",
       "caution": "Do not open the shell while the furnace is running.",
       "view": {
         "pos": [3.917, 3.019, 8.363],
@@ -110,7 +110,7 @@
       "title": "Purge the sulfur precursor",
       "where": "instrument",
       "parts": ["plumbing"],
-      "body": "After the 700 C hold ends, stop the sulfur supply or remove the precursor from the heated flow using the approved method (SOP: method __). Purge with carrier gas (SOP: __ sccm for __ min) until no sulfur gas remains before annealing. Annealing without sulfur gas prevents unintended doping of pristine (non-irradiated) regions of the sample.",
+      "body": "After the 700 °C hold ends, stop the sulfur supply or remove the precursor from the heated flow using the approved method (SOP: method __). Purge with carrier gas (SOP: __ sccm for __ min) until no sulfur gas remains before annealing. Annealing without sulfur gas prevents unintended doping of pristine (non-irradiated) regions of the sample.",
       "view": {
         "pos": [6.388, 6.541, 11.317],
         "target": [-0.127, 2.562, 0.0]
@@ -118,10 +118,10 @@
     },
     {
       "id": "sulfurization-anneal-10",
-      "title": "Anneal in situ at 900 C",
+      "title": "Anneal in situ at 900 °C",
       "where": "instrument",
       "parts": ["controls"],
-      "body": "Program a ramp (SOP: __ C/min) to 900 C and hold for 5 min. Run this annealing segment in situ without sulfur gas present, then end the program.",
+      "body": "Program a ramp (SOP: __ °C/min) to 900 °C and hold for 5 min. Run this annealing segment in situ without sulfur gas present, then end the program.",
       "view": {
         "pos": [3.917, 3.019, 8.363],
         "target": [0.0, 0.628, 1.56]
