@@ -110,7 +110,7 @@ describe('procedure editor', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Move step 2 down' }));
     expect(useEditorStore.getState().content?.steps[2]?.id).toBe(added?.id);
     fireEvent.click(screen.getByRole('button', { name: 'Remove step 3' }));
-    expect(useEditorStore.getState().content?.steps).toHaveLength(10);
+    expect(useEditorStore.getState().content?.steps).toHaveLength(procedure.steps.length);
     expect(selectSelectedStep(useEditorStore.getState())?.id).toBe(procedure.steps[2].id);
   });
 
