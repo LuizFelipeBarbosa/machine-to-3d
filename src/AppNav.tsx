@@ -30,6 +30,7 @@ function AccountNav() {
         <NavLink to="/" end>Machines</NavLink>
         <NavLink to="/records">Records</NavLink>
         {me?.role === 'admin' && <NavLink to="/users">Users</NavLink>}
+        {me?.role === 'admin' && <NavLink to="/admin/machines">Machines admin</NavLink>}
       </nav>
       <span className="account-label">{me?.email ?? me?.name} {me && `· ${me.role}`}</span>
       <button className="btn" type="button" disabled={pending} onClick={() => { void leave(); }}>

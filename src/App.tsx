@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Authenticated, AuthLoading, Unauthenticated, useConvex } from 'convex/react';
 import { AppNav } from './AppNav';
+import { MachineAdmin } from './admin/MachineAdmin';
 import { SignIn } from './auth/SignIn';
 import { CatalogProvider } from './data/CatalogContext';
 import { createConvexCatalog } from './data/convexCatalog';
@@ -18,6 +19,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<MachineList />} />
+      <Route path="/admin/machines" element={<MachineAdmin />} />
       <Route path="/m/:machine" element={<Machine />} />
       <Route path="/m/:machine/:procedure" element={<PlayerRoute />} />
       <Route path="/m/:machine/:procedure/edit" element={<Editor />} />

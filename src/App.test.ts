@@ -12,6 +12,13 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+it('opens machine administration in local mode without an auth or Convex provider', () => {
+  window.history.replaceState(null, '', '/admin/machines');
+  render(createElement(App));
+  expect(screen.getByText('Needs the backend').className).toBe('notice');
+  expect(screen.queryByRole('link', { name: 'Machines admin' })).toBeNull();
+});
+
 it('browses local machines, the explorer, and a procedure without any auth provider', async () => {
   window.history.replaceState(null, '', '/');
   vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true })));
