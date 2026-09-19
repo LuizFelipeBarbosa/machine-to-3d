@@ -1,0 +1,124 @@
+{
+  "formatVersion": 1,
+  "rootNode": "RISE_Raman_SEM",
+  "parts": [
+    {
+      "name": "base",
+      "label": "SEM Cabinet",
+      "blurb": "SEM instrument cabinet with bowed front and leveling feet."
+    },
+    {
+      "name": "chamber",
+      "label": "Chamber Housing",
+      "blurb": "External sample-chamber housing — internal mechanisms are not reconstructed."
+    },
+    {
+      "name": "column",
+      "label": "SEM Column Housing",
+      "blurb": "Tall white electron-column enclosure."
+    },
+    {
+      "name": "raman",
+      "label": "Raman Optical Module",
+      "blurb": "Integrated WITec Raman module with optical base and coupling barrel."
+    },
+    {
+      "name": "cart",
+      "label": "Equipment Cart",
+      "blurb": "Adjacent equipment cabinet with casters and front door."
+    },
+    {
+      "name": "spectrometer",
+      "label": "Raman Peripheral Housings",
+      "blurb": "External Raman peripheral housings — approximate visible details."
+    },
+    {
+      "name": "cables",
+      "label": "Cables and Fibres",
+      "blurb": "External cable guide and signal fibres."
+    }
+  ],
+  "presetViews": [
+    {
+      "name": "perspective",
+      "label": "Perspective",
+      "view": {
+        "pos": [
+          7.663,
+          7.544,
+          11.199
+        ],
+        "target": [
+          1.252,
+          3.63,
+          0.065
+        ]
+      }
+    },
+    {
+      "name": "front",
+      "label": "Front",
+      "view": {
+        "pos": [
+          1.252,
+          4.635,
+          13.458
+        ],
+        "target": [
+          1.252,
+          3.63,
+          0.065
+        ]
+      }
+    },
+    {
+      "name": "rear",
+      "label": "Rear",
+      "view": {
+        "pos": [
+          1.252,
+          4.966,
+          -13.299
+        ],
+        "target": [
+          1.252,
+          3.63,
+          0.065
+        ]
+      }
+    },
+    {
+      "name": "side",
+      "label": "Side",
+      "view": {
+        "pos": [
+          14.617,
+          4.966,
+          0.065
+        ],
+        "target": [
+          1.252,
+          3.63,
+          0.065
+        ]
+      }
+    },
+    {
+      "name": "top",
+      "label": "Top",
+      "view": {
+        "pos": [
+          1.252,
+          17.061,
+          0.072
+        ],
+        "target": [
+          1.252,
+          3.63,
+          0.065
+        ]
+      }
+    }
+  ],
+  "stateVars": []
+}

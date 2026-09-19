@@ -1,0 +1,259 @@
+{
+  "formatVersion": 1,
+  "title": "Non-contact topography scan",
+  "summary": "From an idle instrument to a first image, then back to a safe state. Placeholder content written from general AFM practice, not from the manufacturer's manual.",
+  "minutes": 25,
+  "start": {
+    "lift": false,
+    "headOut": false,
+    "sample": false,
+    "probe": true,
+    "covers": true
+  },
+  "steps": [
+    {
+      "id": "nc-scan-01",
+      "title": "Raise the head clear of the chuck",
+      "where": "software",
+      "parts": [
+        "z"
+      ],
+      "body": "Drive the Z stage up until the probe sits well above the sample chuck. Do this first, even if the last user says they already did.",
+      "caution": "Loading a sample under a lowered head is the most common way probes get broken and samples get scratched.",
+      "view": {
+        "pos": [
+          -4.6,
+          4.4,
+          5.6
+        ],
+        "target": [
+          0.24,
+          3,
+          -0.3
+        ]
+      },
+      "state": {
+        "lift": true,
+        "covers": false
+      }
+    },
+    {
+      "id": "nc-scan-02",
+      "title": "Mount the sample",
+      "where": "instrument",
+      "parts": [
+        "sample"
+      ],
+      "body": "Fix your sample to a magnetic disk. Holding the disk by its edge with tweezers, set it on the centre of the chuck. Check that it sits flat and does not rock.",
+      "caution": "Check the sample height against the lab limit before mounting. A tall sample can meet the probe during approach.",
+      "view": {
+        "pos": [
+          -1.9,
+          3,
+          3.5
+        ],
+        "target": [
+          0.22,
+          1.6,
+          0.36
+        ]
+      },
+      "state": {
+        "sample": true
+      }
+    },
+    {
+      "id": "nc-scan-03",
+      "title": "Check the probe",
+      "where": "instrument",
+      "parts": [
+        "head"
+      ],
+      "body": "Look at the probe carrier under the head. Confirm in the logbook that the installed probe suits non-contact mode and that nobody flagged it as worn.",
+      "view": {
+        "pos": [
+          -2.4,
+          2.9,
+          4.3
+        ],
+        "target": [
+          0.22,
+          1.98,
+          0.3
+        ]
+      },
+      "link": {
+        "procedureSlug": "probe-exchange",
+        "stepId": "probe-exchange-01",
+        "label": "Probe is wrong or worn? Open probe exchange"
+      }
+    },
+    {
+      "id": "nc-scan-04",
+      "title": "Focus on the cantilever",
+      "where": "software",
+      "parts": [
+        "optics",
+        "focus"
+      ],
+      "body": "Open the camera view and move the focus stage until the cantilever is sharp. You should see the whole cantilever and the edge of its chip.",
+      "view": {
+        "pos": [
+          -4.4,
+          4.6,
+          6.4
+        ],
+        "target": [
+          0.22,
+          3.4,
+          0.1
+        ]
+      }
+    },
+    {
+      "id": "nc-scan-05",
+      "title": "Align the beam on the cantilever",
+      "where": "instrument",
+      "parts": [
+        "head"
+      ],
+      "body": "Turn the two knobs on the front of the head to bring the beam spot to the free end of the cantilever. Then centre the detector so the vertical and lateral signals read close to zero.",
+      "caution": "A low sum signal usually means the spot is on the chip, not the cantilever. Fix it now. Approaching with a bad alignment fails or crashes the tip.",
+      "check": "Sum signal is in the expected range and both deflection signals are near zero",
+      "view": {
+        "pos": [
+          -2.4,
+          2.9,
+          4.3
+        ],
+        "target": [
+          0.22,
+          1.98,
+          0.3
+        ]
+      }
+    },
+    {
+      "id": "nc-scan-06",
+      "title": "Move to your region of interest",
+      "where": "software",
+      "parts": [
+        "xy"
+      ],
+      "body": "Refocus the camera on the sample surface, then move the XY stage until the area you want sits under the end of the cantilever.",
+      "caution": "Only move the XY stage while the head is raised.",
+      "view": {
+        "pos": [
+          -3,
+          3.6,
+          4.4
+        ],
+        "target": [
+          0.1,
+          1.25,
+          0.1
+        ]
+      }
+    },
+    {
+      "id": "nc-scan-07",
+      "title": "Tune the cantilever",
+      "where": "software",
+      "parts": [
+        "head"
+      ],
+      "body": "Run a frequency sweep and choose the drive frequency and amplitude set point the way your SOP specifies for this probe type.",
+      "view": {
+        "pos": [
+          -2.4,
+          2.9,
+          4.3
+        ],
+        "target": [
+          0.22,
+          1.98,
+          0.3
+        ]
+      }
+    },
+    {
+      "id": "nc-scan-08",
+      "title": "Approach the surface",
+      "where": "software",
+      "parts": [
+        "z",
+        "head"
+      ],
+      "body": "Start the automatic approach and watch the Z scanner indicator until the software reports that the tip has engaged.",
+      "caution": "Hands off the table and the enclosure during approach. Vibration here can drive the tip into the surface.",
+      "check": "Sample is mounted, beam is aligned, and nobody is touching the table",
+      "view": {
+        "pos": [
+          -3.4,
+          3.2,
+          5.4
+        ],
+        "target": [
+          0.22,
+          2.2,
+          0.1
+        ]
+      },
+      "state": {
+        "lift": false
+      }
+    },
+    {
+      "id": "nc-scan-09",
+      "title": "Scan",
+      "where": "software",
+      "parts": [
+        "sample",
+        "head"
+      ],
+      "body": "Begin with a small, slow scan. Check that the trace and retrace lines overlap, adjust gain and set point until they do, and only then scale up to the full area.",
+      "view": {
+        "pos": [
+          -2,
+          2.3,
+          3.6
+        ],
+        "target": [
+          0.22,
+          1.7,
+          0.38
+        ]
+      }
+    },
+    {
+      "id": "nc-scan-10",
+      "title": "Lift the head before touching anything",
+      "where": "software",
+      "parts": [
+        "z"
+      ],
+      "body": "Stop the scan and lift the Z stage all the way up. Save your data.",
+      "check": "Head is fully raised",
+      "view": {
+        "pos": [
+          -4.6,
+          4.4,
+          5.6
+        ],
+        "target": [
+          0.24,
+          3,
+          -0.3
+        ]
+      },
+      "state": {
+        "lift": true
+      },
+      "link": {
+        "procedureSlug": "shutdown",
+        "stepId": "shutdown-01",
+        "label": "Continue with end of session"
+      }
+    }
+  ]
+}

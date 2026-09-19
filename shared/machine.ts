@@ -36,6 +36,7 @@ export const StateVarSchema = z.object({
   name: z.string().min(1),
   label: z.string(),
   kind: z.literal('toggle'),
+  userToggle: z.boolean().optional(),
   effects: z.array(EffectSchema).min(1),
 }).strict();
 

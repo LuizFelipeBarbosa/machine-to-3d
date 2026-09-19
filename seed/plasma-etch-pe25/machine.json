@@ -1,0 +1,133 @@
+{
+  "formatVersion": 1,
+  "rootNode": "Plasma_Etch_PE25",
+  "parts": [
+    {
+      "name": "body",
+      "label": "Body",
+      "blurb": "The outer housing supports the chamber and front controls."
+    },
+    {
+      "name": "controls",
+      "label": "Front Controls",
+      "blurb": "PLC keypad panel and adjustable power-level knob. Display and buttons are visual details."
+    },
+    {
+      "name": "gas",
+      "label": "Gas Flowmeter",
+      "blurb": "Front gas flowmeter and precision valve — modeled from the reference photograph."
+    },
+    {
+      "name": "chamber",
+      "label": "Chamber and Electrode",
+      "blurb": "Aluminum chamber and horizontal electrode tray — approximate interior geometry."
+    },
+    {
+      "name": "door",
+      "label": "Door and Viewport",
+      "blurb": "Hinged chamber door with circular viewing port, seal and latch."
+    },
+    {
+      "name": "rear",
+      "label": "Rear Connections",
+      "blurb": "Rear gas inlet, vacuum hose, ventilation, power switch and pump socket."
+    }
+  ],
+  "presetViews": [
+    {
+      "name": "perspective",
+      "label": "Perspective",
+      "view": {
+        "pos": [
+          5.27,
+          5.404,
+          9.102
+        ],
+        "target": [
+          -0.294,
+          2.008,
+          -0.562
+        ]
+      }
+    },
+    {
+      "name": "front",
+      "label": "Front",
+      "view": {
+        "pos": [
+          -0.294,
+          2.879,
+          11.062
+        ],
+        "target": [
+          -0.294,
+          2.008,
+          -0.562
+        ]
+      }
+    },
+    {
+      "name": "rear",
+      "label": "Rear",
+      "view": {
+        "pos": [
+          -0.294,
+          3.167,
+          -12.161
+        ],
+        "target": [
+          -0.294,
+          2.008,
+          -0.562
+        ]
+      }
+    },
+    {
+      "name": "side",
+      "label": "Side",
+      "view": {
+        "pos": [
+          11.305,
+          3.167,
+          -0.562
+        ],
+        "target": [
+          -0.294,
+          2.008,
+          -0.562
+        ]
+      }
+    },
+    {
+      "name": "top",
+      "label": "Top",
+      "view": {
+        "pos": [
+          -0.294,
+          13.664,
+          -0.556
+        ],
+        "target": [
+          -0.294,
+          2.008,
+          -0.562
+        ]
+      }
+    }
+  ],
+  "stateVars": [
+    {
+      "name": "doorOpen",
+      "label": "Chamber door open",
+      "kind": "toggle",
+      "effects": [
+        {
+          "type": "rotate",
+          "node": "door",
+          "axis": "y",
+          "angle": -2.073
+        }
+      ]
+    }
+  ]
+}

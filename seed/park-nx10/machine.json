@@ -1,0 +1,295 @@
+{
+  "formatVersion": 1,
+  "rootNode": "Park_NX10",
+  "parts": [
+    {
+      "name": "optics",
+      "label": "Optical microscope",
+      "blurb": "On-axis camera view looking straight down at the probe and sample."
+    },
+    {
+      "name": "head",
+      "label": "AFM head",
+      "blurb": "Carries the Z scanner, the probe, and the two beam alignment knobs."
+    },
+    {
+      "name": "sample",
+      "label": "Sample chuck",
+      "blurb": "Magnetic chuck on the XY scanner. Your sample disk sits here."
+    },
+    {
+      "name": "xy",
+      "label": "XY stage",
+      "blurb": "Motorised coarse positioning of the sample under the probe."
+    },
+    {
+      "name": "z",
+      "label": "Z stage",
+      "blurb": "Raises and lowers the head. Drives the approach to the surface."
+    },
+    {
+      "name": "focus",
+      "label": "Focus stage",
+      "blurb": "Moves the optical microscope up and down to focus the camera view."
+    }
+  ],
+  "presetViews": [
+    {
+      "name": "overview",
+      "label": "Overview",
+      "view": {
+        "pos": [
+          -7.5,
+          5.8,
+          9.5
+        ],
+        "target": [
+          0,
+          2.7,
+          0
+        ]
+      }
+    },
+    {
+      "name": "head",
+      "label": "Head",
+      "view": {
+        "pos": [
+          -2.4,
+          2.9,
+          4.3
+        ],
+        "target": [
+          0.22,
+          1.98,
+          0.3
+        ]
+      }
+    },
+    {
+      "name": "tip",
+      "label": "Tip",
+      "view": {
+        "pos": [
+          -2,
+          2.3,
+          3.6
+        ],
+        "target": [
+          0.22,
+          1.7,
+          0.38
+        ]
+      }
+    },
+    {
+      "name": "approach",
+      "label": "Approach",
+      "view": {
+        "pos": [
+          -3.4,
+          3.2,
+          5.4
+        ],
+        "target": [
+          0.22,
+          2.2,
+          0.1
+        ]
+      }
+    },
+    {
+      "name": "sample",
+      "label": "Sample",
+      "view": {
+        "pos": [
+          -1.9,
+          3,
+          3.5
+        ],
+        "target": [
+          0.22,
+          1.6,
+          0.36
+        ]
+      }
+    },
+    {
+      "name": "optics",
+      "label": "Optics",
+      "view": {
+        "pos": [
+          -4.4,
+          4.6,
+          6.4
+        ],
+        "target": [
+          0.22,
+          3.4,
+          0.1
+        ]
+      }
+    },
+    {
+      "name": "zstage",
+      "label": "Zstage",
+      "view": {
+        "pos": [
+          -4.6,
+          4.4,
+          5.6
+        ],
+        "target": [
+          0.24,
+          3,
+          -0.3
+        ]
+      }
+    },
+    {
+      "name": "xystage",
+      "label": "Xystage",
+      "view": {
+        "pos": [
+          -3,
+          3.6,
+          4.4
+        ],
+        "target": [
+          0.1,
+          1.25,
+          0.1
+        ]
+      }
+    },
+    {
+      "name": "bench",
+      "label": "Bench",
+      "view": {
+        "pos": [
+          -3.2,
+          3.1,
+          5.2
+        ],
+        "target": [
+          0.22,
+          2,
+          0.9
+        ]
+      }
+    }
+  ],
+  "stateVars": [
+    {
+      "name": "lift",
+      "label": "Head raised",
+      "kind": "toggle",
+      "effects": [
+        {
+          "type": "translate",
+          "node": "head",
+          "offset": [
+            0,
+            0.3,
+            0
+          ]
+        },
+        {
+          "type": "translate",
+          "node": "zCarriage",
+          "offset": [
+            0,
+            0.3,
+            0
+          ]
+        },
+        {
+          "type": "translate",
+          "node": "optics",
+          "offset": [
+            0,
+            0.3,
+            0
+          ]
+        },
+        {
+          "type": "translate",
+          "node": "focus",
+          "offset": [
+            0,
+            0.3,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "name": "headOut",
+      "label": "Head slid out",
+      "kind": "toggle",
+      "effects": [
+        {
+          "type": "translate",
+          "node": "head",
+          "offset": [
+            0,
+            0,
+            1.15
+          ]
+        },
+        {
+          "type": "translate",
+          "node": "optics",
+          "offset": [
+            0,
+            0.2,
+            0
+          ]
+        },
+        {
+          "type": "translate",
+          "node": "focus",
+          "offset": [
+            0,
+            0.2,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "name": "sample",
+      "label": "Sample mounted",
+      "kind": "toggle",
+      "effects": [
+        {
+          "type": "visible",
+          "node": "specimen"
+        }
+      ]
+    },
+    {
+      "name": "probe",
+      "label": "Probe installed",
+      "kind": "toggle",
+      "effects": [
+        {
+          "type": "visible",
+          "node": "probe"
+        }
+      ]
+    },
+    {
+      "name": "covers",
+      "label": "Exterior covers",
+      "kind": "toggle",
+      "userToggle": true,
+      "effects": [
+        {
+          "type": "visible",
+          "node": "covers"
+        }
+      ]
+    }
+  ]
+}

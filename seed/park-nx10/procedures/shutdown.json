@@ -1,0 +1,104 @@
+{
+  "formatVersion": 1,
+  "title": "End of session",
+  "summary": "Leave the instrument safe and documented for the next person. Placeholder content written from general AFM practice, not from the manufacturer's manual.",
+  "minutes": 5,
+  "start": {
+    "lift": true,
+    "headOut": false,
+    "sample": true,
+    "probe": true,
+    "covers": false
+  },
+  "steps": [
+    {
+      "id": "shutdown-01",
+      "title": "Confirm the head is raised",
+      "where": "software",
+      "parts": [
+        "z"
+      ],
+      "body": "Check the Z stage position in the software and look at the gap between probe and sample yourself.",
+      "check": "I can see clear space between the probe and the sample",
+      "view": {
+        "pos": [
+          -4.6,
+          4.4,
+          5.6
+        ],
+        "target": [
+          0.24,
+          3,
+          -0.3
+        ]
+      }
+    },
+    {
+      "id": "shutdown-02",
+      "title": "Remove your sample",
+      "where": "instrument",
+      "parts": [
+        "sample"
+      ],
+      "body": "Lift the sample disk off the chuck by its edge with tweezers. Slide it sideways first to break the magnetic hold, rather than pulling straight up.",
+      "view": {
+        "pos": [
+          -1.9,
+          3,
+          3.5
+        ],
+        "target": [
+          0.22,
+          1.6,
+          0.36
+        ]
+      },
+      "state": {
+        "sample": false
+      }
+    },
+    {
+      "id": "shutdown-03",
+      "title": "Log the session",
+      "where": "logbook",
+      "parts": [
+        "head"
+      ],
+      "body": "Record which probe is installed, its condition, and anything the next user should know. If you think the probe is worn, say so.",
+      "view": {
+        "pos": [
+          -2.4,
+          2.9,
+          4.3
+        ],
+        "target": [
+          0.22,
+          1.98,
+          0.3
+        ]
+      }
+    },
+    {
+      "id": "shutdown-04",
+      "title": "Close up",
+      "where": "instrument",
+      "parts": [],
+      "body": "Close the enclosure door, leave the software idle, and clear tweezers and sample boxes off the bench.",
+      "view": {
+        "pos": [
+          -7.5,
+          5.8,
+          9.5
+        ],
+        "target": [
+          0,
+          2.7,
+          0
+        ]
+      },
+      "state": {
+        "covers": true
+      }
+    }
+  ]
+}

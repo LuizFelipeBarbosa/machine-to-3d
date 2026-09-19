@@ -1,0 +1,167 @@
+{
+  "formatVersion": 1,
+  "title": "Probe exchange",
+  "summary": "Swap a worn or wrong probe without damaging the new one or the head. Placeholder content written from general AFM practice, not from the manufacturer's manual.",
+  "minutes": 10,
+  "start": {
+    "lift": false,
+    "headOut": false,
+    "sample": false,
+    "probe": true,
+    "covers": true
+  },
+  "steps": [
+    {
+      "id": "probe-exchange-01",
+      "title": "Raise the head fully",
+      "where": "software",
+      "parts": [
+        "z"
+      ],
+      "body": "Lift the Z stage to the top of its travel so the head has room to slide out.",
+      "view": {
+        "pos": [
+          -4.6,
+          4.4,
+          5.6
+        ],
+        "target": [
+          0.24,
+          3,
+          -0.3
+        ]
+      },
+      "state": {
+        "lift": true,
+        "covers": false
+      }
+    },
+    {
+      "id": "probe-exchange-02",
+      "title": "Unlock the head and slide it out",
+      "where": "instrument",
+      "parts": [
+        "head"
+      ],
+      "body": "Release the head lock, then slide the head straight toward you out of its mount. Rest it on the head stand with the probe facing up.",
+      "caution": "Support the head with both hands, and never set it down on its probe side.",
+      "view": {
+        "pos": [
+          -3.2,
+          3.1,
+          5.2
+        ],
+        "target": [
+          0.22,
+          2,
+          0.9
+        ]
+      },
+      "state": {
+        "headOut": true
+      }
+    },
+    {
+      "id": "probe-exchange-03",
+      "title": "Remove the used probe",
+      "where": "instrument",
+      "parts": [
+        "head"
+      ],
+      "body": "Grip the chip carrier by its edges with tweezers and lift it off the mount. Put it in the used-probe box and note it in the logbook.",
+      "view": {
+        "pos": [
+          -3.2,
+          3.1,
+          5.2
+        ],
+        "target": [
+          0.22,
+          2,
+          0.9
+        ]
+      },
+      "state": {
+        "probe": false
+      }
+    },
+    {
+      "id": "probe-exchange-04",
+      "title": "Seat the new probe",
+      "where": "instrument",
+      "parts": [
+        "head"
+      ],
+      "body": "Pick up the new pre-mounted probe by the carrier edges and lower it onto the mount. It should settle into place on its own, with no force.",
+      "caution": "Never touch the cantilever end of the chip. If you drop a probe, treat it as broken.",
+      "view": {
+        "pos": [
+          -3.2,
+          3.1,
+          5.2
+        ],
+        "target": [
+          0.22,
+          2,
+          0.9
+        ]
+      },
+      "state": {
+        "probe": true
+      }
+    },
+    {
+      "id": "probe-exchange-05",
+      "title": "Slide the head back and lock it",
+      "where": "instrument",
+      "parts": [
+        "head"
+      ],
+      "body": "Slide the head back into the mount until it stops, then engage the lock.",
+      "caution": "An unlocked head drifts during a scan and can shift during approach.",
+      "check": "Head is fully seated and the lock is engaged",
+      "view": {
+        "pos": [
+          -2.4,
+          2.9,
+          4.3
+        ],
+        "target": [
+          0.22,
+          1.98,
+          0.3
+        ]
+      },
+      "state": {
+        "headOut": false
+      }
+    },
+    {
+      "id": "probe-exchange-06",
+      "title": "Realign the beam",
+      "where": "instrument",
+      "parts": [
+        "head",
+        "optics"
+      ],
+      "body": "Every probe sits slightly differently, so the old alignment no longer holds. Pick the scan procedure back up at the focus step.",
+      "view": {
+        "pos": [
+          -2.4,
+          2.9,
+          4.3
+        ],
+        "target": [
+          0.22,
+          1.98,
+          0.3
+        ]
+      },
+      "link": {
+        "procedureSlug": "nc-scan",
+        "stepId": "nc-scan-04",
+        "label": "Go to “Focus on the cantilever”"
+      }
+    }
+  ]
+}

@@ -1,0 +1,132 @@
+{
+  "formatVersion": 1,
+  "rootNode": "NanoFrazor_Benchtop",
+  "parts": [
+    {
+      "name": "body",
+      "label": "Body",
+      "blurb": "The instrument body supports the probe head and sample stage."
+    },
+    {
+      "name": "enclosure",
+      "label": "Amber Enclosure",
+      "blurb": "Amber shielding panels and rear hinge brackets."
+    },
+    {
+      "name": "head",
+      "label": "Probe-Head Assembly",
+      "blurb": "Simplified probe-head assembly reconstructed from visible product details."
+    },
+    {
+      "name": "stage",
+      "label": "Sample Stage",
+      "blurb": "Sample chuck and positioning stack — approximate geometry."
+    },
+    {
+      "name": "controls",
+      "label": "Isolation Controls",
+      "blurb": "Isolation-base control panel — visual details only."
+    },
+    {
+      "name": "handles",
+      "label": "Carrying Handles",
+      "blurb": "Metal carrying handles on the sides of the base."
+    }
+  ],
+  "presetViews": [
+    {
+      "name": "perspective",
+      "label": "Perspective",
+      "view": {
+        "pos": [
+          3.77,
+          4.164,
+          6.566
+        ],
+        "target": [
+          0,
+          1.862,
+          0.018
+        ]
+      }
+    },
+    {
+      "name": "front",
+      "label": "Front",
+      "view": {
+        "pos": [
+          0,
+          2.453,
+          7.895
+        ],
+        "target": [
+          0,
+          1.862,
+          0.018
+        ]
+      }
+    },
+    {
+      "name": "rear",
+      "label": "Rear",
+      "view": {
+        "pos": [
+          0,
+          2.648,
+          -7.843
+        ],
+        "target": [
+          0,
+          1.862,
+          0.018
+        ]
+      }
+    },
+    {
+      "name": "side",
+      "label": "Side",
+      "view": {
+        "pos": [
+          7.86,
+          2.648,
+          0.018
+        ],
+        "target": [
+          0,
+          1.862,
+          0.018
+        ]
+      }
+    },
+    {
+      "name": "top",
+      "label": "Top",
+      "view": {
+        "pos": [
+          0,
+          9.761,
+          0.021
+        ],
+        "target": [
+          0,
+          1.862,
+          0.018
+        ]
+      }
+    }
+  ],
+  "stateVars": [
+    {
+      "name": "coverOn",
+      "label": "Amber cover fitted",
+      "kind": "toggle",
+      "userToggle": true,
+      "effects": [
+        {
+          "type": "visible",
+          "node": "enclosure"
+        }
+      ]
+    }
+  ]
+}

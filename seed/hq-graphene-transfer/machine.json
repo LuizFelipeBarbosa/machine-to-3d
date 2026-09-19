@@ -1,0 +1,124 @@
+{
+  "formatVersion": 1,
+  "rootNode": "HQ_Graphene_Manual_Transfer_System",
+  "parts": [
+    {
+      "name": "base",
+      "label": "Base",
+      "blurb": "The base supports the microscope and transfer stages."
+    },
+    {
+      "name": "microscope",
+      "label": "Optical Microscope",
+      "blurb": "Optical microscope — binocular viewing, objective turret and side illumination."
+    },
+    {
+      "name": "camera",
+      "label": "Camera",
+      "blurb": "Top-mounted camera — optical observation of the transfer region."
+    },
+    {
+      "name": "stamp",
+      "label": "Stamp Manipulator",
+      "blurb": "Stamp manipulator — micrometer positioning of the glass slide and transfer stamp."
+    },
+    {
+      "name": "sample",
+      "label": "Heated Vacuum Chuck",
+      "blurb": "Heated vacuum chuck — supports the substrate during transfer."
+    },
+    {
+      "name": "stage",
+      "label": "Positioning Stages",
+      "blurb": "Manual positioning stages — align the stamp and substrate."
+    },
+    {
+      "name": "controller",
+      "label": "Temperature Controller",
+      "blurb": "External temperature controller — simplified display and connections."
+    }
+  ],
+  "presetViews": [
+    {
+      "name": "perspective",
+      "label": "Perspective",
+      "view": {
+        "pos": [
+          5.855,
+          5.732,
+          8.548
+        ],
+        "target": [
+          1.019,
+          2.779,
+          0.147
+        ]
+      }
+    },
+    {
+      "name": "front",
+      "label": "Front",
+      "view": {
+        "pos": [
+          1.019,
+          3.537,
+          10.252
+        ],
+        "target": [
+          1.019,
+          2.779,
+          0.147
+        ]
+      }
+    },
+    {
+      "name": "rear",
+      "label": "Rear",
+      "view": {
+        "pos": [
+          1.019,
+          3.787,
+          -9.936
+        ],
+        "target": [
+          1.019,
+          2.779,
+          0.147
+        ]
+      }
+    },
+    {
+      "name": "side",
+      "label": "Side",
+      "view": {
+        "pos": [
+          11.102,
+          3.787,
+          0.147
+        ],
+        "target": [
+          1.019,
+          2.779,
+          0.147
+        ]
+      }
+    },
+    {
+      "name": "top",
+      "label": "Top",
+      "view": {
+        "pos": [
+          1.019,
+          12.912,
+          0.153
+        ],
+        "target": [
+          1.019,
+          2.779,
+          0.147
+        ]
+      }
+    }
+  ],
+  "stateVars": []
+}

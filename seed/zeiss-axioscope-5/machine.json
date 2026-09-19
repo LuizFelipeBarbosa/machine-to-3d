@@ -1,0 +1,129 @@
+{
+  "formatVersion": 1,
+  "rootNode": "ZEISS_Axioscope_5",
+  "parts": [
+    {
+      "name": "base",
+      "label": "Base",
+      "blurb": "The base supports the microscope stand."
+    },
+    {
+      "name": "head",
+      "label": "Binocular Head",
+      "blurb": "Binocular head — inclined viewing tubes and eyepieces."
+    },
+    {
+      "name": "camera",
+      "label": "Axiocam Camera",
+      "blurb": "Axiocam — digital camera mounted on the photo port."
+    },
+    {
+      "name": "objectives",
+      "label": "Objective Turret",
+      "blurb": "Six-position nosepiece — objective lenses with identification bands."
+    },
+    {
+      "name": "stage",
+      "label": "Mechanical Stage",
+      "blurb": "Mechanical stage — slide holder and coaxial XY controls."
+    },
+    {
+      "name": "condenser",
+      "label": "Condenser",
+      "blurb": "Condenser — concentrates transmitted illumination beneath the specimen."
+    },
+    {
+      "name": "focus",
+      "label": "Focus Controls",
+      "blurb": "Coarse and fine focus — coaxial controls on the stand."
+    },
+    {
+      "name": "illumination",
+      "label": "Illumination",
+      "blurb": "Illumination — field diaphragm and rear Colibri module."
+    }
+  ],
+  "presetViews": [
+    {
+      "name": "perspective",
+      "label": "Perspective",
+      "view": {
+        "pos": [
+          4.756,
+          5.645,
+          8.192
+        ],
+        "target": [
+          0.01,
+          2.747,
+          -0.051
+        ]
+      }
+    },
+    {
+      "name": "front",
+      "label": "Front",
+      "view": {
+        "pos": [
+          0.01,
+          3.491,
+          9.865
+        ],
+        "target": [
+          0.01,
+          2.747,
+          -0.051
+        ]
+      }
+    },
+    {
+      "name": "rear",
+      "label": "Rear",
+      "view": {
+        "pos": [
+          0.01,
+          3.737,
+          -9.945
+        ],
+        "target": [
+          0.01,
+          2.747,
+          -0.051
+        ]
+      }
+    },
+    {
+      "name": "side",
+      "label": "Side",
+      "view": {
+        "pos": [
+          9.905,
+          3.737,
+          -0.051
+        ],
+        "target": [
+          0.01,
+          2.747,
+          -0.051
+        ]
+      }
+    },
+    {
+      "name": "top",
+      "label": "Top",
+      "view": {
+        "pos": [
+          0.01,
+          12.691,
+          -0.046
+        ],
+        "target": [
+          0.01,
+          2.747,
+          -0.051
+        ]
+      }
+    }
+  ],
+  "stateVars": []
+}
