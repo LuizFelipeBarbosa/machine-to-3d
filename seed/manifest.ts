@@ -84,4 +84,11 @@ export const SEED_MACHINES: SeedMachine[] = [
     dir: 'seed/photo-clamshell',
     procedureSlugs: ['sulfurization-anneal', 'end-of-session'],
   },
+  {
+    slug: 'camera-demonstration',
+    name: 'Canon EOS 60D (reconstruction)',
+    kind: 'DSLR camera — demonstration',
+    dir: 'seed/camera-demonstration',
+    procedureSlugs: ['battery-card-and-monitor'],
+  },
 ];

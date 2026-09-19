@@ -1,0 +1,358 @@
+{
+  "formatVersion": 1,
+  "title": "Battery, memory card and monitor handling",
+  "summary": "Reconstructed from a 61 s demonstration video of a probable Canon EOS 60D: battery removal and return, SD card removal and return, top-control handling and articulated-monitor movement. Educational reconstruction; lever endpoints and electrical state are unresolved — follow the official manual for real operation.",
+  "minutes": 10,
+  "video": {
+    "fileId": "reference.mp4",
+    "label": "Watch the original demonstration"
+  },
+  "start": {
+    "demo": 0
+  },
+  "steps": [
+    {
+      "id": "battery-card-and-monitor-01",
+      "title": "Identify the camera",
+      "where": "instrument",
+      "body": "Inspect the body, attached capped lens, rear controls and underside as the demonstrator turns the camera. Probable EOS 60D; badge blurred.",
+      "parts": [
+        "Body_shell",
+        "Unidentified_zoom_lens"
+      ],
+      "view": {
+        "pos": [
+          0.19,
+          0.105,
+          0.235
+        ],
+        "target": [
+          0,
+          0,
+          0
+        ]
+      },
+      "state": {
+        "demo": 0.103
+      },
+      "media": {
+        "fileId": "media/step-01.jpg",
+        "alt": "Video frame at about 0–10 s"
+      }
+    },
+    {
+      "id": "battery-card-and-monitor-02",
+      "title": "Open the battery cover",
+      "where": "instrument",
+      "body": "Move the underside cover latch and swing the battery door open. The small latch travel and hinge angle are approximate.",
+      "parts": [
+        "Battery_door",
+        "Battery_door_latch"
+      ],
+      "view": {
+        "pos": [
+          -0.134,
+          -0.203,
+          -0.145
+        ],
+        "target": [
+          -0.045,
+          -0.05,
+          0
+        ]
+      },
+      "state": {
+        "demo": 0.179
+      },
+      "media": {
+        "fileId": "media/step-02.jpg",
+        "alt": "Video frame at about 10–15 s"
+      }
+    },
+    {
+      "id": "battery-card-and-monitor-03",
+      "title": "Release and withdraw the battery",
+      "where": "instrument",
+      "body": "Move the retaining tab, then draw the battery out of the grip compartment. Hold it clear of the camera. LP-E6 compatibility follows the probable camera identity; the pack brand and printed markings are unreadable.",
+      "parts": [
+        "Battery_pack",
+        "Battery_retaining_tab"
+      ],
+      "view": {
+        "pos": [
+          -0.139,
+          -0.218,
+          -0.145
+        ],
+        "target": [
+          -0.05,
+          -0.065,
+          0
+        ]
+      },
+      "state": {
+        "demo": 0.308
+      },
+      "media": {
+        "fileId": "media/step-03.jpg",
+        "alt": "Video frame at about 15–22 s"
+      },
+      "caution": "Hold the battery clear of the camera; contacts and markings are not modelled."
+    },
+    {
+      "id": "battery-card-and-monitor-04",
+      "title": "Reinsert and close",
+      "where": "instrument",
+      "body": "Return the battery to the compartment and close the underside door. Reinsertion is partly obscured at about 22–24 seconds.",
+      "parts": [
+        "Battery_pack",
+        "Battery_door"
+      ],
+      "view": {
+        "pos": [
+          -0.139,
+          -0.198,
+          -0.145
+        ],
+        "target": [
+          -0.05,
+          -0.045,
+          0
+        ]
+      },
+      "state": {
+        "demo": 0.436
+      },
+      "media": {
+        "fileId": "media/step-04.jpg",
+        "alt": "Video frame at about 22–28 s"
+      }
+    },
+    {
+      "id": "battery-card-and-monitor-05",
+      "title": "Open the card compartment",
+      "where": "instrument",
+      "body": "Turn to the grip side and open the memory-card cover. The cover hinge geometry is approximate.",
+      "parts": [
+        "Card_door"
+      ],
+      "view": {
+        "pos": [
+          -0.227,
+          0.043,
+          -0.121
+        ],
+        "target": [
+          -0.065,
+          -0.008,
+          -0.01
+        ]
+      },
+      "state": {
+        "demo": 0.5
+      },
+      "media": {
+        "fileId": "media/step-05.jpg",
+        "alt": "Video frame at about 28–34 s"
+      }
+    },
+    {
+      "id": "battery-card-and-monitor-06",
+      "title": "Remove the SD card",
+      "where": "instrument",
+      "body": "Press at the card slot, then withdraw the card and hold it clear. The short spring-release travel is inferred from the mechanism and the partly hidden hand movement.",
+      "parts": [
+        "SD_card"
+      ],
+      "view": {
+        "pos": [
+          -0.247,
+          0.041,
+          -0.126
+        ],
+        "target": [
+          -0.085,
+          -0.01,
+          -0.015
+        ]
+      },
+      "state": {
+        "demo": 0.59
+      },
+      "media": {
+        "fileId": "media/step-06.jpg",
+        "alt": "Video frame at about 34–38 s"
+      }
+    },
+    {
+      "id": "battery-card-and-monitor-07",
+      "title": "Return the SD card",
+      "where": "instrument",
+      "body": "Guide the card into the same slot and press it into place. Card label, capacity, orientation details and insertion depth are simplified; follow the markings on the physical camera.",
+      "parts": [
+        "SD_card"
+      ],
+      "view": {
+        "pos": [
+          -0.232,
+          0.041,
+          -0.126
+        ],
+        "target": [
+          -0.07,
+          -0.01,
+          -0.015
+        ]
+      },
+      "state": {
+        "demo": 0.667
+      },
+      "media": {
+        "fileId": "media/step-07.jpg",
+        "alt": "Video frame at about 38–42 s"
+      }
+    },
+    {
+      "id": "battery-card-and-monitor-08",
+      "title": "Close the card cover",
+      "where": "instrument",
+      "body": "Fold the card-compartment cover shut. The latch internals are not modeled.",
+      "parts": [
+        "Card_door"
+      ],
+      "view": {
+        "pos": [
+          -0.227,
+          0.041,
+          -0.126
+        ],
+        "target": [
+          -0.065,
+          -0.01,
+          -0.015
+        ]
+      },
+      "state": {
+        "demo": 0.718
+      },
+      "media": {
+        "fileId": "media/step-08.jpg",
+        "alt": "Video frame at about 42–46 s"
+      }
+    },
+    {
+      "id": "battery-card-and-monitor-09",
+      "title": "Handle the top control",
+      "where": "instrument",
+      "body": "Follow the demonstrator's finger at the mode-dial and power-switch area. Lever motion is illustrative; the exact OFF/ON transition and selected mode cannot be read.",
+      "parts": [
+        "Power_switch",
+        "Mode_dial"
+      ],
+      "view": {
+        "pos": [
+          0.083,
+          0.221,
+          -0.102
+        ],
+        "target": [
+          0.045,
+          0.025,
+          0
+        ]
+      },
+      "state": {
+        "demo": 0.782
+      },
+      "media": {
+        "fileId": "media/step-09.jpg",
+        "alt": "Video frame at about 46–50 s"
+      }
+    },
+    {
+      "id": "battery-card-and-monitor-10",
+      "title": "Swing the monitor out",
+      "where": "instrument",
+      "body": "Pull the rear monitor away from the body on its side hinge. The model uses a generic symbol, not a decoded camera message.",
+      "parts": [
+        "LCD_panel"
+      ],
+      "view": {
+        "pos": [
+          0.108,
+          0.047,
+          -0.23
+        ],
+        "target": [
+          0.04,
+          -0.01,
+          -0.03
+        ]
+      },
+      "state": {
+        "demo": 0.833
+      },
+      "media": {
+        "fileId": "media/step-10.jpg",
+        "alt": "Video frame at about 50–52 s"
+      }
+    },
+    {
+      "id": "battery-card-and-monitor-11",
+      "title": "Swivel and fold the monitor",
+      "where": "instrument",
+      "body": "Rotate the extended monitor, then return it against the back of the body with its display facing outward. Angles and timing are approximate; do not force the physical hinge.",
+      "parts": [
+        "LCD_panel"
+      ],
+      "view": {
+        "pos": [
+          0.108,
+          0.047,
+          -0.23
+        ],
+        "target": [
+          0.04,
+          -0.01,
+          -0.03
+        ]
+      },
+      "state": {
+        "demo": 0.949
+      },
+      "media": {
+        "fileId": "media/step-11.jpg",
+        "alt": "Video frame at about 52–56 s"
+      },
+      "caution": "Do not force the physical hinge; angles and timing are approximate."
+    },
+    {
+      "id": "battery-card-and-monitor-12",
+      "title": "Final control demonstration",
+      "where": "instrument",
+      "body": "Follow the final movement near the top-left control area. The final switch position is obscured.",
+      "parts": [
+        "Power_switch"
+      ],
+      "view": {
+        "pos": [
+          0.083,
+          0.221,
+          -0.102
+        ],
+        "target": [
+          0.045,
+          0.025,
+          0
+        ]
+      },
+      "state": {
+        "demo": 1.0
+      },
+      "media": {
+        "fileId": "media/step-12.jpg",
+        "alt": "Video frame at about 56–60.74 s"
+      }
+    }
+  ]
+}

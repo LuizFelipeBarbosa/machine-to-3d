@@ -1,0 +1,172 @@
+{
+  "formatVersion": 1,
+  "rootNode": "Probable_Canon_EOS_60D",
+  "parts": [
+    {
+      "name": "Body_shell",
+      "label": "Camera body",
+      "blurb": "Main camera body shell."
+    },
+    {
+      "name": "Unidentified_zoom_lens",
+      "label": "Zoom lens (model unresolved), cap attached",
+      "blurb": "Attached zoom lens; model unresolved."
+    },
+    {
+      "name": "Battery_door",
+      "label": "Battery door",
+      "blurb": "Underside battery compartment cover."
+    },
+    {
+      "name": "Battery_door_latch",
+      "label": "Battery door latch",
+      "blurb": "Latch that releases the battery door."
+    },
+    {
+      "name": "Battery_retaining_tab",
+      "label": "Battery retaining tab",
+      "blurb": "Tab retaining the battery in the grip."
+    },
+    {
+      "name": "Battery_pack",
+      "label": "Battery pack (LP-E6 compatible if the identity is right)",
+      "blurb": "Illustrative removable battery pack."
+    },
+    {
+      "name": "Card_door",
+      "label": "Memory-card cover",
+      "blurb": "Grip-side memory-card compartment cover."
+    },
+    {
+      "name": "SD_card",
+      "label": "SD card",
+      "blurb": "Illustrative removable SD card."
+    },
+    {
+      "name": "Power_switch",
+      "label": "Power switch",
+      "blurb": "Top control near the mode dial."
+    },
+    {
+      "name": "Mode_dial",
+      "label": "Mode dial",
+      "blurb": "Top-mounted shooting mode dial."
+    },
+    {
+      "name": "LCD_panel",
+      "label": "Articulated rear monitor",
+      "blurb": "Rear monitor on an articulated hinge."
+    },
+    {
+      "name": "Top_LCD_surface",
+      "label": "Top LCD",
+      "blurb": "Top status display surface."
+    },
+    {
+      "name": "Shutter_button",
+      "label": "Shutter button",
+      "blurb": "Top shutter-release control."
+    },
+    {
+      "name": "Access_lamp_indicator",
+      "label": "Access lamp",
+      "blurb": "Illustrative access indicator."
+    }
+  ],
+  "presetViews": [
+    {
+      "name": "front",
+      "label": "Front",
+      "view": {
+        "pos": [
+          0.19,
+          0.105,
+          0.26
+        ],
+        "target": [
+          0,
+          0,
+          0.025
+        ]
+      }
+    },
+    {
+      "name": "rear",
+      "label": "Rear",
+      "view": {
+        "pos": [
+          0.115,
+          0.062,
+          -0.26
+        ],
+        "target": [
+          0.035,
+          -0.005,
+          -0.025
+        ]
+      }
+    },
+    {
+      "name": "bottom",
+      "label": "Underside",
+      "view": {
+        "pos": [
+          -0.14,
+          -0.22,
+          -0.17
+        ],
+        "target": [
+          -0.035,
+          -0.04,
+          0
+        ]
+      }
+    },
+    {
+      "name": "card",
+      "label": "Card side",
+      "view": {
+        "pos": [
+          -0.25,
+          0.055,
+          -0.14
+        ],
+        "target": [
+          -0.06,
+          -0.005,
+          -0.01
+        ]
+      }
+    },
+    {
+      "name": "top",
+      "label": "Top",
+      "view": {
+        "pos": [
+          0.07,
+          0.255,
+          -0.12
+        ],
+        "target": [
+          0.025,
+          0.025,
+          0
+        ]
+      }
+    }
+  ],
+  "stateVars": [
+    {
+      "name": "demo",
+      "label": "Demonstration progress",
+      "kind": "fraction",
+      "userToggle": true,
+      "effects": [
+        {
+          "type": "clip",
+          "clip": "Demonstrated_sequence_78s"
+        }
+      ]
+    }
+  ]
+}
