@@ -1,7 +1,7 @@
-import { useId, useState } from 'react';
+import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useMutation } from 'convex/react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { errorMessage } from '../lib/errorMessage';
@@ -22,10 +22,13 @@ type ProcedurePickerProps = {
   onSelect(slug: string): void;
 };
 
-function NewProcedureForm({ machineId, machineSlug }: { machineId: Id<'machines'>; machineSlug: string }) {
+function NewProcedureForm({ machineId, machineSlug, onCancel }: {
+  machineId: Id<'machines'>;
+  machineSlug: string;
+  onCancel(): void;
+}) {
   const create = useMutation(api.procedures.create);
   const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
   const [slug, setSlug] = useState('');
   const [title, setTitle] = useState('');
   const [pending, setPending] = useState(false);
@@ -46,9 +49,8 @@ function NewProcedureForm({ machineId, machineSlug }: { machineId: Id<'machines'
     }
   }
 
-  if (!open) return <button type="button" className="btn" onClick={() => setOpen(true)}>New procedure</button>;
   return (
-    <form className="editor-fields" onSubmit={(event) => void submit(event)}>
+    <form className="editor-fields new-procedure" onSubmit={(event) => void submit(event)}>
       <label className="editor-field">Slug
         <input required pattern="[a-z0-9-]+" title="Use lowercase letters, numbers, and hyphens"
           value={slug} disabled={pending} onChange={(event) => setSlug(event.target.value)} />
@@ -60,7 +62,7 @@ function NewProcedureForm({ machineId, machineSlug }: { machineId: Id<'machines'
         <button type="submit" className="btn primary" disabled={pending || !title.trim()}>
           {pending ? 'Creating…' : 'Create procedure'}
         </button>
-        <button type="button" className="btn" disabled={pending} onClick={() => setOpen(false)}>Cancel</button>
+        <button type="button" className="btn" disabled={pending} onClick={onCancel}>Cancel</button>
       </div>
       {error && <p className="notice error" role="alert">{error}</p>}
     </form>
@@ -68,29 +70,52 @@ function NewProcedureForm({ machineId, machineSlug }: { machineId: Id<'machines'
 }
 
 export function ProcedurePicker({ machineSlug, authorMachineId, procedures, selected, onSelect }: ProcedurePickerProps) {
-  const id = useId();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const machinePath = `/m/${encodeURIComponent(machineSlug)}`;
+  const formOpen = !selected && searchParams.get('new') === '1';
+
+  function setFormOpen(open: boolean) {
+    const params = new URLSearchParams(searchParams);
+    if (open) params.set('new', '1');
+    else params.delete('new');
+    void setSearchParams(params);
+  }
 
   return (
-    <div className="panel-head procedure-picker">
-      <label htmlFor={id}>Procedure</label>
-      <select id={id} value={selected ?? ''} onChange={(event) => onSelect(event.target.value)}>
-        <option value="">Explore the machine</option>
-        {selected && !procedures.some((procedure) => procedure.slug === selected) && (
-          <option value={selected}>{selected}</option>
+    <>
+      <div className="panel-head procedure-picker">
+        <select aria-label="Procedure" value={selected ?? ''} onChange={(event) => onSelect(event.target.value)}>
+          <option value="">Explore the machine</option>
+          {selected && !procedures.some((procedure) => procedure.slug === selected) && (
+            <option value={selected}>{selected}</option>
+          )}
+          {procedures.map((procedure) => (
+            <option key={procedure.slug} value={procedure.slug}>
+              {procedure.title}{procedure.minutes !== undefined && ` · ${procedure.minutes} min`}
+            </option>
+          ))}
+        </select>
+        {(selected || authorMachineId) && (
+          <div className="picker-actions">
+            {selected && <button type="button" onClick={() => onSelect('')}>Explore the machine</button>}
+            {authorMachineId && <>
+              {selected && <>
+                <span aria-hidden="true">·</span>
+                <Link to={`${machinePath}/${encodeURIComponent(selected)}/edit`}>Edit procedure</Link>
+                <span aria-hidden="true">·</span>
+              </>}
+              {selected ? (
+                <Link to={`${machinePath}?new=1`}>New procedure</Link>
+              ) : (
+                <button type="button" onClick={() => setFormOpen(true)}>New procedure</button>
+              )}
+            </>}
+          </div>
         )}
-        {procedures.map((procedure) => (
-          <option key={procedure.slug} value={procedure.slug}>
-            {procedure.title}{procedure.minutes !== undefined && ` · ${procedure.minutes} min`}
-          </option>
-        ))}
-      </select>
-      {selected && <button type="button" className="btn" onClick={() => onSelect('')}>Back to the machine</button>}
-      {authorMachineId && (
-        <div className="version-actions">
-          {selected && <Link to={`/m/${encodeURIComponent(machineSlug)}/${encodeURIComponent(selected)}/edit`}>Edit</Link>}
-          <NewProcedureForm machineId={authorMachineId} machineSlug={machineSlug} />
-        </div>
+      </div>
+      {authorMachineId && formOpen && (
+        <NewProcedureForm machineId={authorMachineId} machineSlug={machineSlug} onCancel={() => setFormOpen(false)} />
       )}
-    </div>
+    </>
   );
 }

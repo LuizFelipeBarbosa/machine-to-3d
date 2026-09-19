@@ -206,11 +206,17 @@ export function PlayerPanel({
         <PartInspector part={inspectedPart} steps={steps} onGo={go} onClose={() => setInspected(null)} />,
         viewport.inspector,
       )}
-      <div className="panel-head">
-        <h2>{content.title}</h2>
+      <div className="panel-head procedure-info">
         {preview && <p className="draft" role="status">Draft preview — not recorded</p>}
-        <p className="panel-summary">{`${content.summary} ${steps.length} steps, about ${content.minutes} minutes.`}</p>
-        {procedure.placeholder && <p className="draft">Example content for this prototype. Swap in your lab's approved SOP before training anyone with it.</p>}
+        <p className="procedure-meta">
+          {`${steps.length} steps · about ${content.minutes} min`}
+          {procedure.placeholder && <> <span className="tag tag-caution">Placeholder content</span></>}
+        </p>
+        <details className="procedure-about">
+          <summary>About this procedure</summary>
+          <p>{content.summary}</p>
+          {procedure.placeholder && <p>Example content for this prototype. Swap in your lab's approved SOP before training anyone with it.</p>}
+        </details>
       </div>
       {index >= steps.length ? (
         <div className="steps">
@@ -232,6 +238,10 @@ export function PlayerPanel({
           onOpenProcedure={openProcedure}
         />
       )}
+      <div className="progress" role="progressbar" aria-label="Procedure progress"
+        aria-valuemin={0} aria-valuemax={steps.length} aria-valuenow={index}>
+        <div className="progress-fill" style={{ width: `${steps.length > 0 ? index / steps.length * 100 : 100}%` }} />
+      </div>
       <PlayerFooter index={index} stepCount={steps.length} nextDisabled={nextDisabled} onBack={back} onNext={next} />
       <p className="sr" aria-live="polite">{announcement}</p>
     </>

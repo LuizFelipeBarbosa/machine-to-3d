@@ -28,7 +28,7 @@ export function StepBody({ step, checked, onChecked, linkTargets, mediaUrls, onO
 
   return (
     <div className="step-body">
-      <p>{step.body}</p>
+      <p className="step-instructions">{step.body}</p>
       {step.caution && (
         <div className="caution">
           <strong>Where this goes wrong</strong>

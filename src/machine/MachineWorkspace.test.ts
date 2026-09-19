@@ -147,7 +147,7 @@ describe('machine workspace', () => {
     expect(sceneProps.highlightedParts).toEqual(['xy']);
     expect(sceneProps.definition).toBe(initialDefinition);
     scene.goToView.mockClear();
-    fireEvent.click(screen.getByRole('button', { name: 'Back to the machine' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Explore the machine' }));
     expect(window.location.pathname).toBe('/m/machine');
     expect(sceneProps.state.lift).toBe(true);
     expect(sceneProps.highlightedParts).toEqual([]);
@@ -240,7 +240,7 @@ describe('machine workspace', () => {
     selectProcedure('second');
     await screen.findByText('Linked target');
     await act(async () => finishLoad(first));
-    expect(screen.getByRole('heading', { name: 'Second procedure' })).toBeTruthy();
+    expect(screen.getByRole('option', { name: 'Second procedure · 2 min' })).toBeTruthy();
     expect((screen.getByRole('combobox', { name: 'Procedure' }) as HTMLSelectElement).value).toBe('second');
     selectProcedure('first');
     expect(screen.queryByText('Loading procedure…')).toBeNull();
@@ -254,7 +254,7 @@ describe('machine workspace', () => {
     expect((await screen.findByRole('alert')).textContent).toContain('Unable to load procedure: Unavailable');
     const canvas = view.container.querySelector('canvas');
     selectProcedure('second');
-    await screen.findByRole('heading', { name: 'Second procedure' });
+    await screen.findByText('Linked target');
     expect(view.container.querySelector('canvas')).toBe(canvas);
     expect(scene.mounts).toBe(1);
   });

@@ -97,9 +97,9 @@ afterEach(() => {
 describe('Convex workspace', () => {
   it('records approved completion with checkpoints and displays media and the Recorded notice', async () => {
     app();
-    await screen.findByRole('heading', { name: 'Approved procedure' });
+    await screen.findByRole('checkbox', { name: /Setup is ready/ });
     expect(screen.getByRole('img', { name: 'Setup image' }).getAttribute('src')).toBe('/approved.png');
-    expect(screen.getByRole('link', { name: 'Edit' }).getAttribute('href')).toBe('/m/machine/procedure/edit');
+    expect(screen.getByRole('link', { name: 'Edit procedure' }).getAttribute('href')).toBe('/m/machine/procedure/edit');
     fireEvent.click(screen.getByRole('checkbox', { name: /Setup is ready/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Finish procedure' }));
     await screen.findByText('Recorded');
@@ -121,7 +121,7 @@ describe('Convex workspace', () => {
     expect(screen.getByRole('heading', { name: 'Procedure complete' })).toBeTruthy();
     expect(backend.complete).not.toHaveBeenCalled();
     expect(usePlayerStore.getState().progress['machine/procedure']).toEqual(saved);
-    fireEvent.click(screen.getByRole('button', { name: 'Back to the machine' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Explore the machine' }));
     expect(window.location.pathname + window.location.search).toBe('/m/machine');
   });
 
@@ -130,14 +130,22 @@ describe('Convex workspace', () => {
     app('/m/machine/procedure?version=draft');
     await screen.findByText('Not authorized');
     expect(backend.query).not.toHaveBeenCalledWith('procedures:getVersion', expect.anything());
-    expect(screen.queryByRole('link', { name: 'Edit' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Edit procedure' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'New procedure' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'New procedure' })).toBeNull();
     expect(backend.complete).not.toHaveBeenCalled();
   });
 
   it('preserves unpublished author procedures and creates a procedure before opening its editor', async () => {
-    app('/m/machine');
-    await screen.findByRole('button', { name: 'New procedure' });
+    app('/m/machine/procedure');
+    const newProcedure = await screen.findByRole('link', { name: 'New procedure' });
+    expect(screen.queryByLabelText('Slug')).toBeNull();
+    fireEvent.click(newProcedure);
+    expect(window.location.pathname).toBe('/m/machine');
+    expect(screen.getByRole('complementary', { name: 'Explore' })).toBeTruthy();
+    expect(screen.getByLabelText('Slug')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByLabelText('Slug')).toBeNull();
     expect(screen.getByRole('option', { name: 'Unpublished procedure' })).toBeTruthy();
     expect((screen.getByRole('button', { name: 'Unpublished procedure' }) as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getAllByText('Draft')).toHaveLength(2);

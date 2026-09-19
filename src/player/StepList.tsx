@@ -29,24 +29,26 @@ export function StepList({ steps, progress, currentRowRef, linkTargets, mediaUrl
         const className = ['step', current && 'is-current', done && 'is-done'].filter(Boolean).join(' ');
         return (
           <li key={step.id} className={className} aria-current={current ? 'step' : undefined} ref={current ? currentRowRef : undefined}>
-            <button type="button" className="step-head" onClick={() => onGo(index)}>
-              <span className="num">{index + 1}</span>
-              <span>
-                <span className="step-title">{step.title}</span>
-                <span className="step-where">{locationLabels[step.where]}</span>
-              </span>
-              <span className="step-flag">{done ? 'Done' : step.check ? 'Checkpoint' : ''}</span>
-            </button>
-            {current && (
-              <StepBody
-                step={step}
-                checked={progress.checked.includes(step.id)}
-                onChecked={(checked) => onChecked(step.id, checked)}
-                linkTargets={linkTargets}
-                mediaUrls={mediaUrls}
-                onOpenProcedure={onOpenProcedure}
-              />
-            )}
+            <div className="step-card">
+              <button type="button" className="step-head" onClick={() => onGo(index)}>
+                <span className="num">{index + 1}</span>
+                <span>
+                  <span className="step-title">{step.title}</span>
+                  {current && <span className="step-where">{locationLabels[step.where]}</span>}
+                </span>
+                <span className="step-flag">{done ? 'Done' : step.check ? 'Checkpoint' : ''}</span>
+              </button>
+              {current && (
+                <StepBody
+                  step={step}
+                  checked={progress.checked.includes(step.id)}
+                  onChecked={(checked) => onChecked(step.id, checked)}
+                  linkTargets={linkTargets}
+                  mediaUrls={mediaUrls}
+                  onOpenProcedure={onOpenProcedure}
+                />
+              )}
+            </div>
           </li>
         );
       })}
