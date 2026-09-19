@@ -9,6 +9,7 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run",
+    "convex": "convex dev",
     "typecheck": "tsc -b --noEmit"
   },
   "dependencies": {
