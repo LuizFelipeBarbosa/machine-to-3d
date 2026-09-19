@@ -47,7 +47,7 @@ class SceneErrorBoundary extends Component<{ children: ReactNode }, { failed: bo
 
 export const MachineScene = forwardRef<MachineSceneHandle, MachineSceneProps>(function MachineScene(props, ref) {
   return (
-    <div className={`machine-scene ${props.className ?? ''}`} style={{ position: 'relative' }}>
+    <div className={`machine-scene ${props.className ?? ''}`}>
       <SceneErrorBoundary key={props.modelUrl}>
         <Canvas
           shadows

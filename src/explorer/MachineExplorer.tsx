@@ -46,7 +46,6 @@ export function MachineExplorer({ machine, procedures, canEdit = false, procedur
         <MachineScene
           key={sceneKey}
           ref={scene}
-          className="app-root"
           modelUrl={machine.modelUrl}
           definition={definition}
           state={state}
