@@ -7,6 +7,7 @@ import {
   getLatestVersion,
   parseContent,
   parseDefinition,
+  publishMachineVersion,
 } from './lib/content';
 import { machineDefinitionValidator } from './lib/validators';
 
@@ -148,27 +149,6 @@ export const publishVersion = mutation({
   }),
   handler: async (ctx, { slug, name, kind, modelFileId, definition: rawDefinition }) => {
     await requireRole(ctx, 'admin');
-    const definition = parseDefinition(rawDefinition);
-    const machine = await ctx.db
-      .query('machines')
-      .withIndex('by_slug', (q) => q.eq('slug', slug))
-      .unique();
-    const machineId = machine === null
-      ? await ctx.db.insert('machines', { slug, name, kind })
-      : machine._id;
-    const latest = await ctx.db
-      .query('machineVersions')
-      .withIndex('by_machine', (q) => q.eq('machineId', machineId))
-      .order('desc')
-      .first();
-    const version = (latest?.version ?? 0) + 1;
-    const machineVersionId = await ctx.db.insert('machineVersions', {
-      machineId,
-      version,
-      modelFileId,
-      definition,
-    });
-    await ctx.db.patch(machineId, { name, kind, currentVersionId: machineVersionId });
-    return { machineId, machineVersionId, version };
+    return publishMachineVersion(ctx, { slug, name, kind, modelFileId, definition: rawDefinition });
   },
 });

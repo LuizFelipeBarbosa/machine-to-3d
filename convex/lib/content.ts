@@ -5,7 +5,7 @@ import type { MachineDefinition } from '../../shared/machine';
 import { ProcedureContentSchema } from '../../shared/procedure';
 import type { ProcedureContent } from '../../shared/procedure';
 import type { Doc, Id } from '../_generated/dataModel';
-import type { QueryCtx } from '../_generated/server';
+import type { MutationCtx, QueryCtx } from '../_generated/server';
 
 function firstIssue(error: ZodError): string {
   const issue = error.issues[0];
@@ -134,4 +134,38 @@ export function emptyProcedureContent(
       view: definition.presetViews[0]?.view ?? { pos: [0, 0, 10], target: [0, 0, 0] },
     }],
   };
+}
+
+export async function publishMachineVersion(
+  ctx: MutationCtx,
+  { slug, name, kind, modelFileId, definition: rawDefinition }: {
+    slug: string;
+    name: string;
+    kind: string;
+    modelFileId: Id<'_storage'>;
+    definition: unknown;
+  },
+) {
+  const definition = parseDefinition(rawDefinition);
+  const machine = await ctx.db
+    .query('machines')
+    .withIndex('by_slug', (q) => q.eq('slug', slug))
+    .unique();
+  const machineId = machine === null
+    ? await ctx.db.insert('machines', { slug, name, kind })
+    : machine._id;
+  const latest = await ctx.db
+    .query('machineVersions')
+    .withIndex('by_machine', (q) => q.eq('machineId', machineId))
+    .order('desc')
+    .first();
+  const version = (latest?.version ?? 0) + 1;
+  const machineVersionId = await ctx.db.insert('machineVersions', {
+    machineId,
+    version,
+    modelFileId,
+    definition,
+  });
+  await ctx.db.patch(machineId, { name, kind, currentVersionId: machineVersionId });
+  return { machineId, machineVersionId, version };
 }
