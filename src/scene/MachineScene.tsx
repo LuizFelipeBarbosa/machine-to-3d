@@ -8,6 +8,7 @@ import type { MachineDefinition, MachineState, View } from '../../shared/machine
 import { MachineModel } from './MachineModel';
 import { Callouts } from './Callouts';
 import type { ModelIndex } from './modelIndex';
+import { prefersReducedMotion } from './reducedMotion';
 
 export type MachineSceneHandle = {
   goToView(view: View, options?: { instant?: boolean }): void;
@@ -73,7 +74,7 @@ function applyView(controls: CameraControlsImpl, view: View, aspect: number, ins
   const stretch = aspect < 1.25 ? Math.min(1.25 / Math.max(aspect, 0.001), 1.9) : 1;
   const target = new THREE.Vector3(...view.target);
   const position = new THREE.Vector3(...view.pos).sub(target).multiplyScalar(stretch).add(target);
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reducedMotion = prefersReducedMotion();
   void controls.setLookAt(position.x, position.y, position.z, ...view.target, !instant && !reducedMotion);
 }
 

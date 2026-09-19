@@ -7,16 +7,16 @@ export function MachineList() {
   const { data: machines, error, loading } = useAsync(() => catalog.listMachines(), [catalog]);
 
   return (
-    <main className="panel">
+    <main className="panel data-page">
       <header className="panel-head">
         <h1>Bench guide</h1>
       </header>
-      <div className="panel-head">
-        {loading && <p role="status">Loading machines…</p>}
-        {error && <p role="alert">Unable to load machines: {error.message}</p>}
-        {machines?.length === 0 && <p>No machines yet</p>}
+      {loading && <p className="notice" role="status">Loading machines…</p>}
+      {error && <p className="notice error" role="alert">Unable to load machines: {error.message}</p>}
+      {machines?.length === 0 && <p className="notice">No machines yet</p>}
+      <div className="machine-grid">
         {machines?.map((machine) => (
-          <section key={machine.slug}>
+          <section className="machine-card" key={machine.slug}>
             <h2><Link to={`/m/${encodeURIComponent(machine.slug)}`}>{machine.name}</Link></h2>
             <p>{machine.kind}</p>
             {machine.procedures.length === 0 ? (

@@ -7,6 +7,7 @@ import { PartInspector } from './PartInspector';
 import { PlayerFooter } from './PlayerFooter';
 import { StepList } from './StepList';
 import { usePlayerStore } from './playerStore';
+import type { Progress } from './playerStore';
 import { useEffectiveState } from './useEffectiveState';
 
 export type PlayerViewProps = {
@@ -15,6 +16,8 @@ export type PlayerViewProps = {
   linkTargets: Record<string, string[]>;
   onOpenProcedure(procedureSlug: string, stepId?: string): void;
   initialStepId?: string;
+  mediaUrls?: Record<string, string>;
+  preview?: boolean;
   onComplete?(checkpoints: { stepId: string; at: number }[]): void;
 };
 
@@ -22,7 +25,7 @@ function isTextControl(target: EventTarget | null): boolean {
   return target instanceof Element && /^(INPUT|SELECT|TEXTAREA)$/.test(target.tagName);
 }
 
-export function PlayerView({ machine, procedure, linkTargets, onOpenProcedure, initialStepId, onComplete }: PlayerViewProps): JSX.Element {
+export function PlayerView({ machine, procedure, linkTargets, onOpenProcedure, initialStepId, onComplete, mediaUrls, preview = false }: PlayerViewProps): JSX.Element {
   const { content } = procedure;
   const { steps } = content;
   const progressKey = `${machine.slug}/${procedure.slug}`;
@@ -30,12 +33,14 @@ export function PlayerView({ machine, procedure, linkTargets, onOpenProcedure, i
   const savedProgress = usePlayerStore((store) => store.progress[progressKey]);
   const [initialIndex] = useState(() => {
     const requestedIndex = steps.findIndex((step) => step.id === initialStepId);
-    const index = requestedIndex >= 0 ? requestedIndex : usePlayerStore.getState().get(progressKey).cur;
+    const index = requestedIndex >= 0 ? requestedIndex : preview ? 0 : usePlayerStore.getState().get(progressKey).cur;
     return Math.max(0, Math.min(index, steps.length));
   });
   const [initialized, setInitialized] = useState(false);
-  const index = initialized ? Math.max(0, Math.min(savedProgress?.cur ?? 0, steps.length)) : initialIndex;
-  const progress = { cur: index, done: savedProgress?.done ?? [], checked: savedProgress?.checked ?? [] };
+  const [previewProgress, setPreviewProgress] = useState<Progress>({ cur: initialIndex, done: [], checked: [] });
+  const progressState = preview ? previewProgress : savedProgress;
+  const index = initialized ? Math.max(0, Math.min(progressState?.cur ?? 0, steps.length)) : initialIndex;
+  const progress = { cur: index, done: progressState?.done ?? [], checked: progressState?.checked ?? [] };
   const currentStep = steps[index];
   const sceneStep = steps[Math.min(index, steps.length - 1)];
   const { state, setToggle } = useEffectiveState(content, index);
@@ -55,16 +60,16 @@ export function PlayerView({ machine, procedure, linkTargets, onOpenProcedure, i
   const announcement = currentStep ? `Step ${index + 1} of ${steps.length}: ${currentStep.title}` : 'Procedure complete';
 
   useEffect(() => {
-    usePlayerStore.getState().go(progressKey, initialIndex, steps.length);
+    if (!preview) usePlayerStore.getState().go(progressKey, initialIndex, steps.length);
     setInitialized(true);
-  }, [progressKey, initialIndex, steps.length]);
+  }, [preview, progressKey, initialIndex, steps.length]);
 
   useEffect(() => {
-    if (index < steps.length || completionReported.current) return;
+    if (preview || index < steps.length || completionReported.current) return;
     completionReported.current = true;
     const at = Date.now();
     onComplete?.((savedProgress?.checked ?? []).map((stepId) => ({ stepId, at })));
-  }, [index, steps.length, savedProgress?.checked, onComplete]);
+  }, [preview, index, steps.length, savedProgress?.checked, onComplete]);
 
   const syncStepView = useCallback((instant = false) => {
     if (sceneStep) scene.current?.goToView(sceneStep.view, { instant });
@@ -83,8 +88,12 @@ export function PlayerView({ machine, procedure, linkTargets, onOpenProcedure, i
 
   const go = useCallback((nextIndex: number) => {
     setInspected(null);
-    usePlayerStore.getState().go(progressKey, nextIndex, steps.length);
-  }, [progressKey, steps.length]);
+    if (preview) {
+      setPreviewProgress((progress) => ({ ...progress, cur: Math.max(0, Math.min(nextIndex, steps.length)) }));
+    } else {
+      usePlayerStore.getState().go(progressKey, nextIndex, steps.length);
+    }
+  }, [preview, progressKey, steps.length]);
 
   const back = useCallback(() => {
     if (index > 0) go(index - 1);
@@ -93,8 +102,16 @@ export function PlayerView({ machine, procedure, linkTargets, onOpenProcedure, i
   const next = useCallback(() => {
     if (nextDisabled || !currentStep) return;
     setInspected(null);
-    usePlayerStore.getState().markDoneAndAdvance(progressKey, currentStep.id, steps.length);
-  }, [currentStep, nextDisabled, progressKey, steps.length]);
+    if (preview) {
+      setPreviewProgress((progress) => ({
+        ...progress,
+        cur: Math.min(progress.cur + 1, steps.length),
+        done: progress.done.includes(currentStep.id) ? progress.done : [...progress.done, currentStep.id],
+      }));
+    } else {
+      usePlayerStore.getState().markDoneAndAdvance(progressKey, currentStep.id, steps.length);
+    }
+  }, [preview, currentStep, nextDisabled, progressKey, steps.length]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent): void {
@@ -114,8 +131,20 @@ export function PlayerView({ machine, procedure, linkTargets, onOpenProcedure, i
 
   function restart(): void {
     completionReported.current = false;
-    usePlayerStore.getState().restart(progressKey);
+    if (preview) setPreviewProgress({ cur: 0, done: [], checked: [] });
+    else usePlayerStore.getState().restart(progressKey);
     go(0);
+  }
+
+  function setChecked(stepId: string, checked: boolean): void {
+    if (preview) {
+      setPreviewProgress((progress) => ({
+        ...progress,
+        checked: checked ? [...new Set([...progress.checked, stepId])] : progress.checked.filter((id) => id !== stepId),
+      }));
+    } else {
+      usePlayerStore.getState().setChecked(progressKey, stepId, checked);
+    }
   }
 
   return (
@@ -123,7 +152,6 @@ export function PlayerView({ machine, procedure, linkTargets, onOpenProcedure, i
       <section className="viewport" aria-label="3D view of the instrument">
         <MachineScene
           ref={scene}
-          className="app-root"
           modelUrl={machine.modelUrl}
           definition={machine.definition}
           state={state}
@@ -150,6 +178,7 @@ export function PlayerView({ machine, procedure, linkTargets, onOpenProcedure, i
         <div className="panel-head">
           <label>Procedure</label>
           <h2>{content.title}</h2>
+          {preview && <p className="draft" role="status">Draft preview — not recorded</p>}
           <p className="panel-summary">{`${content.summary} ${steps.length} steps, about ${content.minutes} minutes.`}</p>
           {procedure.placeholder && <p className="draft">Example content for this prototype. Swap in your lab's approved SOP before training anyone with it.</p>}
         </div>
@@ -167,8 +196,9 @@ export function PlayerView({ machine, procedure, linkTargets, onOpenProcedure, i
             progress={progress}
             currentRowRef={currentRow}
             linkTargets={linkTargets}
+            mediaUrls={mediaUrls}
             onGo={go}
-            onChecked={(stepId, checked) => usePlayerStore.getState().setChecked(progressKey, stepId, checked)}
+            onChecked={setChecked}
             onOpenProcedure={onOpenProcedure}
           />
         )}

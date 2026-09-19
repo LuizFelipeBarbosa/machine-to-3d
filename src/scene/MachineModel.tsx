@@ -8,6 +8,7 @@ import type { MachineDefinition, MachineState } from '../../shared/machine';
 import { computePoses, easeValues } from './effects';
 import { indexModel, isHiddenByAncestor, partOf } from './modelIndex';
 import type { ModelIndex } from './modelIndex';
+import { prefersReducedMotion } from './reducedMotion';
 
 export type MachineModelProps = {
   url: string;
@@ -95,7 +96,7 @@ export function MachineModel({
   }, [index, onIndexed]);
 
   function updateModel(elapsedSeconds: number, dt: number): void {
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reducedMotion = prefersReducedMotion();
     values.current = instant || reducedMotion
       ? goalValues(definition, state)
       : easeValues(values.current, state, Math.min(dt, 0.1));
