@@ -39,6 +39,7 @@ export const list = query({
       const procedures = await ctx.db
         .query('procedures')
         .withIndex('by_machine', (q) => q.eq('machineId', machine._id))
+        .order('asc')
         .collect();
       const summaries = [];
       for (const procedure of procedures) {

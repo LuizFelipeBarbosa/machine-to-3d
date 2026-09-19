@@ -129,6 +129,17 @@ describe('machines.publishVersion', () => {
 });
 
 describe('machines.list', () => {
+  test('returns procedures in creation order rather than title order', async () => {
+    const { admin, author, publishArgs } = await setup();
+    const { machineId } = await admin.mutation(api.machines.publishVersion, publishArgs);
+    await author.mutation(api.procedures.create, { machineId, slug: 'zulu', title: 'Zulu' });
+    await author.mutation(api.procedures.create, { machineId, slug: 'alpha', title: 'Alpha' });
+
+    const listed = await author.query(api.machines.list, {});
+    expect(listed.find((machine) => machine._id === machineId)?.procedures.map((procedure) => procedure.title))
+      .toEqual(['Zulu', 'Alpha']);
+  });
+
   test('hides unpublished procedures and draft flags from trainees, and uses approved summaries', async () => {
     const { t, admin, author, trainee, publishArgs } = await setup();
     const { machineId } = await admin.mutation(api.machines.publishVersion, publishArgs);

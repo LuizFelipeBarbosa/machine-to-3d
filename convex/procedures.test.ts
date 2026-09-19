@@ -540,10 +540,19 @@ describe('editor queries and media', () => {
     expect(await author.query(api.procedures.getVersion, { versionId: draftId }))
       .toMatchObject({ linkTargets: { procedure: ['draft-step'], target: ['step-1'] } });
     expect(await author.query(api.procedures.listForMachine, { machineId })).toEqual([
+      { _id: procedureId, slug: 'procedure', title: 'Working title', hasDraft: true, hasApproved: true },
       { _id: target.procedureId, slug: 'target', title: 'Target', hasDraft: false, hasApproved: true },
       { _id: expect.any(String), slug: 'unpublished', title: 'Unpublished', hasDraft: true, hasApproved: false },
-      { _id: procedureId, slug: 'procedure', title: 'Working title', hasDraft: true, hasApproved: true },
     ]);
+  });
+
+  test('lists procedures in creation order rather than title order', async () => {
+    const { author, machineId } = await setup();
+    await author.mutation(api.procedures.create, { machineId, slug: 'zulu', title: 'Zulu' });
+    await author.mutation(api.procedures.create, { machineId, slug: 'alpha', title: 'Alpha' });
+
+    const listed = await author.query(api.procedures.listForMachine, { machineId });
+    expect(listed.map((procedure) => procedure.title)).toEqual(['Procedure', 'Zulu', 'Alpha']);
   });
 
   test('resolves draft and approved media while tolerating URL and missing-file references', async () => {

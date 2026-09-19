@@ -139,7 +139,8 @@ export const listForMachine = query({
     await requireRole(ctx, 'author');
     await requireMachine(ctx, machineId);
     const procedures = await ctx.db.query('procedures')
-      .withIndex('by_machine', (q) => q.eq('machineId', machineId)).collect();
+      .withIndex('by_machine', (q) => q.eq('machineId', machineId))
+      .order('asc').collect();
     const summaries = [];
     for (const procedure of procedures) {
       const draft = await getDraft(ctx, procedure._id);
@@ -153,7 +154,7 @@ export const listForMachine = query({
         hasApproved: approved !== null,
       });
     }
-    return summaries.sort((a, b) => a.title.localeCompare(b.title));
+    return summaries;
   },
 });
 
