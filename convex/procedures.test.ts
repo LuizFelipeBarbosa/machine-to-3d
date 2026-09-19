@@ -223,7 +223,7 @@ describe('procedure version lifecycle', () => {
 
   test('rejects source versions from another procedure', async () => {
     const { t, author, approver, machineId, procedureId, versionId } = await setup();
-    await approver.mutation(api.procedures.approve, { versionId, changeNote: '' });
+    await approver.mutation(api.procedures.approve, { versionId, changeNote: 'Initial approval' });
     const other = await author.mutation(api.procedures.create, { machineId, slug: 'other', title: 'Other' });
     await expect(author.mutation(api.procedures.createDraft, { procedureId, fromVersionId: other.versionId }))
       .rejects.toMatchObject({ data: 'Source version belongs to another procedure' });
@@ -265,13 +265,58 @@ describe('procedure version lifecycle', () => {
       machineVersionId: current.machineVersionId, definition: nextDefinition, content,
       modelUrl: await t.run((ctx) => ctx.storage.getUrl(modelFileId)),
     });
-    await expect(approver.mutation(api.procedures.approve, { versionId: draftId, changeNote: '' }))
+    await expect(approver.mutation(api.procedures.approve, { versionId: draftId, changeNote: 'Updated machine' }))
       .rejects.toMatchObject({ data: expect.stringContaining('steps[0].parts[0]: Unknown part "sample".') });
     expect(await t.run((ctx) => ctx.db.get(versionId))).toMatchObject({ status: 'approved', machineVersionId });
   });
 });
 
 describe('procedure approval validation', () => {
+  test.each(['', ' \t\n '])('rejects a blank change note %j without changing state', async (changeNote) => {
+    const { t, author, approver, procedureId, versionId } = await setup();
+    await approver.mutation(api.procedures.approve, { versionId, changeNote: 'Initial approval' });
+    const draftId = await author.mutation(api.procedures.createDraft, { procedureId });
+    const before = await t.run(async (ctx) => ({
+      procedure: await ctx.db.get(procedureId),
+      versions: await ctx.db.query('procedureVersions').collect(),
+    }));
+
+    const approval = approver.mutation(api.procedures.approve, { versionId: draftId, changeNote });
+    await expect(approval).rejects.toBeInstanceOf(ConvexError);
+    await expect(approval).rejects.toMatchObject({ data: 'A change note is required' });
+    expect(await t.run(async (ctx) => ({
+      procedure: await ctx.db.get(procedureId),
+      versions: await ctx.db.query('procedureVersions').collect(),
+    }))).toEqual(before);
+  });
+
+  test('retires every prior approval for the procedure, including an unreferenced version', async () => {
+    const { t, author, approver, machineId, machineVersionId, procedureId, versionId } = await setup();
+    const other = await author.mutation(api.procedures.create, { machineId, slug: 'other', title: 'Other' });
+    await approver.mutation(api.procedures.approve, { versionId: other.versionId, changeNote: 'Other approval' });
+    const otherBefore = await t.run((ctx) => ctx.db.get(other.versionId));
+    const previousIds = await t.run(async (ctx) => {
+      const content = emptyProcedureContent('Previous revision', definition);
+      const firstId = await ctx.db.insert('procedureVersions', {
+        procedureId, machineVersionId, content, version: 1, status: 'approved',
+      });
+      const secondId = await ctx.db.insert('procedureVersions', {
+        procedureId, machineVersionId, content, version: 2, status: 'approved',
+      });
+      await ctx.db.patch(procedureId, { approvedVersionId: firstId });
+      await ctx.db.patch(versionId, { version: 3 });
+      return [firstId, secondId];
+    });
+
+    await approver.mutation(api.procedures.approve, { versionId, changeNote: 'New approval' });
+    for (const previousId of previousIds) {
+      expect(await t.run((ctx) => ctx.db.get(previousId))).toMatchObject({ status: 'retired' });
+    }
+    expect(await t.run((ctx) => ctx.db.get(versionId))).toMatchObject({ status: 'approved' });
+    expect(await t.run((ctx) => ctx.db.get(procedureId))).toMatchObject({ approvedVersionId: versionId });
+    expect(await t.run((ctx) => ctx.db.get(other.versionId))).toEqual(otherBefore);
+  });
+
   test('reports every reference issue and leaves the existing approval intact', async () => {
     const { t, author, approver, procedureId, versionId } = await setup();
     await approver.mutation(api.procedures.approve, { versionId, changeNote: 'Original' });
@@ -297,9 +342,9 @@ describe('procedure approval validation', () => {
     const content = emptyProcedureContent('Linked', definition);
     content.steps[0].link = { procedureSlug: 'target', stepId: 'step-1', label: 'Go' };
     await author.mutation(api.procedures.saveDraft, { versionId, content });
-    await expect(approver.mutation(api.procedures.approve, { versionId, changeNote: '' }))
+    await expect(approver.mutation(api.procedures.approve, { versionId, changeNote: 'Link to target' }))
       .rejects.toMatchObject({ data: expect.stringContaining('steps[0].link.procedureSlug:') });
-    await approver.mutation(api.procedures.approve, { versionId: target.versionId, changeNote: '' });
+    await approver.mutation(api.procedures.approve, { versionId: target.versionId, changeNote: 'Target ready' });
 
     const targetDraftId = await author.mutation(api.procedures.createDraft, { procedureId: target.procedureId });
     const targetContent = emptyProcedureContent('Unapproved target revision', definition);
@@ -307,12 +352,12 @@ describe('procedure approval validation', () => {
     await author.mutation(api.procedures.saveDraft, { versionId: targetDraftId, content: targetContent });
     content.steps[0].link.stepId = 'draft-step';
     await author.mutation(api.procedures.saveDraft, { versionId, content });
-    await expect(approver.mutation(api.procedures.approve, { versionId, changeNote: '' }))
+    await expect(approver.mutation(api.procedures.approve, { versionId, changeNote: 'Link to draft step' }))
       .rejects.toMatchObject({ data: expect.stringContaining('steps[0].link.stepId:') });
 
     content.steps[0].link.stepId = 'step-1';
     await author.mutation(api.procedures.saveDraft, { versionId, content });
-    await approver.mutation(api.procedures.approve, { versionId, changeNote: '' });
+    await approver.mutation(api.procedures.approve, { versionId, changeNote: 'Link to approved step' });
     expect(await trainee.query(api.procedures.getForPlay, {
       machineSlug: 'machine', procedureSlug: 'procedure',
     })).toMatchObject({ linkTargets: { procedure: ['step-1'], target: ['step-1'] } });
@@ -338,11 +383,11 @@ describe('procedure approval validation', () => {
     const target = await author.mutation(api.procedures.create, {
       machineId: otherMachine.machineId, slug: 'target', title: 'Target',
     });
-    await approver.mutation(api.procedures.approve, { versionId: target.versionId, changeNote: '' });
+    await approver.mutation(api.procedures.approve, { versionId: target.versionId, changeNote: 'Target ready' });
     const content = emptyProcedureContent('Cross-machine link', definition);
     content.steps[0].link = { procedureSlug: 'target', label: 'Go' };
     await author.mutation(api.procedures.saveDraft, { versionId, content });
-    await expect(approver.mutation(api.procedures.approve, { versionId, changeNote: '' }))
+    await expect(approver.mutation(api.procedures.approve, { versionId, changeNote: 'Cross-machine link' }))
       .rejects.toMatchObject({ data: expect.stringContaining('steps[0].link.procedureSlug:') });
   });
 });
@@ -355,7 +400,7 @@ describe('procedure queries and authorization', () => {
     expect(await author.query(api.procedures.getForPlay, args)).toBeNull();
     expect(await trainee.query(api.procedures.getForPlay, { ...args, machineSlug: 'missing' })).toBeNull();
     expect(await trainee.query(api.procedures.getForPlay, { ...args, procedureSlug: 'missing' })).toBeNull();
-    await approver.mutation(api.procedures.approve, { versionId, changeNote: '' });
+    await approver.mutation(api.procedures.approve, { versionId, changeNote: 'Initial approval' });
     const draftId = await author.mutation(api.procedures.createDraft, { procedureId });
     await author.mutation(api.procedures.saveDraft, {
       versionId: draftId, content: emptyProcedureContent('Private draft', definition),
@@ -365,7 +410,7 @@ describe('procedure queries and authorization', () => {
     // This assignment also checks that Zod parsing preserves tuple types in the API.
     const typedContent: ProcedureContent | undefined = approved?.content;
     expect(typedContent?.steps[0].view.pos).toEqual([1, 2, 3]);
-    await approver.mutation(api.procedures.approve, { versionId: draftId, changeNote: '' });
+    await approver.mutation(api.procedures.approve, { versionId: draftId, changeNote: 'Revised procedure' });
     expect(await trainee.query(api.procedures.getForPlay, args)).toMatchObject({ versionId: draftId, version: 2 });
   });
 

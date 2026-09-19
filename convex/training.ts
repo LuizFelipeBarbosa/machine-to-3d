@@ -1,4 +1,5 @@
 import { ConvexError, v } from 'convex/values';
+import type { Infer } from 'convex/values';
 import type { Doc } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
 import type { QueryCtx } from './_generated/server';
@@ -38,6 +39,17 @@ async function summarizeRecord(ctx: QueryCtx, record: Doc<'trainingRecords'>) {
   };
 }
 
+function normalizeCheckpoints(checkpoints: Infer<typeof checkpointValidator>[], completedAt: number) {
+  const seenStepIds = new Set<string>();
+  const normalized: Infer<typeof checkpointValidator>[] = [];
+  for (const checkpoint of checkpoints) {
+    if (seenStepIds.has(checkpoint.stepId)) continue;
+    seenStepIds.add(checkpoint.stepId);
+    normalized.push({ stepId: checkpoint.stepId, at: Math.min(checkpoint.at, completedAt) });
+  }
+  return normalized;
+}
+
 export const complete = mutation({
   args: {
     procedureVersionId: v.id('procedureVersions'),
@@ -50,8 +62,13 @@ export const complete = mutation({
     if (version.status !== 'approved') {
       throw new ConvexError('Only approved procedures are recorded');
     }
+    const completedAt = Date.now();
+    const selfAttestedCheckpoints = normalizeCheckpoints(checkpoints, completedAt);
+    if (selfAttestedCheckpoints.length > version.content.steps.length) {
+      throw new ConvexError('Too many checkpoints');
+    }
     const stepIds = new Set(version.content.steps.map((step) => step.id));
-    for (const checkpoint of checkpoints) {
+    for (const checkpoint of selfAttestedCheckpoints) {
       if (!stepIds.has(checkpoint.stepId)) {
         throw new ConvexError(`Unknown checkpoint step: ${checkpoint.stepId}`);
       }
@@ -59,8 +76,8 @@ export const complete = mutation({
     return ctx.db.insert('trainingRecords', {
       userId: user._id,
       procedureVersionId,
-      completedAt: Date.now(),
-      selfAttestedCheckpoints: checkpoints,
+      completedAt,
+      selfAttestedCheckpoints,
     });
   },
 });

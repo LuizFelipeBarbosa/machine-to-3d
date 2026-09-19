@@ -1,6 +1,7 @@
 import { anyApi } from 'convex/server';
 import type { ApiFromModules } from 'convex/server';
 import { convexTest } from 'convex-test';
+import { ConvexError } from 'convex/values';
 import { describe, expect, test } from 'vitest';
 import type { MachineDefinition } from '../shared/machine';
 import type * as files from './files';
@@ -89,11 +90,57 @@ describe('training.complete', () => {
     }]);
   });
 
+  test('keeps only the first checkpoint for each step in submitted order', async () => {
+    const { t, admin, approver, trainee, versionId } = await setup();
+    const draft = await admin.query(api.procedures.getVersion, { versionId });
+    const content = draft.content;
+    content.steps.push({ ...content.steps[0], id: 'step-2' });
+    await admin.mutation(api.procedures.saveDraft, { versionId, content });
+    await approver.mutation(api.procedures.approve, { versionId, changeNote: 'Two steps' });
+    const checkpoints = [
+      { stepId: 'step-2', at: 123 },
+      { stepId: 'step-1', at: 456 },
+      { stepId: 'step-2', at: 789 },
+      { stepId: 'step-1', at: 1000 },
+    ];
+
+    const recordId = await trainee.mutation(api.training.complete, {
+      procedureVersionId: versionId, checkpoints,
+    });
+    const record = await t.run((ctx) => ctx.db.get(recordId));
+    expect(record!.selfAttestedCheckpoints).toEqual([checkpoints[0], checkpoints[1]]);
+  });
+
+  test('rejects too many distinct checkpoints without inserting a record', async () => {
+    const { t, trainee, versionId } = await setupApproved();
+    const completion = trainee.mutation(api.training.complete, {
+      procedureVersionId: versionId,
+      checkpoints: [{ stepId: 'step-1', at: 1 }, { stepId: 'extra-step', at: 2 }],
+    });
+    await expect(completion).rejects.toBeInstanceOf(ConvexError);
+    await expect(completion).rejects.toMatchObject({ data: 'Too many checkpoints' });
+    expect(await t.run((ctx) => ctx.db.query('trainingRecords').collect())).toEqual([]);
+  });
+
+  test('clamps future checkpoint timestamps to the completion time', async () => {
+    const { t, trainee, versionId } = await setupApproved();
+    const before = Date.now();
+    const future = before + 100000;
+    const recordId = await trainee.mutation(api.training.complete, {
+      procedureVersionId: versionId, checkpoints: [{ stepId: 'step-1', at: future }],
+    });
+    const record = await t.run((ctx) => ctx.db.get(recordId));
+    expect(record!.selfAttestedCheckpoints).toEqual([{ stepId: 'step-1', at: record!.completedAt }]);
+    expect(record!.completedAt).toBeGreaterThanOrEqual(before);
+    expect(record!.completedAt).toBeLessThanOrEqual(Date.now());
+    expect(record!.selfAttestedCheckpoints[0].at).toBeLessThan(future);
+  });
+
   test('rejects an unknown checkpoint without inserting a record', async () => {
     const { t, trainee, versionId } = await setupApproved();
     await expect(trainee.mutation(api.training.complete, {
       procedureVersionId: versionId,
-      checkpoints: [{ stepId: 'step-1', at: 1 }, { stepId: 'missing', at: 2 }],
+      checkpoints: [{ stepId: 'missing', at: 2 }],
     })).rejects.toMatchObject({ data: 'Unknown checkpoint step: missing' });
     expect(await t.run((ctx) => ctx.db.query('trainingRecords').collect())).toEqual([]);
   });
@@ -179,11 +226,11 @@ describe('file access', () => {
   });
 
   test('requires sign-in for URLs and returns null for deleted files', async () => {
-    const { t, trainee, modelFileId } = await setup();
+    const { t, admin, modelFileId } = await setup();
     await expect(t.query(api.files.mediaUrl, { fileId: modelFileId }))
       .rejects.toMatchObject({ data: 'Not signed in' });
-    expect(await trainee.query(api.files.mediaUrl, { fileId: modelFileId })).toEqual(expect.any(String));
+    expect(await admin.query(api.files.mediaUrl, { fileId: modelFileId })).toEqual(expect.any(String));
     await t.run((ctx) => ctx.storage.delete(modelFileId));
-    expect(await trainee.query(api.files.mediaUrl, { fileId: modelFileId })).toBeNull();
+    expect(await admin.query(api.files.mediaUrl, { fileId: modelFileId })).toBeNull();
   });
 });

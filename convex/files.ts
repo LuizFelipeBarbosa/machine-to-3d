@@ -1,6 +1,6 @@
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
-import { requireRole, requireUser } from './lib/authz';
+import { requireRole } from './lib/authz';
 
 export const generateUploadUrl = mutation({
   args: { kind: v.union(v.literal('model'), v.literal('media')) },
@@ -15,7 +15,7 @@ export const mediaUrl = query({
   args: { fileId: v.id('_storage') },
   returns: v.union(v.string(), v.null()),
   handler: async (ctx, { fileId }) => {
-    await requireUser(ctx);
+    await requireRole(ctx, 'author');
     return ctx.storage.getUrl(fileId);
   },
 });

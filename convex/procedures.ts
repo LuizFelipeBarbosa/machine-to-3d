@@ -388,6 +388,9 @@ export const approve = mutation({
   returns: v.null(),
   handler: async (ctx, { versionId, changeNote }) => {
     const user = await requireRole(ctx, 'approver');
+    if (changeNote.trim().length === 0) {
+      throw new ConvexError('A change note is required');
+    }
     const version = await requireVersion(ctx, versionId);
     if (version.status !== 'draft') {
       throw new ConvexError('Only drafts can be approved');
@@ -404,8 +407,11 @@ export const approve = mutation({
       throw new ConvexError(`Invalid procedure references:\n${details}`);
     }
 
-    const previous = await getApprovedVersion(ctx, procedure);
-    if (previous !== null) {
+    const approvedVersions = await ctx.db.query('procedureVersions')
+      .withIndex('by_procedure_status', (q) =>
+        q.eq('procedureId', procedure._id).eq('status', 'approved'),
+      ).collect();
+    for (const previous of approvedVersions) {
       await ctx.db.patch(previous._id, { status: 'retired' });
     }
     await ctx.db.patch(versionId, {
