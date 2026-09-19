@@ -14,6 +14,10 @@ type SeedMachine = {
 
 const machines: readonly SeedMachine[] = SEED_MACHINES;
 
+function seedPath(machine: SeedMachine, relative: string): string {
+  return `../../${machine.dir}/${relative}`;
+}
+
 function validateFiles<T>(files: Record<string, unknown>, schema: z.ZodType<T>): Map<string, T> {
   const validated = new Map<string, T>();
   for (const [path, json] of Object.entries(files)) {
@@ -40,11 +44,27 @@ const modelUrls = import.meta.glob<string>('../../seed/*/model.glb', {
   import: 'default',
 });
 
-// The manifest controls membership and ordering; absent files are allowed while seeding.
+function assertSeedFilesExist(): void {
+  for (const machine of machines) {
+    const definitionPath = seedPath(machine, 'machine.json');
+    if (!definitions.has(definitionPath)) {
+      throw new Error(`Missing seed file for machine "${machine.slug}": ${definitionPath}`);
+    }
+
+    const modelPath = seedPath(machine, 'model.glb');
+    if (!modelUrls[modelPath]) {
+      throw new Error(`Missing seed file for machine "${machine.slug}": ${modelPath}`);
+    }
+  }
+}
+
+assertSeedFilesExist();
+
+// The manifest controls membership and ordering; absent procedures are allowed while seeding.
 function proceduresForMachine(machine: SeedMachine): ProcedureRecord[] {
   const records: ProcedureRecord[] = [];
   for (const slug of machine.procedureSlugs) {
-    const content = procedures.get(`../../seed/${machine.dir}/procedures/${slug}.json`);
+    const content = procedures.get(seedPath(machine, `procedures/${slug}.json`));
     if (content) {
       records.push({ slug, machineSlug: machine.slug, content, placeholder: true });
     }
@@ -70,8 +90,8 @@ export const localCatalog: Catalog = {
     const machine = machines.find((entry) => entry.slug === slug);
     if (!machine) return null;
 
-    const definition = definitions.get(`../../seed/${machine.dir}/machine.json`);
-    const modelUrl = modelUrls[`../../seed/${machine.dir}/model.glb`];
+    const definition = definitions.get(seedPath(machine, 'machine.json'));
+    const modelUrl = modelUrls[seedPath(machine, 'model.glb')];
     if (!definition || !modelUrl) return null;
 
     return { slug, name: machine.name, kind: machine.kind, modelUrl, definition };
