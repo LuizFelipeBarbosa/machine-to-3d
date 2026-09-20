@@ -12,7 +12,7 @@ import { validateWorkspace } from './kit/validate.js';
 import type { ClaimedJob, DeliverPayload, EventLevel, WorkerClient } from './types.js';
 import { prepareWorkspace } from './workspace.js';
 
-const TRANSIENT_UPSTREAM_ERROR = /503|Service Unavailable|server_is_overloaded|auth_unavailable|overloaded|rate.?limit|429/i;
+const TRANSIENT_UPSTREAM_ERROR = /503|Service Unavailable|server_is_overloaded|auth_unavailable|overloaded|rate.?limit|429|at capacity|try a different model|model is overloaded/i;
 
 export type PipelineOptions = {
   home: string;

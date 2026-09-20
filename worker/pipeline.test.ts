@@ -284,6 +284,15 @@ describe('runJob', () => {
     expect(argv.some(arg => /model_provider/.test(arg))).toBe(false);
   });
 
+  it('retries a model capacity error once and delivers the second result', async () => {
+    options.codex!.env!.STUB_MODE = 'fail-capacity-once';
+    options.retryDelayMs = 10;
+    await run();
+    expect(client.events.some(event => event.level === 'warn'
+      && event.message === 'Upstream overloaded via cliproxyapi; retrying directly in 0.01s')).toBe(true);
+    expect(client.deliveries).toHaveLength(1);
+  });
+
   it('fails after one retry when the upstream remains overloaded', async () => {
     options.codex!.env!.STUB_MODE = 'fail-503';
     options.retryDelayMs = 10;

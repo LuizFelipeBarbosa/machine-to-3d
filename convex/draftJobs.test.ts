@@ -286,6 +286,8 @@ describe('draftJobs.cancel and retry', () => {
     await t.mutation(api.draftJobs.claim, worker);
     await t.mutation(api.draftJobs.setStage, { jobId, workerId: worker.workerId, stage: 'generating' });
     await t.mutation(api.draftJobs.fail, { jobId, workerId: worker.workerId, error: 'Worker failed' });
+    // A deliberate retry must reset the attempts counter, even after five upstream-outage failures.
+    await t.run((ctx) => ctx.db.patch(jobId, { attempts: 5 }));
     // A retry must also clean up a legacy failed job that retained its lease timestamp.
     await t.run((ctx) => ctx.db.patch(jobId, { leaseUntil: Date.now() + 60_000 }));
     await expect(otherAuthor.mutation(api.draftJobs.retry, { jobId }))
@@ -293,10 +295,11 @@ describe('draftJobs.cancel and retry', () => {
     const client = role === 'owner' ? author : approver;
     expect(await client.mutation(api.draftJobs.retry, { jobId })).toBeNull();
     const retried = await t.run((ctx) => ctx.db.get(jobId));
-    expect(retried).toMatchObject({ status: 'queued', stage: 'generating', attempts: 1 });
+    expect(retried).toMatchObject({ status: 'queued', stage: 'generating', attempts: 0 });
     for (const field of ['lastError', 'workerId', 'leaseUntil']) expect(retried).not.toHaveProperty(field);
     await expect(t.mutation(api.draftJobs.heartbeat, { jobId, workerId: worker.workerId }))
       .rejects.toMatchObject({ data: 'Lease lost' });
+    expect(await t.mutation(api.draftJobs.claim, worker)).toMatchObject({ jobId, attempts: 1 });
   });
 
   test.each(['queued', 'running', 'done', 'cancelled'] as const)('rejects retry from %s', async (status) => {

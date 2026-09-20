@@ -326,7 +326,7 @@ export const retry = mutation({
     await requireAvailableWorkspace(ctx, job.workspaceKey);
     await ctx.db.patch(jobId, {
       status: 'queued', lastError: undefined, workerId: undefined,
-      leaseUntil: undefined, updatedAt: Date.now(), ...refreshedInputs,
+      leaseUntil: undefined, updatedAt: Date.now(), attempts: 0, ...refreshedInputs,
     });
     return null;
   },

@@ -18,11 +18,16 @@ if (process.env.STUB_MODE === 'resume-fails' && argv.includes('resume')) {
   console.error('error: session not found');
   process.exitCode = 1;
 } else if (process.env.STUB_MODE === 'fail-503'
-  || (process.env.STUB_MODE === 'fail-503-once' && !existsSync(join(workspace, '.stub-fail-503-once')))) {
+  || (process.env.STUB_MODE === 'fail-503-once' && !existsSync(join(workspace, '.stub-fail-503-once')))
+  || (process.env.STUB_MODE === 'fail-capacity-once' && !existsSync(join(workspace, '.stub-fail-capacity-once')))) {
   if (process.env.STUB_MODE === 'fail-503-once') {
     await writeFile(join(workspace, '.stub-fail-503-once'), 'failed');
+  } else if (process.env.STUB_MODE === 'fail-capacity-once') {
+    await writeFile(join(workspace, '.stub-fail-capacity-once'), 'failed');
   }
-  console.log('Reconnecting... unexpected status 503 Service Unavailable: server_is_overloaded');
+  console.log(process.env.STUB_MODE === 'fail-capacity-once'
+    ? 'Selected model is at capacity. Please try a different model.'
+    : 'Reconnecting... unexpected status 503 Service Unavailable: server_is_overloaded');
   process.exitCode = 1;
 } else {
   if (!existsSync(join(workspace, 'buildModel.ts'))) {
