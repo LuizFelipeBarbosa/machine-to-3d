@@ -138,12 +138,13 @@ describe('prepareWorkspace', () => {
     expect(reference).toContain('buildModel.ts must be written from scratch');
   });
 
-  it('keeps local model edits across jobs and switches to existing-machine mode', async () => {
+  it('keeps local model edits across jobs and derives mode from backend state', async () => {
     const first = await prepareWorkspace(job, { home, repoRoot });
     await writeFile(join(first.dir, 'buildModel.ts'), '// Hand-edited model');
     await writeFile(join(first.dir, 'machine.json'), '{"handEdited":true}');
     const second = await prepareWorkspace(job, { home, repoRoot });
-    expect(second.mode).toBe('existing-machine');
+    expect(second.mode).toBe('new-machine');
+    expect(second.taskPrompt).toContain('# Mode — new-machine');
     expect(await readFile(join(second.dir, 'buildModel.ts'), 'utf8')).toBe('// Hand-edited model');
     expect(await readFile(join(second.dir, 'machine.json'), 'utf8')).toBe('{"handEdited":true}');
 
@@ -152,7 +153,8 @@ describe('prepareWorkspace', () => {
       modelUrl: 'https://storage.example/model', sourceUrl: 'https://storage.example/source',
     };
     const fetchRequest = vi.fn<typeof fetch>();
-    await prepareWorkspace(job, { home, repoRoot, fetch: fetchRequest });
+    const third = await prepareWorkspace(job, { home, repoRoot, fetch: fetchRequest });
+    expect(third.mode).toBe('existing-machine');
     expect(fetchRequest).not.toHaveBeenCalled();
     expect(await readFile(join(second.dir, 'buildModel.ts'), 'utf8')).toBe('// Hand-edited model');
   });

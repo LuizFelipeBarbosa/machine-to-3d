@@ -47,45 +47,97 @@ function runFfmpeg(args, logName) {
   return log;
 }
 
+function videoDuration() {
+  const ffprobe = spawnSync('ffprobe', [
+    '-v', 'error', '-show_entries', 'format=duration',
+    '-of', 'default=noprint_wrappers=1:nokey=1', video,
+  ], { encoding: 'utf8' });
+  const duration = Number(ffprobe.stdout?.trim());
+  return Number.isFinite(duration) && duration > 0 ? duration : null;
+}
+
+function evenlyPick(items, count) {
+  if (count >= items.length) return [...items];
+  if (count <= 0) return [];
+  if (count === 1) return [items[0]];
+  return Array.from({ length: count }, (_, index) =>
+    items[Math.round(index * (items.length - 1) / (count - 1))]);
+}
+
 function extractFrames() {
-  // Select the first frame, scene cuts and the first frame in each five-second bucket.
-  const selection = 'gt(scene,0.3)+isnan(prev_t)+gt(floor(t/5),floor(prev_t/5))';
+  const duration = videoDuration();
+  const interval = Math.max(2, Math.min(10, (duration ?? 0) / 40));
+  // Select the first frame, scene cuts and the first frame in each periodic bucket.
+  const selection = `gt(scene,0.3)+isnan(prev_t)+gt(floor(t/${interval}),floor(prev_t/${interval}))`;
   const log = runFfmpeg([
     '-i', video, '-map', '0:v:0', '-an',
     '-vf', `setpts=PTS-STARTPTS,select='${selection}',showinfo`,
     '-fps_mode', 'vfr', '-f', 'null', '-',
   ], 'candidates.log');
+  const sceneLog = runFfmpeg([
+    '-i', video, '-map', '0:v:0', '-an',
+    '-vf', "setpts=PTS-STARTPTS,select='gt(scene,0.3)+isnan(prev_t)',showinfo",
+    '-fps_mode', 'vfr', '-f', 'null', '-',
+  ], 'scenes.log');
+  const scenePts = new Set();
+  for (const match of readFileSync(sceneLog, 'utf8').matchAll(/\bpts:\s*(\d+)\s+pts_time:([\d.eE+-]+)/g)) {
+    scenePts.add(match[1]);
+  }
   const candidates = [];
   const filenames = new Set();
   for (const match of readFileSync(log, 'utf8').matchAll(/\bpts:\s*(\d+)\s+pts_time:([\d.eE+-]+)/g)) {
     const seconds = Number(match[2]);
     const file = `f-${seconds.toFixed(2).padStart(8, '0')}.jpg`;
     if (!filenames.has(file)) {
-      candidates.push({ pts: match[1], seconds, file });
+      candidates.push({ pts: match[1], seconds, file, reason: scenePts.has(match[1]) ? 'scene' : 'interval' });
       filenames.add(file);
     }
   }
   candidates.sort((left, right) => left.seconds - right.seconds);
   if (candidates.length === 0) throw new Error('No video frames found.');
-  const selected = candidates.length <= 80 ? candidates : Array.from({ length: 80 }, (_, index) =>
-    candidates[Math.round(index * (candidates.length - 1) / 79)]);
+  const computedCap = Math.min(240, Math.max(40, Math.ceil((duration ?? candidates.at(-1).seconds) / 1.5)));
+  const configuredCap = Number.parseInt(process.env.EXTRACT_MAX_FRAMES ?? '', 10);
+  const cap = Number.isInteger(configuredCap) && configuredCap > 0 ? configuredCap : computedCap;
+  let selected;
+  if (candidates.length <= cap) {
+    selected = candidates;
+  } else {
+    const scenes = candidates.filter(frame => frame.reason === 'scene');
+    const intervals = candidates.filter(frame => frame.reason === 'interval');
+    if (scenes.length >= cap) {
+      selected = evenlyPick(scenes, cap);
+    } else {
+      selected = [...scenes, ...evenlyPick(intervals, cap - scenes.length)];
+      selected.sort((left, right) => left.seconds - right.seconds);
+    }
+  }
 
   // Decode again so only the capped subset is encoded to JPEG, preserving source PTS.
-  const filter = selected.map(frame => `eq(pts,${frame.pts})`).join('+');
-  runFfmpeg([
-    '-loglevel', 'error', '-i', video, '-map', '0:v:0', '-an',
-    '-vf', `setpts=PTS-STARTPTS,select='${filter}'`, '-fps_mode', 'vfr',
-    '-q:v', '2', join(temporary, '%03d.jpg'),
-  ], 'frames.log');
+  // Keep each select expression below ffmpeg's expression-size limit for long videos.
+  const encodedFiles = [];
+  for (let offset = 0; offset < selected.length; offset += 80) {
+    const chunk = selected.slice(offset, offset + 80);
+    const filter = chunk.map(frame => `eq(pts,${frame.pts})`).join('+');
+    const prefix = `frames-${offset}-`;
+    runFfmpeg([
+      '-loglevel', 'error', '-i', video, '-map', '0:v:0', '-an',
+      '-vf', `setpts=PTS-STARTPTS,select='${filter}'`, '-fps_mode', 'vfr',
+      '-q:v', '2', join(temporary, `${prefix}%03d.jpg`),
+    ], `frames-${offset}.log`);
+    encodedFiles.push(...readdirSync(temporary)
+      .filter(file => file.startsWith(prefix) && file.endsWith('.jpg'))
+      .sort()
+      .map(file => join(temporary, file)));
+  }
   const frames = join(output, 'frames');
   for (const file of readdirSync(frames)) {
     if (/^f-\d+\.\d{2}\.jpg$/.test(file)) rmSync(join(frames, file));
   }
   selected.forEach((frame, index) => {
-    renameSync(join(temporary, `${String(index + 1).padStart(3, '0')}.jpg`), join(frames, frame.file));
+    renameSync(encodedFiles[index], join(frames, frame.file));
   });
-  writeFileSync(join(frames, 'index.json'), JSON.stringify(selected.map(({ file, seconds }) =>
-    ({ file, seconds })), null, 2) + '\n');
+  writeFileSync(join(frames, 'index.json'), JSON.stringify(selected.map(({ file, seconds, reason }) =>
+    ({ file, seconds, reason })), null, 2) + '\n');
   return selected.length;
 }
 

@@ -32,7 +32,8 @@ export async function prepareWorkspace(
 
   const hadModel = await exists(join(dir, 'buildModel.ts'));
   if (!hadModel) await prepareModel(job, dir, repoRoot, fetchRequest);
-  const mode = hadModel || job.machine.current ? 'existing-machine' : 'new-machine';
+  // Mode reflects backend state, not leftover files, so brand-new retries can replace template names.
+  const mode = job.machine.current !== undefined ? 'existing-machine' : 'new-machine';
 
   for (const procedure of job.approvedProcedures) {
     const file = childPath(join(dir, 'procedures'), `${procedure.slug}.json`);

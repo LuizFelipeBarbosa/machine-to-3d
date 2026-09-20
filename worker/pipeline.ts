@@ -40,7 +40,7 @@ export async function runJob(job: ClaimedJob, context: JobContext, options: Pipe
     let images: string[] | undefined;
     if (job.kind === 'create' && videoFile !== null && options.runExtract !== false) {
       if (!await startStage(job.jobId, 'extract', context)) return;
-      images = await extractFrames(dir, videoFile, job.procedureSlug, options.repoRoot);
+      images = await extractFrames(dir, videoFile, job.procedureSlug, options.repoRoot, context);
     }
 
     if (!await startStage(job.jobId, 'codex', context)) return;
@@ -92,17 +92,50 @@ async function runCommand(label: string, command: string, args: string[], dir: s
   }
 }
 
-async function extractFrames(dir: string, videoFile: string, slug: string, repoRoot: string): Promise<string[]> {
+export function selectPromptFrames(
+  index: { file: string; seconds: number; reason?: string }[],
+  options: { min?: number; max?: number } = {},
+): string[] {
+  if (index.length === 0) return [];
+  const frames = [...index].sort((left, right) => left.seconds - right.seconds);
+  const min = Math.max(0, options.min ?? 4);
+  const max = Math.max(1, options.max ?? 16);
+  const scenes = frames.filter(frame => frame.reason === 'scene');
+  const selected = [...scenes];
+  if (selected.length < min) {
+    const available = frames.filter(frame => frame.reason !== 'scene');
+    const needed = Math.min(min - selected.length, available.length);
+    selected.push(...evenlySelect(available, needed));
+  }
+  selected.sort((left, right) => left.seconds - right.seconds);
+  const limited = selected.length <= max ? selected : evenlySelect(selected, max);
+  return [...new Set(limited.map(frame => frame.file))];
+}
+
+function evenlySelect<T>(items: T[], count: number): T[] {
+  if (count >= items.length) return [...items];
+  if (count <= 0) return [];
+  if (count === 1) return [items[0]];
+  return Array.from({ length: count }, (_, index) =>
+    items[Math.round(index * (items.length - 1) / (count - 1))]);
+}
+
+async function extractFrames(
+  dir: string, videoFile: string, slug: string, repoRoot: string, context: JobContext,
+): Promise<string[]> {
   await runCommand('Video extraction', 'bash', [
     join(repoRoot, 'worker/kit/extract.sh'), videoFile, `videos/${slug}`,
   ], dir);
   const frameDir = join(dir, 'videos', slug, 'frames');
   const frames = JSON.parse(await readFile(join(frameDir, 'index.json'), 'utf8')) as {
-    file: string; seconds: number;
+    file: string; seconds: number; reason?: string;
   }[];
-  const count = Math.min(6, frames.length);
-  const selected = Array.from({ length: count }, (_, index) =>
-    frames[count === 1 ? 0 : Math.round(index * (frames.length - 1) / (count - 1))].file);
+  const normalized = frames.map(frame => ({ ...frame, reason: frame.reason ?? 'interval' }));
+  const configuredMax = Number(process.env.WORKER_PROMPT_FRAMES);
+  const promptFrameMax = Number.isInteger(configuredMax) && configuredMax > 0 ? configuredMax : undefined;
+  const selected = selectPromptFrames(normalized, { max: promptFrameMax });
+  const sceneCount = normalized.filter(frame => frame.reason === 'scene').length;
+  await context.log('info', `Attached ${selected.length} of ${frames.length} frames (${sceneCount} scene changes)`);
   return [...new Set(selected)].map(file => join(frameDir, file));
 }
 

@@ -33,10 +33,11 @@ describe.skipIf(!ffmpeg)('extract.sh', () => {
     expect(result.status, result.stderr).toBe(0);
     expect(result.stdout).toMatch(/^extract: \d+ frames; transcript /);
     const index = JSON.parse(readFileSync(join(output, 'frames/index.json'), 'utf8')) as {
-      file: string; seconds: number;
+      file: string; seconds: number; reason: string;
     }[];
     for (const [position, frame] of index.entries()) {
       expect(frame.file).toMatch(/^f-\d{5,}\.\d{2}\.jpg$/);
+      expect(['scene', 'interval']).toContain(frame.reason);
       expect(existsSync(join(output, 'frames', frame.file))).toBe(true);
       if (position > 0) expect(frame.seconds).toBeGreaterThan(index[position - 1].seconds);
     }
@@ -48,22 +49,30 @@ describe.skipIf(!ffmpeg)('extract.sh', () => {
   it('extracts sorted frames and a transcript envelope from a six-second video', () => {
     const { index, output } = extract(makeVideo());
     expect(index.length).toBeGreaterThanOrEqual(2);
-    expect(index.map(frame => frame.seconds)).toEqual(expect.arrayContaining([0, 5]));
+    expect(index.map(frame => frame.seconds)).toEqual([0, 2, 4]);
     expect(existsSync(join(output, 'audio.wav'))).toBe(true);
   }, 60_000);
 
   it('caps scene-change candidates evenly across the video and accepts silent video', () => {
     const video = makeVideo("nullsrc=size=32x32:rate=1,geq=lum='if(mod(floor(N/2),2),235,16)':cb=128:cr=128", '180', false);
     const { index, transcript } = extract(video);
-    expect(index).toHaveLength(80);
+    expect(index).toHaveLength(110);
     expect(index[0].seconds).toBe(0);
     expect(index.at(-1)!.seconds).toBe(178);
-    const candidates = Array.from({ length: 180 }, (_, seconds) => seconds)
-      .filter(seconds => seconds % 2 === 0 || seconds % 5 === 0);
-    expect(index.map(frame => frame.seconds)).toEqual(Array.from({ length: 80 }, (_, position) =>
-      candidates[Math.round(position * (candidates.length - 1) / 79)]));
-    expect(index.some(frame => frame.seconds % 5 !== 0)).toBe(true);
+    expect(index.filter(frame => frame.reason === 'scene').every(frame => frame.seconds % 2 === 0)).toBe(true);
+    expect(index.some(frame => frame.reason === 'interval')).toBe(true);
     expect(transcript.unavailable).toContain('no audio track');
+  }, 60_000);
+
+  it('honors an explicit frame cap while retaining scene frames', () => {
+    const video = makeVideo("nullsrc=size=32x32:rate=1,geq=lum='if(mod(floor(N/2),2),235,16)':cb=128:cr=128", '10', false);
+    const reference = extract(video, { ...process.env });
+    const capped = extract(video, { ...process.env, EXTRACT_MAX_FRAMES: '5' });
+    expect(capped.index.length).toBeLessThanOrEqual(5);
+    const cappedFiles = new Set(capped.index.map(frame => frame.file));
+    for (const frame of reference.index.filter(frame => frame.reason === 'scene')) {
+      expect(cappedFiles.has(frame.file)).toBe(true);
+    }
   }, 60_000);
 
   it('normalizes whisper.cpp millisecond offsets when an optional CLI is available', () => {

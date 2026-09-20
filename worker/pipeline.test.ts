@@ -11,7 +11,7 @@ import type { ProcedureContent } from '../shared/procedure.js';
 import { validateProcedure } from '../shared/validateProcedure.js';
 import { runCodex } from './codex.js';
 import * as codex from './codex.js';
-import { runJob, type PipelineOptions } from './pipeline.js';
+import { runJob, selectPromptFrames, type PipelineOptions } from './pipeline.js';
 import type { ClaimedJob, DeliverPayload, EventLevel, WorkerClient } from './types.js';
 
 const repoRoot = process.cwd();
@@ -65,6 +65,38 @@ function createClient(): RecordingClient {
     async fail(jobId, error) { failures.push({ jobId, error }); },
   };
 }
+
+describe('selectPromptFrames', () => {
+  it('returns a small all-scene set in time order', () => {
+    expect(selectPromptFrames([
+      { file: 'late.jpg', seconds: 4, reason: 'scene' },
+      { file: 'early.jpg', seconds: 1, reason: 'scene' },
+      { file: 'middle.jpg', seconds: 2, reason: 'scene' },
+    ])).toEqual(['early.jpg', 'middle.jpg', 'late.jpg']);
+  });
+
+  it('pads too few scene frames with evenly spaced interval frames', () => {
+    expect(selectPromptFrames([
+      { file: 'zero.jpg', seconds: 0, reason: 'scene' },
+      { file: 'one.jpg', seconds: 1, reason: 'interval' },
+      { file: 'two.jpg', seconds: 2, reason: 'interval' },
+      { file: 'three.jpg', seconds: 3, reason: 'interval' },
+      { file: 'four.jpg', seconds: 4, reason: 'interval' },
+      { file: 'five.jpg', seconds: 5, reason: 'interval' },
+    ], { min: 4 })).toEqual(['zero.jpg', 'one.jpg', 'three.jpg', 'five.jpg']);
+  });
+
+  it('thins larger selections evenly while keeping the first and last frames', () => {
+    const index = Array.from({ length: 20 }, (_, seconds) => ({
+      file: `${seconds}.jpg`, seconds, reason: 'scene',
+    }));
+    expect(selectPromptFrames(index, { max: 5 })).toEqual(['0.jpg', '5.jpg', '10.jpg', '14.jpg', '19.jpg']);
+  });
+
+  it('returns an empty selection for an empty index', () => {
+    expect(selectPromptFrames([])).toEqual([]);
+  });
+});
 
 function procedure(): ProcedureContent {
   return {
@@ -383,12 +415,14 @@ describe('runJob', () => {
     delete options.runExtract;
     await run();
     const frames = JSON.parse(await readFile(join(videoDir, 'frames/index.json'), 'utf8')) as {
-      file: string; seconds: number;
+      file: string; seconds: number; reason: string;
     }[];
-    expect(frames.map(frame => frame.seconds)).toEqual([0, 5]);
+    expect(frames.map(frame => frame.seconds)).toEqual([0, 2, 4]);
     for (const frame of frames) expect((await readFile(join(videoDir, 'frames', frame.file))).length).toBeGreaterThan(0);
     expect(JSON.parse(await readFile(join(videoDir, 'transcript.json'), 'utf8')).segments).toEqual([]);
     expect(client.stages.map(call => call.stage)).toContain('extract');
+    expect(client.events.some(event => event.level === 'info'
+      && /^Attached \d+ of \d+ frames \(\d+ scene changes\)$/.test(event.message))).toBe(true);
     const payload = client.deliveries[0].payload;
     expect((payload.procedure.content as ProcedureContent).steps[0].media?.fileId).toBe('file-1');
     expect(payload.mediaFileIds).toEqual(['file-1']);
