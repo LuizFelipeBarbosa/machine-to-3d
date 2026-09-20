@@ -202,13 +202,13 @@ describe('JobDetail', () => {
     render(app());
     const timeline = within(screen.getByRole('list', { name: 'Job stages' }));
     expect(timeline.getAllByRole('listitem').map((item) => item.textContent)).toEqual([
-      'workspace', 'extract', 'codex', 'verify', 'frame', 'upload', 'done',
+      'Workspace', 'Extract frames', 'Processing', 'Verify', 'Frame views', 'Upload', 'Done',
     ]);
-    expect(timeline.getByText('workspace').classList.contains('is-done')).toBe(true);
-    expect(timeline.getByText('extract').classList.contains('is-done')).toBe(true);
-    expect(timeline.getByText('codex').classList.contains('is-current')).toBe(true);
-    expect(timeline.getByText('codex').getAttribute('aria-current')).toBe('step');
-    expect(timeline.getByText('verify').className).toBe('');
+    expect(timeline.getByText('Workspace').classList.contains('is-done')).toBe(true);
+    expect(timeline.getByText('Extract frames').classList.contains('is-done')).toBe(true);
+    expect(timeline.getByText('Processing').classList.contains('is-current')).toBe(true);
+    expect(timeline.getByText('Processing').getAttribute('aria-current')).toBe('step');
+    expect(timeline.getByText('Verify').className).toBe('');
   });
 
   it('marks the failed stage, renders the error, and retries', async () => {
@@ -217,7 +217,7 @@ describe('JobDetail', () => {
     render(app());
     expect(screen.getByText(/Could not verify/).tagName).toBe('PRE');
     expect(screen.getByText(/Could not verify/).className).toBe('job-error');
-    expect(screen.getByText('codex').classList.contains('is-failed')).toBe(true);
+    expect(screen.getByText('Processing').classList.contains('is-failed')).toBe(true);
     expect(screen.queryByRole('button', { name: 'Cancel' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
     await waitFor(() => expect(backend.retry).toHaveBeenCalledWith({ jobId: 'job-id' }));
@@ -268,8 +268,8 @@ describe('JobDetail', () => {
     expect(events[0].className).toBe('info');
     expect(events[1].textContent).toContain('Check this');
     expect(events[1].className).toBe('warn');
-    expect(screen.getByText('codex').classList.contains('is-done')).toBe(true);
-    expect(screen.getByText('verify').classList.contains('is-current')).toBe(true);
+    expect(screen.getByText('Processing').classList.contains('is-done')).toBe(true);
+    expect(screen.getByText('Verify').classList.contains('is-current')).toBe(true);
   });
 
   it('shows loading and not-found states', () => {

@@ -8,6 +8,15 @@ import { useMe } from '../auth/useMe';
 import { errorMessage } from '../lib/errorMessage';
 
 const stages = ['workspace', 'extract', 'codex', 'verify', 'frame', 'upload', 'done'];
+const STAGE_LABELS: Record<string, string> = {
+  workspace: 'Workspace',
+  extract: 'Extract frames',
+  codex: 'Processing',
+  verify: 'Verify',
+  frame: 'Frame views',
+  upload: 'Upload',
+  done: 'Done',
+};
 
 export function Jobs() {
   const { me, loading } = useMe();
@@ -93,9 +102,10 @@ export function JobDetail() {
           <ol className="job-stages" aria-label="Job stages">
             {stages.map((stage, index) => (
               <li key={stage} aria-current={index === currentStage ? 'step' : undefined}
+                title={stage}
                 className={index < currentStage ? 'is-done' : index === currentStage
                   ? `is-current${job.status === 'failed' ? ' is-failed' : ''}` : undefined}>
-                {stage}
+                {STAGE_LABELS[stage]}
               </li>
             ))}
           </ol>

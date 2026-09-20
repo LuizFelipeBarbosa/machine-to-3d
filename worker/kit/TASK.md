@@ -25,7 +25,7 @@ import * as THREE from 'three';
 export function buildModel(): { root: THREE.Group; clips: THREE.AnimationClip[] }
 ```
 
-Name the root. Give each part one named group as a direct child of the root. Represent moving sub-assemblies as groups whose origins are their motion pivots (hinge or slide). Export one named `AnimationClip` per demonstrated motion; use unique, stable node and clip names. Use no textures, canvas or text. Use Y-up, rest the model on y=0, and use relative units (5–10 units tall is typical) with real-world proportions where known. Aim for illustrative accuracy: which part, which side, what moves. This is not a measured model.
+Name the root. Name it after the instrument in PascalCase_With_Underscores (for example, `Canon_EOS_50D` or `Plasma_Etch_PE25`) and set `machine.json`'s `rootNode` to that same name. Never keep the template's `Kit_Box` as the root name. Name parts and clips for the instrument's real parts (for example, `batteryDoor`, not generic template names such as `door` or `panel`); `door` or `panel` is fine only when the instrument genuinely has that part. Give each part one named group as a direct child of the root. Represent moving sub-assemblies as groups whose origins are their motion pivots (hinge or slide). Export one named `AnimationClip` per demonstrated motion; use unique, stable node and clip names. Use no textures, canvas or text. Use Y-up, rest the model on y=0, and use relative units (5–10 units tall is typical) with real-world proportions where known. Aim for illustrative accuracy: which part, which side, what moves. This is not a measured model.
 
 # Deliverable 2 — machine.json
 
@@ -59,7 +59,7 @@ Write `formatVersion: 1`, `title: "{{PROCEDURE_TITLE}}"`, `summary` (two sentenc
 
 For `existing-machine`, the workspace holds `machine.json`, `procedures/*.json` and `references/`. If `buildModel.ts` is missing, `references/EXISTING.md` describes the published model; read it first and satisfy it exactly when writing `buildModel.ts` from scratch. Otherwise, extend the existing `buildModel.ts`. NEVER rename or remove an existing part, node, state var or clip; other procedures depend on them. Add what the new video shows and refine proportions. When adding a state var, supply its initial value in every existing procedure's `start`. Report `modelChanged` accordingly.
 
-For `new-machine`, start from a copy of `{{REPO}}/worker/kit/template/` and adapt it to the instrument.
+For `new-machine`, start from a copy of `{{REPO}}/worker/kit/template/`, rename the root, parts and clips for the instrument, then add geometry.
 
 # Loop until clean
 
