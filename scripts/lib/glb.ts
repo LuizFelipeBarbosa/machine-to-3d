@@ -42,6 +42,12 @@ type GltfDocument = {
 };
 
 export function parseGlbJson(bytes: Uint8Array): unknown {
+  return readJsonChunk(bytes).json;
+}
+
+type JsonChunk = { offset: number; length: number; json: unknown };
+
+function readJsonChunk(bytes: Uint8Array): JsonChunk {
   if (bytes.byteLength < 12) {
     throw new Error('Invalid GLB: header is shorter than 12 bytes.');
   }
@@ -57,6 +63,7 @@ export function parseGlbJson(bytes: Uint8Array): unknown {
   }
 
   let json: unknown;
+  let jsonChunk: JsonChunk | undefined;
   let hasJson = false;
   for (let offset = 12; offset < bytes.byteLength;) {
     if (offset + 8 > bytes.byteLength) {
@@ -75,6 +82,7 @@ export function parseGlbJson(bytes: Uint8Array): unknown {
       } catch (error) {
         throw new Error('Invalid GLB: could not parse the JSON chunk.', { cause: error });
       }
+      jsonChunk = { offset, length, json };
       hasJson = true;
     }
     offset = end;
@@ -82,7 +90,7 @@ export function parseGlbJson(bytes: Uint8Array): unknown {
   if (!hasJson) {
     throw new Error('Invalid GLB: missing JSON chunk.');
   }
-  return json;
+  return jsonChunk!;
 }
 
 function readGlbDocument(bytes: Uint8Array): GltfDocument {
@@ -91,6 +99,61 @@ function readGlbDocument(bytes: Uint8Array): GltfDocument {
     throw new Error('Invalid GLB: JSON document must be an object.');
   }
   return json as GltfDocument;
+}
+
+export function dedupeNodeNames(bytes: Uint8Array): { bytes: Uint8Array; renamed: Record<string, string[]> } {
+  const jsonChunk = readJsonChunk(bytes);
+  if (typeof jsonChunk.json !== 'object' || jsonChunk.json === null || Array.isArray(jsonChunk.json)) {
+    throw new Error('Invalid GLB: JSON document must be an object.');
+  }
+  const document = jsonChunk.json as GltfDocument;
+  const nodes = document.nodes ?? [];
+  const reservedNames = new Set(nodes.flatMap(node => node.name ? [node.name] : []));
+  const seenNames = new Set<string>();
+  const renamed: Record<string, string[]> = {};
+
+  for (const node of nodes) {
+    if (!node.name) continue;
+    const originalName = node.name;
+    if (!seenNames.has(originalName)) {
+      seenNames.add(originalName);
+      continue;
+    }
+
+    let suffix = 2;
+    let newName = `${originalName}_${suffix}`;
+    while (reservedNames.has(newName)) {
+      suffix++;
+      newName = `${originalName}_${suffix}`;
+    }
+    node.name = newName;
+    reservedNames.add(newName);
+    const names = Object.hasOwn(renamed, originalName) ? renamed[originalName] : undefined;
+    if (names) {
+      names.push(newName);
+    } else {
+      Object.defineProperty(renamed, originalName, {
+        value: [newName], enumerable: true, configurable: true, writable: true,
+      });
+    }
+  }
+
+  if (Object.keys(renamed).length === 0) return { bytes, renamed };
+
+  const jsonBytes = new TextEncoder().encode(JSON.stringify(document));
+  const paddedLength = Math.ceil(jsonBytes.length / 4) * 4;
+  const oldChunkEnd = jsonChunk.offset + 8 + jsonChunk.length;
+  const result = new Uint8Array(bytes.byteLength - jsonChunk.length + paddedLength);
+  result.set(bytes.subarray(0, jsonChunk.offset), 0);
+  result.set(bytes.subarray(jsonChunk.offset, jsonChunk.offset + 8), jsonChunk.offset);
+  result.set(jsonBytes, jsonChunk.offset + 8);
+  result.fill(0x20, jsonChunk.offset + 8 + jsonBytes.length, jsonChunk.offset + 8 + paddedLength);
+  result.set(bytes.subarray(oldChunkEnd), jsonChunk.offset + 8 + paddedLength);
+
+  const resultView = new DataView(result.buffer, result.byteOffset, result.byteLength);
+  resultView.setUint32(8, result.byteLength, true);
+  resultView.setUint32(jsonChunk.offset, paddedLength, true);
+  return { bytes: result, renamed };
 }
 
 /** World-space subtree bounds for named nodes in the default scene. */

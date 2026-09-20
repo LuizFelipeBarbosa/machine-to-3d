@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { nodeBounds, parseGlbJson, summarizeGlb } from './glb.js';
+import { dedupeNodeNames, nodeBounds, parseGlbJson, summarizeGlb } from './glb.js';
 
 function makeGlb(document: unknown): Uint8Array {
   const json = Buffer.from(JSON.stringify(document));
@@ -16,6 +16,24 @@ function makeGlb(document: unknown): Uint8Array {
   bytes.writeUInt32LE(paddedLength, 12);
   bytes.writeUInt32LE(0x4e4f534a, 16);
   json.copy(bytes, 20);
+  return bytes;
+}
+
+function makeGlbWithBinary(document: unknown, binary: Uint8Array): Uint8Array {
+  const json = Buffer.from(JSON.stringify(document));
+  const jsonLength = Math.ceil(json.length / 4) * 4;
+  const bytes = Buffer.alloc(12 + 8 + jsonLength + 8 + binary.length);
+  bytes.writeUInt32LE(0x46546c67, 0);
+  bytes.writeUInt32LE(2, 4);
+  bytes.writeUInt32LE(bytes.length, 8);
+  bytes.writeUInt32LE(jsonLength, 12);
+  bytes.writeUInt32LE(0x4e4f534a, 16);
+  json.copy(bytes, 20);
+  bytes.fill(0x20, 20 + json.length, 20 + jsonLength);
+  const binaryOffset = 20 + jsonLength;
+  bytes.writeUInt32LE(binary.length, binaryOffset);
+  bytes.writeUInt32LE(0x004e4942, binaryOffset + 4);
+  Buffer.from(binary).copy(bytes, binaryOffset + 8);
   return bytes;
 }
 
@@ -103,6 +121,38 @@ describe('reference instrument GLBs', () => {
 });
 
 describe('GLB parsing and bounds', () => {
+  it('dedupes node names and produces a valid GLB', () => {
+    const input = makeGlb({ scenes: [{ nodes: [0, 1] }], nodes: [{ name: 'x' }, { name: 'x' }] });
+    const result = dedupeNodeNames(input);
+
+    expect(result.renamed).toEqual({ x: ['x_2'] });
+    expect(() => parseGlbJson(result.bytes)).not.toThrow();
+    expect(summarizeGlb(result.bytes).duplicateNames).toEqual([]);
+    expect(summarizeGlb(result.bytes).namedNodes).toEqual(['x', 'x_2']);
+  });
+
+  it('preserves binary chunk bytes while deduping names', () => {
+    const binary = Uint8Array.from([0, 1, 2, 3, 4, 5, 6, 7]);
+    const input = makeGlbWithBinary({ nodes: [{ name: 'x' }, { name: 'x' }] }, binary);
+    const result = dedupeNodeNames(input);
+    const inputJsonLength = new DataView(input.buffer, input.byteOffset, input.byteLength).getUint32(12, true);
+    const outputJsonLength = new DataView(result.bytes.buffer, result.bytes.byteOffset, result.bytes.byteLength).getUint32(12, true);
+    const inputBinaryOffset = 20 + inputJsonLength;
+    const outputBinaryOffset = 20 + outputJsonLength;
+
+    expect(result.renamed).toEqual({ x: ['x_2'] });
+    expect(Array.from(result.bytes.subarray(outputBinaryOffset))).toEqual(Array.from(input.subarray(inputBinaryOffset)));
+    expect(summarizeGlb(result.bytes).duplicateNames).toEqual([]);
+  });
+
+  it('returns the original bytes when there are no duplicate names', () => {
+    const input = makeGlb({ nodes: [{ name: 'x' }, { name: 'y' }] });
+    const result = dedupeNodeNames(input);
+
+    expect(result.renamed).toEqual({});
+    expect(result.bytes).toBe(input);
+  });
+
   it('summarizes all sampler durations and unique named targets in channel order', () => {
     const summary = summarizeGlb(makeGlb({
       nodes: [{ name: 'first' }, {}, { name: 'second' }, { name: 'first' }],
