@@ -245,6 +245,18 @@ describe('procedure version lifecycle', () => {
     ]);
   });
 
+  test('refuses approval while an agent revision targets the draft and unlocks after cancellation', async () => {
+    const { author, approver, versionId } = await setup();
+    const jobId = await author.mutation(api.draftJobs.createRevision, {
+      procedureVersionId: versionId, instruction: 'Clarify the first step',
+    });
+    await expect(approver.mutation(api.procedures.approve, { versionId, changeNote: 'Review' }))
+      .rejects.toMatchObject({ data: 'An agent revision is running for this draft' });
+    await author.mutation(api.draftJobs.cancel, { jobId });
+    await expect(approver.mutation(api.procedures.approve, { versionId, changeNote: 'Review' }))
+      .resolves.toBeNull();
+  });
+
   test.each(['approved', 'retired'] as const)('prevents editing, deleting, or approving a %s version', async (status) => {
     const { t, author, approver, procedureId, versionId } = await setup();
     await approver.mutation(api.procedures.approve, { versionId, changeNote: 'Original' });

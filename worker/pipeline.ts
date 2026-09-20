@@ -12,10 +12,13 @@ import { validateWorkspace } from './kit/validate.js';
 import type { ClaimedJob, DeliverPayload, EventLevel, WorkerClient } from './types.js';
 import { prepareWorkspace } from './workspace.js';
 
+const TRANSIENT_UPSTREAM_ERROR = /503|Service Unavailable|server_is_overloaded|auth_unavailable|overloaded|rate.?limit|429/i;
+
 export type PipelineOptions = {
   home: string;
   repoRoot: string;
   codex?: Partial<CodexRunOptions>;
+  retryDelayMs?: number;
   runExtract?: boolean;
   fetch?: typeof fetch;
 };
@@ -47,7 +50,8 @@ export async function runJob(job: ClaimedJob, context: JobContext, options: Pipe
       outputSchemaPath: join(options.repoRoot, 'worker/kit/report.schema.json'),
       signal: context.signal,
       ...options.codex,
-    });
+    }, options.retryDelayMs);
+    if (result === null) return;
 
     if (!await startStage(job.jobId, 'verify', context)) return;
     const { glb, definition, content, modelChanged } = await verifyOutputs(job, dir, options.repoRoot, result);
@@ -103,16 +107,18 @@ async function extractFrames(dir: string, videoFile: string, slug: string, repoR
 }
 
 async function generateOutputs(
-  job: ClaimedJob, context: JobContext, options: CodexRunOptions,
-): Promise<CodexRunResult> {
+  job: ClaimedJob, context: JobContext, options: CodexRunOptions, retryDelayMs?: number,
+): Promise<CodexRunResult | null> {
   const recentTexts: string[] = [];
-  let sessionId: string | null = null;
+  let sawTransientUpstreamError = false;
+  let sessionId: string | null = options.resumeSessionId ?? null;
   let notifications = Promise.resolve();
   let notificationError: Error | undefined;
   const runOptions: CodexRunOptions = {
     ...options,
     onEvent: event => {
       if (event.text !== undefined && event.text.trim()) {
+        sawTransientUpstreamError ||= TRANSIENT_UPSTREAM_ERROR.test(event.text);
         recentTexts.push(event.text);
         if (recentTexts.length > 3) recentTexts.shift();
       }
@@ -143,13 +149,42 @@ async function generateOutputs(
   }
 
   let result = await attempt(runOptions);
-  if (job.kind === 'revise' && result.exitCode !== 0 && result.durationMs <= 60_000
-    && !result.aborted && !context.signal.aborted
-    && /session|resume|not found|no such/i.test([result.finalMessage, ...recentTexts].join('\n'))) {
-    await context.log('info', 'Codex could not resume the session; retrying with a fresh session');
-    result = await attempt({ ...runOptions, resumeSessionId: undefined });
+  let resumeFallbackUsed = false;
+  let transientRetryUsed = false;
+  while (result.exitCode !== 0 && result.report === null
+    && !result.aborted && !result.timedOut && !context.signal.aborted) {
+    const diagnostics = [result.finalMessage, result.stderr, ...recentTexts].join('\n');
+    const mentionsResumeFailure = /session|resume|not found|no such/i.test(diagnostics);
+    const shouldFallbackResume = runOptions.resumeSessionId !== undefined
+      && !resumeFallbackUsed
+      && (result.durationMs <= 60_000 || mentionsResumeFailure);
+    if (shouldFallbackResume) {
+      resumeFallbackUsed = true;
+      await context.log('warn', 'Resume failed; starting a fresh session');
+      result = await attempt({ ...runOptions, resumeSessionId: undefined });
+      continue;
+    }
+
+    if (!transientRetryUsed
+      && (sawTransientUpstreamError || TRANSIENT_UPSTREAM_ERROR.test(diagnostics))) {
+      transientRetryUsed = true;
+      const delay = Math.max(0, retryDelayMs ?? 90_000);
+      const provider = runOptions.provider ?? 'cliproxyapi';
+      const retryProvider = provider === 'cliproxyapi' ? 'default' : provider;
+      const retryMessage = provider === 'cliproxyapi'
+        ? `Upstream overloaded via cliproxyapi; retrying directly in ${delay / 1000}s`
+        : `Upstream overloaded; retrying in ${delay / 1000}s`;
+      await context.log('warn', retryMessage);
+      if (!await waitForRetry(delay, context.signal)) return null;
+      if (context.signal.aborted) return null;
+      result = await attempt({ ...runOptions, provider: retryProvider,
+        resumeSessionId: sessionId ?? undefined });
+      continue;
+    }
+    break;
   }
 
+  if (context.signal.aborted) return null;
   if (result.timedOut || result.aborted || result.exitCode !== 0) {
     const reason = result.aborted ? 'aborted' : result.timedOut ? 'timed out' : `failed with exit code ${result.exitCode}`;
     throw new Error(`Codex ${reason}. Last event texts (${recentTexts.length} of 3): ${recentTexts.join('; ') || '(none)'}`);
@@ -158,6 +193,23 @@ async function generateOutputs(
   const report = result.report as { status?: string; notes?: string };
   if (report.status === 'blocked') throw new Error(`Codex blocked: ${report.notes}`);
   return result;
+}
+
+async function waitForRetry(delayMs: number, signal: AbortSignal): Promise<boolean> {
+  if (signal.aborted) return false;
+  if (delayMs <= 0) return true;
+  return new Promise(resolve => {
+    const timer = setTimeout(() => {
+      signal.removeEventListener('abort', onAbort);
+      resolve(true);
+    }, delayMs);
+    const onAbort = () => {
+      clearTimeout(timer);
+      signal.removeEventListener('abort', onAbort);
+      resolve(false);
+    };
+    signal.addEventListener('abort', onAbort, { once: true });
+  });
 }
 
 function findSessionId(value: unknown): string | null {

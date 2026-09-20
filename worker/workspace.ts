@@ -1,5 +1,7 @@
 import { copyFile, lstat, mkdir, readFile, readdir, readlink, rm, symlink, writeFile } from 'node:fs/promises';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { summarizeGlb } from '../scripts/lib/glb.js';
+import { referencedClips, referencedNodes, type MachineDefinition } from '../shared/machine.js';
 import type { ClaimedJob } from './types.js';
 
 export type PreparedWorkspace = {
@@ -62,7 +64,7 @@ export async function prepareWorkspace(
     VIDEO_FILE: videoFile ?? '(no video was provided)',
     INSTRUCTION: job.instruction || '(none)',
   });
-  await writeFile(join(dir, 'TASK.md'), taskPrompt);
+  await writeFile(join(dir, job.kind === 'revise' ? 'REVISE.md' : 'TASK.md'), taskPrompt);
   return { dir, mode, taskPrompt, videoFile, videoDir, procedureFile };
 }
 
@@ -97,25 +99,65 @@ async function prepareModel(job: ClaimedJob, dir: string, repoRoot: string, fetc
   }
   if (current) {
     const response = await download(current.modelUrl, fetchRequest);
-    await writeFile(join(dir, 'model.glb'), new Uint8Array(await response.arrayBuffer()));
+    const model = new Uint8Array(await response.arrayBuffer());
+    await writeFile(join(dir, 'model.glb'), model);
     await writeFile(join(dir, 'machine.json'), JSON.stringify(current.definition, null, 2));
-    const definition = current.definition as { parts: { name: string }[]; stateVars: { name: string }[] };
-    await writeFile(join(dir, 'references/EXISTING.md'), [
-      '# Existing machine',
-      '',
-      'The published model has no editable source. Its model.glb and machine.json are in this workspace.',
-      '',
-      `Part names: ${definition.parts.map(part => part.name).join(', ') || '(none)'}`,
-      `State-var names: ${definition.stateVars.map(stateVar => stateVar.name).join(', ') || '(none)'}`,
-      '',
-      'Create buildModel.ts to match these exact names and the published model, then extend it additively.',
-      '',
-    ].join('\n'));
+    await writeFile(join(dir, 'references/EXISTING.md'), existingMachineReference(
+      current.definition as MachineDefinition,
+      summarizeGlb(model),
+    ));
     return;
   }
   for (const name of ['buildModel.ts', 'machine.json']) {
     await copyFile(join(repoRoot, 'worker/kit/template', name), join(dir, name));
   }
+}
+
+function existingMachineReference(definition: MachineDefinition, summary: ReturnType<typeof summarizeGlb>): string {
+  const partByName = new Map(definition.parts.map(part => [part.name, part]));
+  const nodeLines = referencedNodes(definition).map(name => {
+    const part = partByName.get(name);
+    return part
+      ? `- \`${name}\` — ${part.label}: ${part.blurb}`
+      : `- \`${name}\``;
+  });
+  const stateLines = definition.stateVars.flatMap(stateVar => [
+    `- \`${stateVar.name}\` (${stateVar.label}, ${stateVar.kind}) effects JSON: ${JSON.stringify(stateVar.effects)}`,
+    '```json',
+    JSON.stringify(stateVar.effects, null, 2),
+    '```',
+  ]);
+  const clipLines = referencedClips(definition).map(name => {
+    const animation = summary.animations.find(candidate => candidate.name === name);
+    return animation
+      ? `- \`${name}\` — duration: ${animation.duration} seconds; target nodes: ${animation.targetNodes.join(', ') || '(none)'}`
+      : `- \`${name}\` — missing from the downloaded model`;
+  });
+  const boundingBox = summary.boundingBox
+    ? `Bounding box: min ${JSON.stringify(summary.boundingBox.min)}; max ${JSON.stringify(summary.boundingBox.max)}`
+    : 'Bounding box: unavailable in the downloaded model';
+
+  return [
+    '# Existing machine',
+    '',
+    'The published model has no editable source. npm run export will overwrite model.glb, so buildModel.ts must be written from scratch to reproduce the published model\'s structure.',
+    '',
+    `Root node (the exported \`root.name\` must equal it): \`${definition.rootNode}\``,
+    '',
+    'Exact node names that must exist:',
+    ...nodeLines,
+    '',
+    'State vars and their effects (JSON):',
+    ...stateLines,
+    '',
+    'Animation clips that must exist:',
+    ...clipLines,
+    '',
+    boundingBox,
+    '',
+    'Keep every listed name; add new parts, state vars and clips freely.',
+    '',
+  ].join('\n');
 }
 
 async function prepareVideo(url: string | undefined, dir: string, videoDir: string, fetchRequest: typeof fetch): Promise<string | null> {

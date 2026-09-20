@@ -248,7 +248,7 @@ describe('runJob', () => {
     const runner = vi.spyOn(codex, 'runCodexWithFallback').mockImplementationOnce(async runOptions => {
       runOptions.onEvent?.({ type: 'error', text: 'Resume session not found', raw: null });
       return {
-        sessionId: 'previous-session', finalMessage: '', report: null,
+        sessionId: 'previous-session', finalMessage: '', stderr: '', report: null,
         exitCode: 1, durationMs: 100, timedOut: false, aborted: false,
       };
     });
@@ -262,6 +262,47 @@ describe('runJob', () => {
     expect(client.stages.filter(stage => stage.sessionId).at(-1)?.sessionId).toBe('stub-session');
   });
 
+  it('falls back from a resume failure reported on stderr', async () => {
+    revise();
+    options.codex!.env!.STUB_MODE = 'resume-fails';
+    await run();
+    expect(client.events).toContainEqual({
+      jobId: job.jobId, level: 'warn', message: 'Resume failed; starting a fresh session',
+    });
+    expect(client.deliveries).toHaveLength(1);
+  });
+
+  it('retries an overloaded upstream once and delivers the second result', async () => {
+    options.codex!.env!.STUB_MODE = 'fail-503-once';
+    options.retryDelayMs = 10;
+    await run();
+    expect(client.events.some(event => event.level === 'warn'
+      && event.message === 'Upstream overloaded via cliproxyapi; retrying directly in 0.01s')).toBe(true);
+    expect(client.deliveries).toHaveLength(1);
+    const report = client.deliveries[0].payload.report as { argv?: string[] };
+    const argv = Array.isArray(report.argv) ? report.argv : [];
+    expect(argv.some(arg => /model_provider/.test(arg))).toBe(false);
+  });
+
+  it('fails after one retry when the upstream remains overloaded', async () => {
+    options.codex!.env!.STUB_MODE = 'fail-503';
+    options.retryDelayMs = 10;
+    await expect(run()).rejects.toThrow('Codex failed with exit code 1');
+    expect(client.deliveries).toEqual([]);
+  });
+
+  it('stops without delivering when aborted during an overload retry wait', async () => {
+    options.codex!.env!.STUB_MODE = 'fail-503';
+    options.retryDelayMs = 90_000;
+    const event = client.event;
+    client.event = async (...args) => {
+      await event(...args);
+      if (args[2] === 'Upstream overloaded via cliproxyapi; retrying directly in 90s') controller.abort();
+    };
+    await expect(run()).resolves.toBeUndefined();
+    expect(client.deliveries).toEqual([]);
+  });
+
   it('stops after one fresh retry and includes the last three diagnostic texts', async () => {
     revise();
     const runner = vi.spyOn(codex, 'runCodexWithFallback').mockImplementation(async runOptions => {
@@ -269,7 +310,7 @@ describe('runJob', () => {
         runOptions.onEvent?.({ type: 'error', text, raw: null });
       }
       return {
-        sessionId: null, finalMessage: '', report: null,
+        sessionId: null, finalMessage: '', stderr: '', report: null,
         exitCode: 1, durationMs: 100, timedOut: false, aborted: false,
       };
     });

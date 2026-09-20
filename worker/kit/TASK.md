@@ -57,7 +57,7 @@ Write `formatVersion: 1`, `title: "{{PROCEDURE_TITLE}}"`, `summary` (two sentenc
 
 # Mode — {{MODE}}
 
-For `existing-machine`, the workspace already holds `buildModel.ts`, `machine.json`, `procedures/*.json` and `references/`. Extend them. NEVER rename or remove an existing part, node, state var or clip; other procedures depend on them. Add what the new video shows and refine proportions. When adding a state var, supply its initial value in every existing procedure's `start`. Report `modelChanged` accordingly.
+For `existing-machine`, the workspace holds `machine.json`, `procedures/*.json` and `references/`. If `buildModel.ts` is missing, `references/EXISTING.md` describes the published model; read it first and satisfy it exactly when writing `buildModel.ts` from scratch. Otherwise, extend the existing `buildModel.ts`. NEVER rename or remove an existing part, node, state var or clip; other procedures depend on them. Add what the new video shows and refine proportions. When adding a state var, supply its initial value in every existing procedure's `start`. Report `modelChanged` accordingly.
 
 For `new-machine`, start from a copy of `{{REPO}}/worker/kit/template/` and adapt it to the instrument.
 

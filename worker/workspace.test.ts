@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { lstat, mkdir, mkdtemp, readFile, readlink, realpath, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { summarizeGlb } from '../scripts/lib/glb.js';
+import { referencedClips, referencedNodes } from '../shared/machine.js';
 import type { ClaimedJob } from './types.js';
 import { prepareWorkspace, renderTemplate } from './workspace.js';
 
@@ -106,24 +108,34 @@ describe('prepareWorkspace', () => {
   });
 
   it('prepares a seeded machine without editable source and preserves its names', async () => {
+    const seededDefinition = JSON.parse(await readFile(join(repoRoot, 'seed/rise-raman-sem/machine.json'), 'utf8'));
+    const modelBytes = await readFile(join(repoRoot, 'seed/rise-raman-sem/model.glb'));
     job.machine.current = {
-      machineVersionId: 'version-1', version: 1, definition,
+      machineVersionId: 'version-1', version: 1, definition: seededDefinition,
       modelUrl: 'https://storage.example/model',
     };
-    const bytes = new Uint8Array([0, 1, 128, 255]);
     const fetchRequest = vi.fn<typeof fetch>(async url => {
       expect(url).toBe(job.machine.current?.modelUrl);
-      return new Response(bytes, { headers: { 'content-type': 'model/gltf-binary' } });
+      return new Response(modelBytes, { headers: { 'content-type': 'model/gltf-binary' } });
     });
     const result = await prepareWorkspace(job, { home, repoRoot, fetch: fetchRequest });
     expect(result.mode).toBe('existing-machine');
-    expect(new Uint8Array(await readFile(join(result.dir, 'model.glb')))).toEqual(bytes);
-    expect(JSON.parse(await readFile(join(result.dir, 'machine.json'), 'utf8'))).toEqual(definition);
+    expect(await readFile(join(result.dir, 'model.glb'))).toEqual(modelBytes);
+    expect(JSON.parse(await readFile(join(result.dir, 'machine.json'), 'utf8'))).toEqual(seededDefinition);
     await expect(lstat(join(result.dir, 'buildModel.ts'))).rejects.toMatchObject({ code: 'ENOENT' });
     const reference = await readFile(join(result.dir, 'references/EXISTING.md'), 'utf8');
-    for (const { name } of [...definition.parts, ...definition.stateVars]) expect(reference).toContain(name);
+    const summary = summarizeGlb(modelBytes);
+    expect(reference).toContain(seededDefinition.rootNode);
+    for (const name of referencedNodes(seededDefinition)) expect(reference).toContain(name);
+    for (const name of referencedClips(seededDefinition)) {
+      const animation = summary.animations.find(candidate => candidate.name === name)!;
+      expect(reference).toContain(`duration: ${animation.duration} seconds`);
+      for (const node of animation.targetNodes) expect(reference).toContain(node);
+    }
+    expect(reference).toContain(`Bounding box: min ${JSON.stringify(summary.boundingBox!.min)}; max ${JSON.stringify(summary.boundingBox!.max)}`);
     expect(reference).toContain('no editable source');
-    expect(reference).toContain('Create buildModel.ts to match these exact names');
+    expect(reference).toContain('npm run export');
+    expect(reference).toContain('buildModel.ts must be written from scratch');
   });
 
   it('keeps local model edits across jobs and switches to existing-machine mode', async () => {
@@ -158,6 +170,7 @@ describe('prepareWorkspace', () => {
 
   it('overwrites the revision target with the author draft and renders REVISE.md', async () => {
     const first = await prepareWorkspace(job, { home, repoRoot });
+    const originalTask = await readFile(join(first.dir, 'TASK.md'), 'utf8');
     await writeFile(first.procedureFile, '{"oldDraft":true}');
     job.kind = 'revise';
     job.instruction = 'Explain how to wipe the lid.';
@@ -176,7 +189,8 @@ describe('prepareWorkspace', () => {
     }));
     expect(result.taskPrompt).toContain(job.instruction);
     expect(result.taskPrompt).not.toContain('{{');
-    expect(await readFile(join(result.dir, 'TASK.md'), 'utf8')).toBe(result.taskPrompt);
+    expect(await readFile(join(result.dir, 'TASK.md'), 'utf8')).toBe(originalTask);
+    expect(await readFile(join(result.dir, 'REVISE.md'), 'utf8')).toBe(result.taskPrompt);
   });
 
   it('downloads a QuickTime video once and reuses its relative path', async () => {

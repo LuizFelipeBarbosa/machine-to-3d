@@ -53,8 +53,18 @@ describe('runCodex', () => {
     }));
     expect(report.resumed).toBe(true);
     expect(report.argv.slice(0, 3)).toEqual(['exec', 'resume', 'previous-session']);
+    expect(report.argv).toContain('sandbox_mode="workspace-write"');
+    expect(report.argv).toContain('--skip-git-repo-check');
+    expect(report.argv).not.toContain('-C');
+    expect(report.argv).not.toContain('--sandbox');
     expect(report.argv).not.toContain('-i');
     expect(report.argv).not.toContain('/tmp/ignored.png');
+  });
+
+  it('captures stderr from a failed invocation', async () => {
+    const result = await runCodex({ ...baseOptions, env: { FAKE_CODEX_MODE: 'fail-stderr-session' } });
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain('unrecognized subcommand / session not found');
   });
 
   it.each([

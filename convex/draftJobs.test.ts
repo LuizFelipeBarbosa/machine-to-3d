@@ -850,7 +850,10 @@ describe('draftJobs.deliver', () => {
     });
     await t.mutation(api.draftJobs.claim, worker);
     if (status === 'deleted') await author.mutation(api.procedures.discardDraft, { versionId });
-    else await approver.mutation(api.procedures.approve, { versionId, changeNote: 'Reviewed' });
+    else {
+      // The real approve mutation is guarded against running revisions, so simulate the stale state directly.
+      await t.run((ctx) => ctx.db.patch(versionId, { status: 'approved' }));
+    }
     await expect(t.mutation(api.draftJobs.deliver, {
       jobId, workerId: worker.workerId, modelChanged: false,
       procedure: { content: emptyProcedureContent('Revised', templateDefinition) }, report: {},

@@ -27,6 +27,7 @@ export type CodexEvent = { type: string; text?: string; raw: unknown };
 export type CodexRunResult = {
   sessionId: string | null;
   finalMessage: string;
+  stderr: string;
   report: unknown | null;
   exitCode: number;
   timedOut: boolean;
@@ -36,11 +37,17 @@ export type CodexRunResult = {
 
 function buildArgs(options: CodexRunOptions, outputPath: string): string[] {
   const args = ['exec'];
-  if (options.resumeSessionId !== undefined) args.push('resume', options.resumeSessionId);
-  args.push('--json', '-C', options.workspace, '--sandbox', 'workspace-write',
-    '--skip-git-repo-check', '-o', outputPath);
+  const resumeSessionId = options.resumeSessionId;
+  const resumed = resumeSessionId !== undefined;
+  if (resumed) {
+    args.push('resume', resumeSessionId);
+    args.push('--json', '-o', outputPath);
+  } else {
+    args.push('--json', '-C', options.workspace, '--sandbox', 'workspace-write',
+      '--skip-git-repo-check', '-o', outputPath);
+  }
   if (options.outputSchemaPath) args.push('--output-schema', options.outputSchemaPath);
-  if (options.resumeSessionId === undefined) {
+  if (!resumed) {
     for (const image of options.images ?? []) args.push('-i', image);
   }
   if (options.networkAccess !== false) {
@@ -48,6 +55,7 @@ function buildArgs(options: CodexRunOptions, outputPath: string): string[] {
   }
   args.push('-c', `model_reasoning_effort="${options.effort ?? 'high'}"`);
   if (options.model) args.push('-m', options.model);
+  if (resumed) args.push('--skip-git-repo-check', '-c', 'sandbox_mode="workspace-write"');
   if ((options.provider ?? 'cliproxyapi') === 'cliproxyapi') {
     args.push('-c', 'model_provider="cliproxyapi"');
   }
@@ -153,7 +161,10 @@ async function runAttempt(options: CodexRunOptions): Promise<{
       child.stdout.setEncoding('utf8');
       child.stderr.setEncoding('utf8');
       child.stdout.on('data', (chunk: string) => { stdout += chunk; });
-      child.stderr.on('data', (chunk: string) => { stderr += chunk; });
+      child.stderr.on('data', (chunk: string) => {
+        const remaining = 64 * 1024 - stderr.length;
+        if (remaining > 0) stderr += chunk.slice(0, remaining);
+      });
       lines.on('line', line => {
         const event = parseEvent(line);
         sessionId ??= findSessionId(event.raw);
@@ -203,7 +214,7 @@ async function runAttempt(options: CodexRunOptions): Promise<{
     if (!finalMessage.trim()) finalMessage = lastAgentMessage;
     return {
       result: { sessionId, finalMessage, report: parseReport(finalMessage),
-        exitCode, timedOut, aborted, durationMs },
+        stderr, exitCode, timedOut, aborted, durationMs },
       output: `${stdout}\n${stderr}`,
     };
   } finally {
@@ -218,7 +229,7 @@ export async function runCodex(options: CodexRunOptions): Promise<CodexRunResult
 export async function runCodexWithFallback(options: CodexRunOptions): Promise<CodexRunResult> {
   const { result, output } = await runAttempt(options);
   if (result.exitCode !== 0 && result.durationMs <= 60_000
-    && /model_provider|cliproxyapi|ECONNREFUSED|401/i.test(output)) {
+    && /model_provider|cliproxyapi|auth_unavailable|ECONNREFUSED|401/i.test(`${output}\n${result.stderr}`)) {
     options.onEvent?.({
       type: 'provider-fallback',
       text: 'Provider failed within 60 seconds; retrying with the default provider.',

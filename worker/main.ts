@@ -61,6 +61,9 @@ async function main(): Promise<void> {
 
   const home = process.env.WORKER_HOME ?? join(homedir(), '.instrument-trainer');
   const command = process.env.WORKER_CODEX_CMD;
+  const configuredProvider = process.env.WORKER_CODEX_PROVIDER;
+  const provider: 'cliproxyapi' | 'default' = configuredProvider === 'default'
+    || configuredProvider === 'cliproxyapi' ? configuredProvider : 'cliproxyapi';
   const pollMs = Number.parseInt(process.env.WORKER_POLL_MS ?? '15000', 10);
   const workerId = `${hostname()}-${process.pid}`;
   const client = withStdoutLogging(createWorkerClient({ siteUrl, secret, workerId }), logLine);
@@ -79,7 +82,7 @@ async function main(): Promise<void> {
   await runLoop({
     client,
     runJob: (job, ctx) => runJob(job, ctx, {
-      home, repoRoot, codex: command ? { command } : undefined,
+      home, repoRoot, codex: { command, provider },
     }),
     pollMs,
     sleep: ms => {

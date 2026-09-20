@@ -1,7 +1,7 @@
 import { ConvexError, v } from 'convex/values';
 import { validateProcedure } from '../shared/validateProcedure';
 import type { ProcedureContent } from '../shared/procedure';
-import type { Doc } from './_generated/dataModel';
+import type { Doc, Id } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
 import type { QueryCtx } from './_generated/server';
 import { requireRole, requireUser } from './lib/authz';
@@ -36,6 +36,18 @@ const versionSummaryValidator = v.object({
   approvedAt: v.optional(v.number()),
   changeNote: v.optional(v.string()),
 });
+
+async function requireNoActiveDraftRevision(ctx: QueryCtx, versionId: Id<'procedureVersions'>) {
+  for (const status of ['queued', 'running'] as const) {
+    const job = await ctx.db.query('draftJobs')
+      .withIndex('by_target', (q) =>
+        q.eq('targetProcedureVersionId', versionId).eq('status', status),
+      ).first();
+    if (job !== null) {
+      throw new ConvexError('An agent revision is running for this draft');
+    }
+  }
+}
 
 export const getEditorContext = query({
   args: { machineSlug: v.string(), procedureSlug: v.string() },
@@ -409,15 +421,7 @@ export const saveDraft = mutation({
     if (expectedContentRevision !== undefined && expectedContentRevision !== (version.contentRevision ?? 0)) {
       throw new ConvexError('Draft was changed elsewhere; reload before saving');
     }
-    for (const status of ['queued', 'running'] as const) {
-      const job = await ctx.db.query('draftJobs')
-        .withIndex('by_target', (q) =>
-          q.eq('targetProcedureVersionId', versionId).eq('status', status),
-        ).first();
-      if (job !== null) {
-        throw new ConvexError('An agent revision is running for this draft');
-      }
-    }
+    await requireNoActiveDraftRevision(ctx, versionId);
     await ctx.db.patch(versionId, { content: parseContent(content) });
     return null;
   },
@@ -452,6 +456,7 @@ export const approve = mutation({
     if (version.status !== 'draft') {
       throw new ConvexError('Only drafts can be approved');
     }
+    await requireNoActiveDraftRevision(ctx, versionId);
     const procedure = await requireProcedure(ctx, version.procedureId);
     const machineVersion = await requireMachineVersion(ctx, version.machineVersionId);
     const content = parseContent(version.content);

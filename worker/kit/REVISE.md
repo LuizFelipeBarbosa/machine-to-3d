@@ -6,7 +6,7 @@ The author reviewed the draft of `{{PROCEDURE_SLUG}}` for {{MACHINE_NAME}} in `{
 
 `procedures/{{PROCEDURE_SLUG}}.json` already contains the author's hand edits. Keep them unless the instruction says otherwise.
 
-The same contracts as the original task apply; read `{{REPO}}/worker/kit/TASK.md` for them. Model changes must stay additive: never rename or remove existing parts, nodes, state vars, or clips.
+The same contracts as the original task apply; read the rendered `{{WORKSPACE}}/TASK.md` from the previous run for them. If that file does not exist, read `{{REPO}}/worker/kit/TASK.md` instead and ignore its placeholders. Model changes must stay additive: never rename or remove existing parts, nodes, state vars, or clips.
 
 After making changes, run `npm run export` then `npm run validate` from the workspace, repeating until clean.
 
