@@ -1,0 +1,217 @@
+{
+  "formatVersion": 1,
+  "title": "Battery access and replacement",
+  "summary": "Reconstructed from a 58 s video: power off, turn over, slide the battery cover off, remove and reseat the two AA cells, refit the cover, power on. Shapes are approximate; the 3D terminal orientation is not a polarity reference.",
+  "minutes": 5,
+  "video": {
+    "fileId": "reference.mp4",
+    "label": "Watch the original video"
+  },
+  "start": {
+    "demo": 0
+  },
+  "steps": [
+    {
+      "id": "battery-access-01",
+      "title": "Inspect the keyboard",
+      "where": "instrument",
+      "body": "Locate the integrated touchpad on the right and the power switch along the rear edge. The dark case, lime touchpad divider, compact US key layout and underside label match the Logitech K400 Plus.",
+      "parts": [
+        "touchpad",
+        "power"
+      ],
+      "view": {
+        "pos": [
+          0,
+          0.654,
+          -0.002
+        ],
+        "target": [
+          0,
+          -0.001,
+          -0.002
+        ]
+      },
+      "state": {
+        "demo": 0.107
+      },
+      "media": {
+        "fileId": "media/step-01.jpg",
+        "alt": "Video frame at about 0:00–0:08"
+      }
+    },
+    {
+      "id": "battery-access-02",
+      "title": "Power off and turn over",
+      "where": "instrument",
+      "body": "Slide the rear switch to OFF, then turn the keyboard face down on a clean, soft surface. Locate the long battery cover near the rear edge.",
+      "parts": [
+        "power"
+      ],
+      "view": {
+        "pos": [
+          0.096,
+          -0.085,
+          -0.644
+        ],
+        "target": [
+          0,
+          -0.001,
+          -0.002
+        ]
+      },
+      "state": {
+        "demo": 0.25
+      },
+      "caution": "Switching OFF is added preparation; a definite OFF transition is not visible in the video.",
+      "media": {
+        "fileId": "media/step-02.jpg",
+        "alt": "0:08–0:18"
+      }
+    },
+    {
+      "id": "battery-access-03",
+      "title": "Slide the battery cover off",
+      "where": "instrument",
+      "body": "Find the two molded arrows on the cover. Press gently and slide the cover in their direction, toward the nearby outer edge. Lift the released cover away and set it aside. No screws are removed.",
+      "parts": [
+        "cover"
+      ],
+      "view": {
+        "pos": [
+          0,
+          -0.624,
+          0.2
+        ],
+        "target": [
+          0,
+          -0.001,
+          -0.002
+        ]
+      },
+      "state": {
+        "demo": 0.393
+      },
+      "media": {
+        "fileId": "media/step-03.jpg",
+        "alt": "0:18–0:29"
+      }
+    },
+    {
+      "id": "battery-access-04",
+      "title": "Remove the batteries",
+      "where": "instrument",
+      "body": "Note the polarity markings before removing a cell. Push it gently toward the spring contact and lift the other end out; repeat for the other cell if replacing both. The keyboard uses two AA batteries.",
+      "parts": [
+        "batteries",
+        "compartment"
+      ],
+      "view": {
+        "pos": [
+          0,
+          -0.624,
+          0.2
+        ],
+        "target": [
+          0,
+          -0.001,
+          -0.002
+        ]
+      },
+      "state": {
+        "demo": 0.536
+      },
+      "caution": "The camera does not clearly show each individual cell removal; the spring-contact technique is added guidance.",
+      "media": {
+        "fileId": "media/step-04.jpg",
+        "alt": "0:29–0:43"
+      }
+    },
+    {
+      "id": "battery-access-05",
+      "title": "Reinstall or replace the cells",
+      "where": "instrument",
+      "body": "Seat two AA batteries according to the + and − markings inside the physical compartment. If replacing depleted batteries, use a matched fresh pair. Make sure both cells sit fully in their channel before fitting the cover.",
+      "parts": [
+        "batteries"
+      ],
+      "view": {
+        "pos": [
+          0,
+          -0.624,
+          0.2
+        ],
+        "target": [
+          0,
+          -0.001,
+          -0.002
+        ]
+      },
+      "state": {
+        "demo": 0.679
+      },
+      "caution": "Do not use the approximate 3D terminal orientation as a polarity reference.",
+      "media": {
+        "fileId": "media/step-05.jpg",
+        "alt": "0:43–0:47"
+      }
+    },
+    {
+      "id": "battery-access-06",
+      "title": "Refit the cover",
+      "where": "instrument",
+      "body": "Align the cover tabs with their guides and slide the cover back, opposite the removal arrows, until it sits flush. If it does not close easily, recheck battery seating and tab alignment.",
+      "parts": [
+        "cover"
+      ],
+      "view": {
+        "pos": [
+          0,
+          -0.624,
+          0.2
+        ],
+        "target": [
+          0,
+          -0.001,
+          -0.002
+        ]
+      },
+      "state": {
+        "demo": 0.821
+      },
+      "media": {
+        "fileId": "media/step-06.jpg",
+        "alt": "0:47–0:53"
+      }
+    },
+    {
+      "id": "battery-access-07",
+      "title": "Power on and check",
+      "where": "instrument",
+      "body": "Return the keyboard upright and slide the switch to ON; the green area is visible. With its existing USB receiver connected, check that typing and the touchpad work.",
+      "parts": [
+        "power"
+      ],
+      "view": {
+        "pos": [
+          0.096,
+          -0.085,
+          -0.644
+        ],
+        "target": [
+          0,
+          -0.001,
+          -0.002
+        ]
+      },
+      "state": {
+        "demo": 1
+      },
+      "caution": "Typing and touchpad testing are added completion checks, not demonstrated in the video.",
+      "media": {
+        "fileId": "media/step-07.jpg",
+        "alt": "0:53–0:58"
+      }
+    }
+  ]
+}

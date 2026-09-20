@@ -1,0 +1,131 @@
+{
+  "formatVersion": 1,
+  "rootNode": "Logitech_K400_Plus",
+  "parts": [
+    {
+      "name": "body",
+      "label": "Case",
+      "blurb": "Main outer case shell of the wireless keyboard."
+    },
+    {
+      "name": "keys",
+      "label": "Keys",
+      "blurb": "Compact US-layout key bank for typing input."
+    },
+    {
+      "name": "touchpad",
+      "label": "Touchpad",
+      "blurb": "Integrated pointing surface on the right side of the keyboard."
+    },
+    {
+      "name": "cover",
+      "label": "Battery cover",
+      "blurb": "Slides off toward the outer edge along the molded arrows; no screws."
+    },
+    {
+      "name": "batteries",
+      "label": "AA batteries",
+      "blurb": "Two AA cells seated in the removable battery compartment."
+    },
+    {
+      "name": "compartment",
+      "label": "Battery compartment",
+      "blurb": "Molded bay that holds the two AA cells beneath the cover."
+    },
+    {
+      "name": "power",
+      "label": "Power switch",
+      "blurb": "Rear-edge switch used to turn the keyboard off and on."
+    },
+    {
+      "name": "Power_slider",
+      "label": "Power slider",
+      "blurb": "Sliding control that moves between the keyboard's power positions."
+    },
+    {
+      "name": "Power_green",
+      "label": "Green ON indicator",
+      "blurb": "Green indicator area that is visible when the keyboard is on."
+    }
+  ],
+  "presetViews": [
+    {
+      "name": "perspective",
+      "label": "Perspective",
+      "view": {
+        "pos": [
+          0.141,
+          0.422,
+          0.478
+        ],
+        "target": [
+          0,
+          -0.001,
+          -0.002
+        ]
+      }
+    },
+    {
+      "name": "top",
+      "label": "Keys & touchpad",
+      "view": {
+        "pos": [
+          0,
+          0.654,
+          -0.002
+        ],
+        "target": [
+          0,
+          -0.001,
+          -0.002
+        ]
+      }
+    },
+    {
+      "name": "under",
+      "label": "Underside",
+      "view": {
+        "pos": [
+          0,
+          -0.624,
+          0.2
+        ],
+        "target": [
+          0,
+          -0.001,
+          -0.002
+        ]
+      }
+    },
+    {
+      "name": "rear",
+      "label": "Rear switch",
+      "view": {
+        "pos": [
+          0.096,
+          -0.085,
+          -0.644
+        ],
+        "target": [
+          0,
+          -0.001,
+          -0.002
+        ]
+      }
+    }
+  ],
+  "stateVars": [
+    {
+      "name": "demo",
+      "label": "Procedure progress",
+      "kind": "fraction",
+      "userToggle": true,
+      "effects": [
+        {
+          "type": "clip",
+          "clip": "Battery procedure"
+        }
+      ]
+    }
+  ]
+}

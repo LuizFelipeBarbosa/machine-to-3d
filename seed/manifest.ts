@@ -91,4 +91,11 @@ export const SEED_MACHINES: SeedMachine[] = [
     dir: 'seed/camera-demonstration',
     procedureSlugs: ['battery-card-and-monitor'],
   },
+  {
+    slug: 'logitech-k400-plus',
+    name: 'Logitech K400 Plus (reconstruction)',
+    kind: 'Wireless keyboard — demonstration',
+    dir: 'seed/logitech-k400-plus',
+    procedureSlugs: ['battery-access'],
+  },
 ];
